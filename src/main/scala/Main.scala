@@ -1,5 +1,4 @@
-//TODO correct package name?
-package main
+//TODO is the gitignore comprehensive?
 
 object Main {
   def main(args: Array[String]): Unit = {
