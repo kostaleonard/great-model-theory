@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/scala,sbt,intellij,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=scala,sbt,intellij,macos
 
+target
+project/target
 .idea/
 
 ### Intellij ###
