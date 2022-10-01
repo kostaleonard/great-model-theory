@@ -1,13 +1,16 @@
 package layers
 
+import ndarray.NDArray
+
 /**
  * A neural network layer.
  */
-abstract class Layer {
+abstract class Layer[T] {
 
-  //TODO add call method stub
   /**
    * Returns the layer's transformation on the inputs.
+   *
+   * @param inputs The input tensor of arbitrary shape.
    */
-  //def call(): NDArray
+  def call(inputs: NDArray[T]): NDArray[T]
 }
