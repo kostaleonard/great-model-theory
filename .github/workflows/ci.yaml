@@ -1,14 +1,17 @@
 name: Run linting and tests
 on: [push, pull_request]
 jobs:
-  build:
+  lint:
+    name: Scalafmt and Scalafix
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 8
+      - uses: olafurpg/setup-scala@v13
+      - run: sbt "scalafixAll --check"
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: olafurpg/setup-scala@v13
       - name: Build and Test
         run: sbt -v +test
