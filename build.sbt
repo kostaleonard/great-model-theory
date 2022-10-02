@@ -7,3 +7,10 @@ lazy val root = (project in file("."))
     name := "igneous",
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.12" % Test
   )
+
+inThisBuild(
+  List(
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
+  )
+)
