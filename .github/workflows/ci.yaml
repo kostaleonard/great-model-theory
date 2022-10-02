@@ -2,7 +2,6 @@ name: Run linting and tests
 on: [push, pull_request]
 jobs:
   lint:
-    name: Scalafmt and Scalafix
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
