@@ -1,11 +1,18 @@
 package ndarray
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 /**
  * An N-dimensional array.
  */
 object NDArray {
+
+  /**
+   * Returns an empty NDArray of the given type.
+   *
+   * @tparam T The array element type.
+   */
+  def empty[T: ClassTag] = new NDArray[T](List.empty, Array.empty[T])
 
   /**
    * Returns an array filled with the given value.
@@ -32,21 +39,13 @@ object NDArray {
    */
   def ones[T: ClassTag](shape: List[Int]): NDArray[T] = NDArray.ofValue[T](shape, 1.asInstanceOf[T])
 
-  //TODO if the input sequence does not have the same length for all rows, this will cause issues.
-  //TODO warnings
   /**
    * Returns an array from the possibly nested sequence.
    *
-   * @param seq A possibly nested sequence of array elements. The output array will have the same shape as this
-   *            sequence.
+   * @param seq A sequence of array elements. The output array will have the same shape as this sequence.
    * @tparam T The array element type.
    */
-  def apply[T: ClassTag](seq: Seq[_]): NDArray[T] = seq match {
-    case nested: Seq[Seq[_]] =>
-      val subarrays = nested.map(NDArray[T](_))
-      new NDArray[T](subarrays.length +: subarrays.head.shape, subarrays.flatMap(_.flatten()).toArray)
-    case flat: Seq[T] => new NDArray[T](List(seq.length), flat.toArray)
-  }
+  def apply[T: ClassTag](seq: Seq[T]): NDArray[T] = new NDArray[T](List(seq.length), seq.toArray)
 
   /**
    * Returns an array whose elements are 0, 1, 2, etc. when flattened.
@@ -66,9 +65,9 @@ object NDArray {
  * @tparam T The array element type.
  */
 class NDArray[T] private (val shape: List[Int], val elements: Array[T]) {
-  private val shapeMultipliers = Array.fill[Int](shape.length)(1)
-  shapeMultipliers.indices.reverse.drop(1).foreach{ idx =>
-    shapeMultipliers(idx) = shape(idx + 1) * shapeMultipliers(idx + 1)
+  private val strides = Array.fill[Int](shape.length)(1)
+  strides.indices.reverse.drop(1).foreach{ idx =>
+    strides(idx) = shape(idx + 1) * strides(idx + 1)
   }
 
   /**
@@ -76,17 +75,14 @@ class NDArray[T] private (val shape: List[Int], val elements: Array[T]) {
    */
   def flatten(): Array[T] = elements
 
-  //TODO also allow for a partial apply on arbitrary ranks
   /**
    * Returns an element from the array.
    *
    * @param indices The indices to an element in the array. Must be of length [[shape.length]].
    */
   def apply(indices: List[Int]): T = elements(
-    indices.indices.foldRight(0)((idx, accumulator) => indices(idx) * shapeMultipliers(idx) + accumulator)
+    indices.indices.foldRight(0)((idx, accumulator) => indices(idx) * strides(idx) + accumulator)
   )
-
-  //TODO set an element in the array. Also would like to be able to set with an NDArray if only a subset of indices are provided
 
   /**
    * Returns an NDArray with the same elements as the input, but with the given shape.
