@@ -16,4 +16,10 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val dense = new Dense[Float](Array(BATCH_SIZE_PLACEHOLDER, 4), 2)
     assert(dense.biases.flatten().forall(_ == 0))
   }
+
+  it should "have weights and biases of the correct shapes" in {
+    val dense = new Dense[Float](Array(BATCH_SIZE_PLACEHOLDER, 4), 2)
+    assert(dense.weights.shape sameElements Array(4, 2))
+    assert(dense.biases.shape sameElements Array(2))
+  }
 }

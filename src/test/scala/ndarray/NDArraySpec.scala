@@ -62,6 +62,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.flatten().forall(_ == 1))
   }
 
+  it should "pass type parameter information correctly" in {
+    val arr = NDArray.ones[Float](List(2, 3))
+    assert(arr.flatten().forall(_.isInstanceOf[Float]))
+  }
+
   "An NDArray.apply array" should "convert a flat sequence into a rank 1 NDArray" in {
     val values = List(1, 2, 3, 4)
     val arr = NDArray[Int](values)
@@ -95,6 +100,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr = NDArray.arange[Int](List(2, 3, 2))
     val elements = arr.flatten()
     assert(elements.indices.forall(idx => elements(idx) == idx))
+  }
+
+  it should "pass type parameter information correctly" in {
+    val arr = NDArray.arange[Float](List(2, 3, 2))
+    assert(arr.flatten().forall(_.isInstanceOf[Float]))
   }
 
   "An NDArray.random[Float] array" should "contain different elements in [0, 1)" in {

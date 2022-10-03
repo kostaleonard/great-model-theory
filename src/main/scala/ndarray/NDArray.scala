@@ -25,7 +25,8 @@ object NDArray {
     */
   def ofValue[T: ClassTag](shape: Seq[Int], value: T) =
     new NDArray[T](shape.toArray, Array.fill[T](shape.product)(value))
-
+  
+  // TODO force T to be a numeric type
   /** Returns an array filled with zeros.
     *
     * @param shape
@@ -34,8 +35,16 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def zeros[T: ClassTag](shape: Seq[Int]): NDArray[T] =
-    NDArray.ofValue[T](shape, 0.asInstanceOf[T])
+  def zeros[T: ClassTag](shape: Seq[Int]): NDArray[T] = classTag[T] match {
+    case _ if classTag[T] == classTag[Float] =>
+      NDArray.ofValue[Float](shape, 0).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Double] =>
+      NDArray.ofValue[Double](shape, 0).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Int] =>
+      NDArray.ofValue[Int](shape, 0).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Long] =>
+      NDArray.ofValue[Long](shape, 0).asInstanceOf[NDArray[T]]
+  }
 
   /** Returns an array filled with ones.
     *
@@ -45,8 +54,16 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def ones[T: ClassTag](shape: Seq[Int]): NDArray[T] =
-    NDArray.ofValue[T](shape, 1.asInstanceOf[T])
+  def ones[T: ClassTag](shape: Seq[Int]): NDArray[T] = classTag[T] match {
+    case _ if classTag[T] == classTag[Float] =>
+      NDArray.ofValue[Float](shape, 1).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Double] =>
+      NDArray.ofValue[Double](shape, 1).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Int] =>
+      NDArray.ofValue[Int](shape, 1).asInstanceOf[NDArray[T]]
+    case _ if classTag[T] == classTag[Long] =>
+      NDArray.ofValue[Long](shape, 1).asInstanceOf[NDArray[T]]
+  }
 
   /** Returns an array from the given sequence.
     *
@@ -67,12 +84,19 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def arange[T: ClassTag](shape: Seq[Int]): NDArray[T] = new NDArray[T](
-    shape.toArray,
-    Array
-      .range(0, shape.product)
-      .map(_.asInstanceOf[T])
-  )
+  def arange[T: ClassTag](shape: Seq[Int]): NDArray[T] = {
+    val elements = classTag[T] match {
+      case _ if classTag[T] == classTag[Float] =>
+        Array.range(0, shape.product).map(_.asInstanceOf[Float])
+      case _ if classTag[T] == classTag[Double] =>
+        Array.range(0, shape.product).map(_.asInstanceOf[Double])
+      case _ if classTag[T] == classTag[Int] =>
+        Array.range(0, shape.product)
+      case _ if classTag[T] == classTag[Long] =>
+        Array.range(0, shape.product).map(_.asInstanceOf[Long])
+    }
+    new NDArray[T](shape.toArray, elements.asInstanceOf[Array[T]])
+  }
 
   /** Returns an array whose elements are randomly initialized.
     *
@@ -143,4 +167,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     */
   def reshape(targetShape: Seq[Int]): NDArray[T] =
     new NDArray[T](targetShape.toArray, elements)
+
+  // TODO add indices method to get List[Array[Int]] for all indices in order: (0, 0), (0, 1), (0, 2), ...
+  // TODO can we make this class implement Iterable?
 }
