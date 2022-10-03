@@ -2,6 +2,9 @@ package layers
 
 import ndarray.NDArray
 
+import scala.reflect.ClassTag
+
+//TODO add glorot uniform as function in companion object?
 //TODO eventually we want to not need/allow users to supply the input shape
 /** A densely connected neural network layer.
   *
@@ -23,11 +26,25 @@ import ndarray.NDArray
   *   first dimension is considered the batch dimension, and is ignored.
   * @param units
   *   The number of neurons in the layer.
+  * @param weightsInitialization
+  *   The initial weights matrix to use. Must be of shape
+  *   [[(inputShape.last, units)]]. If not provided, the weights matrix is
+  *   randomly initialized.
+  * @param biasesInitialization
+  *   The initial biases vector to use. Must be of shape [[(units]]. If not
+  *   provided, the biases vector is set to zero.
   */
-class Dense[T](inputShape: Array[Int], units: Int) extends Layer[T] {
-  // Weights are randomly initialized, but biases are initialized to 0.
-  val weights: NDArray[T] = NDArray.random[T](Array(inputShape.last, units))
-  val biases: NDArray[T] = NDArray.zeros[T](Array(units))
+class Dense[T: ClassTag](
+    inputShape: Array[Int],
+    units: Int,
+    weightsInitialization: Option[NDArray[T]] = None,
+    biasesInitialization: Option[NDArray[T]] = None
+) extends Layer[T] {
+  val weights: NDArray[T] = weightsInitialization.getOrElse(
+    NDArray.random[T](List(inputShape.last, units))
+  )
+  val biases: NDArray[T] =
+    biasesInitialization.getOrElse(NDArray.zeros[T](List(units)))
 
   // TODO implement actual dense transformation
   /** Returns the layer's transformation on the inputs.

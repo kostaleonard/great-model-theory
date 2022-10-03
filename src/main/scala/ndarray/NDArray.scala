@@ -23,8 +23,8 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def ofValue[T: ClassTag](shape: Array[Int], value: T) =
-    new NDArray[T](shape, Array.fill[T](shape.product)(value))
+  def ofValue[T: ClassTag](shape: Seq[Int], value: T) =
+    new NDArray[T](shape.toArray, Array.fill[T](shape.product)(value))
 
   /** Returns an array filled with zeros.
     *
@@ -34,7 +34,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def zeros[T: ClassTag](shape: Array[Int]): NDArray[T] =
+  def zeros[T: ClassTag](shape: Seq[Int]): NDArray[T] =
     NDArray.ofValue[T](shape, 0.asInstanceOf[T])
 
   /** Returns an array filled with ones.
@@ -45,7 +45,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def ones[T: ClassTag](shape: Array[Int]): NDArray[T] =
+  def ones[T: ClassTag](shape: Seq[Int]): NDArray[T] =
     NDArray.ofValue[T](shape, 1.asInstanceOf[T])
 
   /** Returns an array from the given sequence.
@@ -67,8 +67,8 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def arange[T: ClassTag](shape: Array[Int]): NDArray[T] = new NDArray[T](
-    shape,
+  def arange[T: ClassTag](shape: Seq[Int]): NDArray[T] = new NDArray[T](
+    shape.toArray,
     Array
       .range(0, shape.product)
       .map(_.asInstanceOf[T])
@@ -86,7 +86,7 @@ object NDArray {
     *   The array element type. Must be one of {Float, Double, Int, Long},
     *   otherwise this function will throw an error.
     */
-  def random[T: ClassTag](shape: Array[Int]): NDArray[T] = {
+  def random[T: ClassTag](shape: Seq[Int]): NDArray[T] = {
     val elements = classTag[T] match {
       case _ if classTag[T] == classTag[Float] =>
         Array.fill(shape.product)(scala.util.Random.nextFloat())
@@ -97,7 +97,7 @@ object NDArray {
       case _ if classTag[T] == classTag[Long] =>
         Array.fill(shape.product)(scala.util.Random.nextLong())
     }
-    new NDArray[T](shape, elements.asInstanceOf[Array[T]])
+    new NDArray[T](shape.toArray, elements.asInstanceOf[Array[T]])
   }
 }
 
@@ -128,7 +128,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   The indices to an element in the array. Must be of length
     *   [[shape.length]].
     */
-  def apply(indices: List[Int]): T = elements(
+  def apply(indices: Seq[Int]): T = elements(
     indices.indices.foldRight(0)((idx, accumulator) =>
       indices(idx) * strides(idx) + accumulator
     )
@@ -141,6 +141,6 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   The shape of the output array. The product must equal
     *   [[elements.length]].
     */
-  def reshape(targetShape: Array[Int]): NDArray[T] =
-    new NDArray[T](targetShape, elements)
+  def reshape(targetShape: Seq[Int]): NDArray[T] =
+    new NDArray[T](targetShape.toArray, elements)
 }
