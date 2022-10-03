@@ -11,7 +11,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def empty[T: ClassTag] = new NDArray[T](List.empty, Array.empty[T])
+  def empty[T: ClassTag] = new NDArray[T](Array.empty, Array.empty[T])
 
   /** Returns an array filled with the given value.
     *
@@ -23,7 +23,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def ofValue[T: ClassTag](shape: List[Int], value: T) =
+  def ofValue[T: ClassTag](shape: Array[Int], value: T) =
     new NDArray[T](shape, Array.fill[T](shape.product)(value))
 
   /** Returns an array filled with zeros.
@@ -34,7 +34,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def zeros[T: ClassTag](shape: List[Int]): NDArray[T] =
+  def zeros[T: ClassTag](shape: Array[Int]): NDArray[T] =
     NDArray.ofValue[T](shape, 0.asInstanceOf[T])
 
   /** Returns an array filled with ones.
@@ -45,10 +45,10 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def ones[T: ClassTag](shape: List[Int]): NDArray[T] =
+  def ones[T: ClassTag](shape: Array[Int]): NDArray[T] =
     NDArray.ofValue[T](shape, 1.asInstanceOf[T])
 
-  /** Returns an array from the possibly nested sequence.
+  /** Returns an array from the given sequence.
     *
     * @param seq
     *   A sequence of array elements. The output array will have the same shape
@@ -57,7 +57,7 @@ object NDArray {
     *   The array element type.
     */
   def apply[T: ClassTag](seq: Seq[T]): NDArray[T] =
-    new NDArray[T](List(seq.length), seq.toArray)
+    new NDArray[T](Array(seq.length), seq.toArray)
 
   /** Returns an array whose elements are 0, 1, 2, etc. when flattened.
     *
@@ -67,7 +67,7 @@ object NDArray {
     * @tparam T
     *   The array element type.
     */
-  def arange[T: ClassTag](shape: List[Int]): NDArray[T] = new NDArray[T](
+  def arange[T: ClassTag](shape: Array[Int]): NDArray[T] = new NDArray[T](
     shape,
     Array
       .range(0, shape.product)
@@ -86,16 +86,16 @@ object NDArray {
     *   The array element type. Must be one of {Float, Double, Int, Long},
     *   otherwise this function will throw an error.
     */
-  def random[T: ClassTag](shape: List[Int]): NDArray[T] = {
+  def random[T: ClassTag](shape: Array[Int]): NDArray[T] = {
     val elements = classTag[T] match {
       case _ if classTag[T] == classTag[Float] =>
-        Array.fill(shape.product)(scala.util.Random.nextFloat)
+        Array.fill(shape.product)(scala.util.Random.nextFloat())
       case _ if classTag[T] == classTag[Double] =>
-        Array.fill(shape.product)(scala.util.Random.nextDouble)
+        Array.fill(shape.product)(scala.util.Random.nextDouble())
       case _ if classTag[T] == classTag[Int] =>
-        Array.fill(shape.product)(scala.util.Random.nextInt)
+        Array.fill(shape.product)(scala.util.Random.nextInt())
       case _ if classTag[T] == classTag[Long] =>
-        Array.fill(shape.product)(scala.util.Random.nextLong)
+        Array.fill(shape.product)(scala.util.Random.nextLong())
     }
     new NDArray[T](shape, elements.asInstanceOf[Array[T]])
   }
@@ -107,11 +107,12 @@ object NDArray {
   *   The shape of the array. For example, an array with shape (2, 3) is a
   *   matrix with 2 rows and 3 columns.
   * @param elements
-  *   The elements that make up the array. Must be of length [[shape.product]].
+  *   The elements that make up the array. Must be of the same length as the
+  *   product of all dimensions in shape.
   * @tparam T
   *   The array element type.
   */
-class NDArray[T] private (val shape: List[Int], val elements: Array[T]) {
+class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
   private val strides = Array.fill[Int](shape.length)(1)
   strides.indices.reverse.drop(1).foreach { idx =>
     strides(idx) = shape(idx + 1) * strides(idx + 1)
@@ -137,8 +138,9 @@ class NDArray[T] private (val shape: List[Int], val elements: Array[T]) {
     * shape.
     *
     * @param targetShape
-    *   The shape of the output array. The product must equal [[shape.product]].
+    *   The shape of the output array. The product must equal
+    *   [[elements.length]].
     */
-  def reshape(targetShape: List[Int]): NDArray[T] =
+  def reshape(targetShape: Array[Int]): NDArray[T] =
     new NDArray[T](targetShape, elements)
 }

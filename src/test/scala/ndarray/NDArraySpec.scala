@@ -5,22 +5,22 @@ import org.scalatest.matchers.should.Matchers
 
 class NDArraySpec extends AnyFlatSpec with Matchers {
   "An N-dimensional array" should "have the correct number of elements (rank 2)" in {
-    val arr = NDArray.zeros[Int](List(2, 3))
+    val arr = NDArray.zeros[Int](Array(2, 3))
     assert(arr.flatten().length == 6)
   }
 
   it should "have the correct number of elements (rank 5)" in {
-    val arr = NDArray.zeros[Int](List(2, 3, 4, 5, 6))
+    val arr = NDArray.zeros[Int](Array(2, 3, 4, 5, 6))
     assert(arr.flatten().length == 2 * 3 * 4 * 5 * 6)
   }
 
   it should "return the element at the given indices" in {
-    val arr1 = NDArray.arange[Int](List(2, 3))
+    val arr1 = NDArray.arange[Int](Array(2, 3))
     assert(arr1(List(0, 0)) == 0)
     assert(arr1(List(0, 1)) == 1)
     assert(arr1(List(1, 0)) == 3)
     assert(arr1(List(1, 2)) == 5)
-    val arr2 = NDArray.arange[Int](List(2, 3, 4))
+    val arr2 = NDArray.arange[Int](Array(2, 3, 4))
     assert(arr2(List(0, 2, 1)) == 9)
     assert(arr2(List(1, 1, 0)) == 16)
   }
@@ -31,24 +31,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   "An NDArray.ofValue array" should "contain only the given value" in {
-    val arr = NDArray.ofValue[Int](List(2, 3), 5)
+    val arr = NDArray.ofValue[Int](Array(2, 3), 5)
     assert(arr.flatten().forall(_ == 5))
   }
 
   "An NDArray.zeros array" should "contain only zeros" in {
-    val arr = NDArray.zeros[Int](List(2, 3))
+    val arr = NDArray.zeros[Int](Array(2, 3))
     assert(arr.flatten().forall(_ == 0))
   }
 
   "An NDArray.ones array" should "contain only ones" in {
-    val arr = NDArray.ones[Int](List(2, 3))
+    val arr = NDArray.ones[Int](Array(2, 3))
     assert(arr.flatten().forall(_ == 1))
   }
 
   "An NDArray.apply array" should "convert a flat sequence into a rank 1 NDArray" in {
     val values = List(1, 2, 3, 4)
     val arr = NDArray[Int](values)
-    assert(arr.shape == List(4))
+    assert(arr.shape sameElements Array(4))
     val elements = arr.flatten()
     assert(elements.indices.forall(idx => elements(idx) == values(idx)))
   }
@@ -59,7 +59,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   "An NDArray.arange array" should "contain elements (0, 1, 2, ...) as index increments" in {
-    val arr = NDArray.arange[Int](List(2, 3, 2))
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
     assert(arr(List(0, 0, 0)) == 0)
     assert(arr(List(0, 0, 1)) == 1)
     assert(arr(List(0, 1, 0)) == 2)
@@ -75,20 +75,20 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "contain elements (0, 1, 2, ...) when flattened" in {
-    val arr = NDArray.arange[Int](List(2, 3, 2))
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
     val elements = arr.flatten()
     assert(elements.indices.forall(idx => elements(idx) == idx))
   }
 
   "An NDArray.random[Float] array" should "contain different elements in [0, 1)" in {
-    val arr = NDArray.random[Float](List(2, 3))
+    val arr = NDArray.random[Float](Array(2, 3))
     assert(arr.flatten().forall(element => 0 <= element && element < 1))
     val head = arr(List(0, 0))
     assert(!arr.flatten().forall(_ == head))
   }
 
   "An NDArray.random[Int] array" should "contain different elements in [-2 ^ 31, 2 ^ 31 - 1]" in {
-    val arr = NDArray.random[Int](List(2, 3))
+    val arr = NDArray.random[Int](Array(2, 3))
     assert(
       arr
         .flatten()
