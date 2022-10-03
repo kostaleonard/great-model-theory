@@ -14,6 +14,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.flatten().length == 2 * 3 * 4 * 5 * 6)
   }
 
+  it should "return the elements as a 1D array when flattened" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    assert(arr.flatten() sameElements Array(0, 1, 2, 3, 4, 5))
+  }
+
   it should "return the element at the given indices" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     assert(arr1(List(0, 0)) == 0)
@@ -23,6 +28,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr2 = NDArray.arange[Int](Array(2, 3, 4))
     assert(arr2(List(0, 2, 1)) == 9)
     assert(arr2(List(1, 1, 0)) == 16)
+  }
+
+  it should "return an NDArray with the same elements but new shape when reshaped" in {
+    val arr1 = NDArray.arange[Int](Array(2, 3))
+    val arr2 = arr1.reshape(Array(3, 2))
+    assert(arr2.shape sameElements Array(3, 2))
+    assert(arr1.flatten() sameElements arr2.flatten())
   }
 
   "An NDArray.empty array" should "have no elements" in {
