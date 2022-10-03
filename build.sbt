@@ -14,3 +14,5 @@ inThisBuild(
     semanticdbVersion := scalafixSemanticdb.revision
   )
 )
+
+scalacOptions ++= Seq("-deprecation", "-feature")
