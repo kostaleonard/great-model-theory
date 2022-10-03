@@ -15,9 +15,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "default to type Float" in {
-    //TODO I'm going to have to learn the syntax a bit better to get this to pass.
+    // TODO I'm going to have to learn the syntax a bit better to get this to pass.
     val arr = NDArray.zeros(List(2, 3))
-    //assert(arr.flatten().forall(_.isInstanceOf[Float]))
+    // assert(arr.flatten().forall(_.isInstanceOf[Float]))
   }
 
   it should "return the element at the given indices" in {
@@ -84,5 +84,23 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr = NDArray.arange[Int](List(2, 3, 2))
     val elements = arr.flatten()
     assert(elements.indices.forall(idx => elements(idx) == idx))
+  }
+
+  "An NDArray.random[Float] array" should "contain different elements in [0, 1)" in {
+    val arr = NDArray.random[Float](List(2, 3))
+    assert(arr.flatten().forall(element => 0 <= element && element < 1))
+    val head = arr(List(0, 0))
+    assert(!arr.flatten().forall(_ == head))
+  }
+
+  "An NDArray.random[Int] array" should "contain different elements in [-2 ^ 31, 2 ^ 31 - 1]" in {
+    val arr = NDArray.random[Int](List(2, 3))
+    assert(
+      arr
+        .flatten()
+        .forall(element => Int.MinValue <= element && element <= Int.MaxValue)
+    )
+    val head = arr(List(0, 0))
+    assert(!arr.flatten().forall(_ == head))
   }
 }

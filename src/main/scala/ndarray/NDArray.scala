@@ -73,6 +73,32 @@ object NDArray {
       .range(0, shape.product)
       .map(_.asInstanceOf[T])
   )
+
+  /** Returns an array whose elements are randomly initialized.
+    *
+    * Elements are drawn from a uniform distribution using scala.util.Random, so
+    * Floats are in [0, 1), Ints are in [[Int.MinValue, Int.MaxValue]], etc.
+    *
+    * @param shape
+    *   The shape of the array. For example, an array with shape (2, 3) is a
+    *   matrix with 2 rows and 3 columns.
+    * @tparam T
+    *   The array element type. Must be one of {Float, Double, Int, Long},
+    *   otherwise this function will throw an error.
+    */
+  def random[T: ClassTag](shape: List[Int]): NDArray[T] = {
+    val elements = classTag[T] match {
+      case _ if classTag[T] == classTag[Float] =>
+        Array.fill(shape.product)(scala.util.Random.nextFloat)
+      case _ if classTag[T] == classTag[Double] =>
+        Array.fill(shape.product)(scala.util.Random.nextDouble)
+      case _ if classTag[T] == classTag[Int] =>
+        Array.fill(shape.product)(scala.util.Random.nextInt)
+      case _ if classTag[T] == classTag[Long] =>
+        Array.fill(shape.product)(scala.util.Random.nextLong)
+    }
+    new NDArray[T](shape, elements.asInstanceOf[Array[T]])
+  }
 }
 
 /** An N-dimensional array.
