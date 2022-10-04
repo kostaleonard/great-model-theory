@@ -25,7 +25,7 @@ object NDArray {
     */
   def ofValue[T: ClassTag](shape: Seq[Int], value: T) =
     new NDArray[T](shape.toArray, Array.fill[T](shape.product)(value))
-  
+
   // TODO force T to be a numeric type
   /** Returns an array filled with zeros.
     *

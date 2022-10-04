@@ -37,6 +37,14 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr1.flatten() sameElements arr2.flatten())
   }
 
+  it should "be able to contain arbitrary data types" in {
+    val arr1 = NDArray.ofValue[String](List(2, 3), "hello")
+    assert(arr1.flatten().forall(_.equals("hello")))
+    case class Hello(x: Int)
+    val arr2 = NDArray[Hello](List(Hello(0), Hello(1)))
+    assert(arr2.flatten().forall(_.isInstanceOf[Hello]))
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)

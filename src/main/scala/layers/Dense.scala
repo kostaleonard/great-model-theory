@@ -33,6 +33,8 @@ import scala.reflect.ClassTag
   * @param biasesInitialization
   *   The initial biases vector to use. Must be of shape [[(units]]. If not
   *   provided, the biases vector is set to zero.
+  * @tparam T
+  *   The array element type.
   */
 class Dense[T: ClassTag](
     inputShape: Array[Int],
@@ -52,7 +54,8 @@ class Dense[T: ClassTag](
     * Multiplies all values of the input tensor by the learned layer weights.
     *
     * @param inputs
-    *   The input tensor of arbitrary shape.
+    *   The input tensor of arbitrary shape. The first dimension is the batch
+    *   dimension.
     */
-  def call(inputs: NDArray[T]): NDArray[T] = inputs
+  def apply(inputs: NDArray[T]): NDArray[T] = inputs
 }
