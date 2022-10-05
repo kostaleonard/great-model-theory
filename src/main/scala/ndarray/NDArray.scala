@@ -161,7 +161,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     )
   )
 
-  //TODO this should use Try/Success/Failure with ShapeException
+  // TODO this should use Try/Success/Failure with ShapeException
   /** Returns an NDArray with the same elements as the input, but with the given
     * shape.
     *
@@ -175,7 +175,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
   // TODO add indices method to get List[Array[Int]] for all indices in order: (0, 0), (0, 1), (0, 2), ...
   // TODO can we make this class implement Iterable?
 
-  //TODO add tests for these
+  // TODO add tests for these
   /** Returns true if the arrays have the same shape and elements.
     *
     * @param other
@@ -183,7 +183,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     */
   def arrayEquals(other: NDArray[T]): Boolean = this == other match {
     case Success(mask) => mask.flatten().forall(identity)
-    case _ => false
+    case _             => false
   }
 
   /** Returns false if the arrays have the same shape and elements.
@@ -193,7 +193,6 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     */
   def arrayNotEquals(other: NDArray[T]): Boolean = !arrayEquals(other)
 
-  //TODO implement ~=
   /** Returns a mask describing the equality of the arrays.
     *
     * @param other
@@ -204,7 +203,14 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   false otherwise. The mask is of the same shape as the arrays. If the
     *   arrays are of different shapes, returns Failure.
     */
-  def ==(other: NDArray[T]): Try[NDArray[Boolean]] = Failure(new ShapeException())
+  def ==(other: NDArray[T]): Try[NDArray[Boolean]] =
+    if (shape sameElements other.shape) {
+      val thisFlat = flatten()
+      val otherFlat = other.flatten()
+      val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
+      Success(NDArray[Boolean](mask).reshape(shape.toList))
+    } else
+      Failure(new ShapeException("Arrays must have same shape for comparison"))
 
   /** Returns true if the arrays have the same shape and elements within error.
     *
@@ -219,7 +225,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
       epsilon: Double = 1e-5
   ): Boolean = this.~=(other, epsilon = epsilon) match {
     case Success(mask) => mask.flatten().forall(identity)
-    case _ => false
+    case _             => false
   }
 
   /** Returns false if the arrays have the same shape and elements within error.
@@ -235,7 +241,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
       epsilon: Double = 1e-5
   ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
 
-  //TODO implement ~=
+  // TODO implement ~=
   /** Returns a mask describing the approximate equality of the arrays.
     *
     * @param other
@@ -250,5 +256,6 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   the same shape as the arrays. If the arrays are of different shapes,
     *   returns Failure.
     */
-  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] = Failure(new ShapeException)
+  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] =
+    Failure(new ShapeException)
 }

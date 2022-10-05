@@ -37,6 +37,8 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val inputs = NDArray.arange[Float](List(sampleBatchSize, numFeatures))
     val outputs = dense(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
-    assert(outputs arrayApproximatelyEquals NDArray[Float](List(6f, 6f, 22f, 22f)))
+    assert(
+      outputs arrayApproximatelyEquals NDArray[Float](List(6f, 6f, 22f, 22f))
+    )
   }
 }
