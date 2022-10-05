@@ -29,7 +29,7 @@ object NDArray {
   def ofValue[T: ClassTag](shape: Seq[Int], value: T) =
     new NDArray[T](shape.toArray, Array.fill[T](shape.product)(value))
 
-  // TODO force T to be a numeric type
+  // TODO force T to be a numeric type--add subclass?
   /** Returns an array filled with zeros.
     *
     * @param shape
@@ -139,7 +139,10 @@ object NDArray {
   * @tparam T
   *   The array element type.
   */
-class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
+class NDArray[T: ClassTag] private (
+    val shape: Array[Int],
+    val elements: Array[T]
+) {
   private val strides = Array.fill[Int](shape.length)(1)
   strides.indices.reverse.drop(1).foreach { idx =>
     strides(idx) = shape(idx + 1) * strides(idx + 1)
@@ -175,7 +178,6 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
   // TODO add indices method to get List[Array[Int]] for all indices in order: (0, 0), (0, 1), (0, 2), ...
   // TODO can we make this class implement Iterable?
 
-  // TODO add tests for these
   /** Returns true if the arrays have the same shape and elements.
     *
     * @param other
@@ -212,6 +214,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
 
+  // TODO this only works for numeric types--make this Try/Success/Fail?
   /** Returns true if the arrays have the same shape and elements within error.
     *
     * @param other
@@ -241,7 +244,6 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
       epsilon: Double = 1e-5
   ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
 
-  // TODO implement ~=
   /** Returns a mask describing the approximate equality of the arrays.
     *
     * @param other
@@ -257,5 +259,46 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   returns Failure.
     */
   def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] =
-    Failure(new ShapeException)
+    if (shape sameElements other.shape) {
+      val thisFlat = flatten()
+      val otherFlat = other.flatten()
+      classTag[T] match {
+        case _ if classTag[T] == classTag[Float] =>
+          val epsilonAsFloat = epsilon.asInstanceOf[Float]
+          val thisFlatAsFloat = thisFlat.asInstanceOf[Array[Float]]
+          val otherFlatAsFloat = otherFlat.asInstanceOf[Array[Float]]
+          val mask = thisFlat.indices.map(idx =>
+            Math.abs(
+              thisFlatAsFloat(idx) - otherFlatAsFloat(idx)
+            ) <= epsilonAsFloat
+          )
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
+        case _ if classTag[T] == classTag[Double] =>
+          val thisFlatAsDouble = thisFlat.asInstanceOf[Array[Double]]
+          val otherFlatAsDouble = otherFlat.asInstanceOf[Array[Double]]
+          val mask = thisFlat.indices.map(idx =>
+            Math.abs(thisFlatAsDouble(idx) - otherFlatAsDouble(idx)) <= epsilon
+          )
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
+        case _ if classTag[T] == classTag[Int] =>
+          val epsilonAsInt = epsilon.asInstanceOf[Int]
+          val thisFlatAsInt = thisFlat.asInstanceOf[Array[Int]]
+          val otherFlatAsInt = otherFlat.asInstanceOf[Array[Int]]
+          val mask = thisFlat.indices.map(idx =>
+            Math.abs(thisFlatAsInt(idx) - otherFlatAsInt(idx)) <= epsilonAsInt
+          )
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
+        case _ if classTag[T] == classTag[Long] =>
+          val epsilonAsLong = epsilon.asInstanceOf[Long]
+          val thisFlatAsLong = thisFlat.asInstanceOf[Array[Long]]
+          val otherFlatAsLong = otherFlat.asInstanceOf[Array[Long]]
+          val mask = thisFlat.indices.map(idx =>
+            Math.abs(
+              thisFlatAsLong(idx) - otherFlatAsLong(idx)
+            ) <= epsilonAsLong
+          )
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
+      }
+    } else
+      Failure(new ShapeException("Arrays must have same shape for comparison"))
 }

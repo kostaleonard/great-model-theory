@@ -58,8 +58,8 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "not be equal in comparison with an array of different shape" in {
-    val arr1 = NDArray.arange[Int](List(2, 3))
-    val arr2 = NDArray.arange[Int](List(3, 2))
+    val arr1 = NDArray.zeros[Int](List(2, 3))
+    val arr2 = NDArray.zeros[Int](List(3, 2))
     assert(arr1 arrayNotEquals arr2)
   }
 
@@ -91,6 +91,86 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr2 = NDArray.arange[Int](List(3, 2))
     val mask = arr1 == arr2
     assert(mask.isFailure)
+  }
+
+  it should "be approximately equal in comparison with an array of the same shape and similar elements" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.000001, 0.9999999, 2.0, 3.00000001, 4))
+    assert(arr1 arrayApproximatelyEquals arr2)
+  }
+
+  it should "be approximately equal in comparison with an array of the same shape and large epsilon" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.49, 0.8, 2.2, 2.95, 4))
+    assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 0.5))
+  }
+
+  it should "not be approximately equal in comparison with an array of the same shape and dissimilar elements" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.1, 0.9999999, 2.0, 3.00000001, 4))
+    assert(arr1 arrayNotApproximatelyEquals arr2)
+  }
+
+  it should "not be approximately equal in comparison with an array of different shape" in {
+    val arr1 = NDArray.zeros[Double](List(2, 3))
+    val arr2 = NDArray.zeros[Double](List(3, 2))
+    assert(arr1 arrayNotApproximatelyEquals arr2)
+  }
+
+  it should "produce a mask of all true on ~= comparison with an array of the same shape and similar elements" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.000001, 0.9999999, 2.0, 3.00000001, 4))
+    val mask = arr1 ~= arr2
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements arr1.shape)
+    assert(mask.get.flatten().forall(identity))
+  }
+
+  it should "produce a mask of all true on ~= comparison with an array of the same shape and large epsilon" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.49, 0.8, 2.2, 2.95, 4))
+    val mask = arr1.~=(arr2, epsilon = 0.5)
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements arr1.shape)
+    assert(mask.get.flatten().forall(identity))
+  }
+
+  it should "produce a mask of only the similar elements on ~= comparison with an array of the same shape and different elements" in {
+    val arr1 = NDArray[Double](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Double](List(0.1, 0.9999999, 2.0, 3.00000001, 5))
+    val mask = arr1 ~= arr2
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements arr1.shape)
+    assert(!mask.get.apply(List(0)))
+    assert(mask.get.apply(List(1)))
+    assert(mask.get.apply(List(2)))
+    assert(mask.get.apply(List(3)))
+    assert(!mask.get.apply(List(4)))
+  }
+
+  it should "fail on ~= comparison with an array of different shape" in {
+    val arr1 = NDArray.arange[Double](List(2, 3))
+    val arr2 = NDArray.arange[Double](List(3, 2))
+    val mask = arr1 ~= arr2
+    assert(mask.isFailure)
+  }
+
+  it should "be approximately equal when using Floats" in {
+    val arr1 = NDArray[Float](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Float](List(0.000001f, 0.9999999f, 2.0f, 3.00000001f, 4))
+    assert(arr1 arrayApproximatelyEquals arr2)
+  }
+
+  it should "be approximately equal when using Ints" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Int](List(0, 1, 3, 2, 4))
+    assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
+  }
+
+  it should "be approximately equal when using Longs" in {
+    val arr1 = NDArray[Long](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Long](List(0, 1, 3, 2, 4))
+    assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
   }
 
   "An NDArray.empty array" should "have no elements" in {
