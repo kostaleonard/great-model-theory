@@ -14,7 +14,7 @@ class ShapeException(message: String) extends Exception(message) {
     * @param cause
     *   The stack trace.
     */
-  def this(message: String, cause: Throwable) {
+  def this(message: String, cause: Throwable) = {
     this(message)
     initCause(cause)
   }
@@ -24,13 +24,13 @@ class ShapeException(message: String) extends Exception(message) {
     * @param cause
     *   The stack trace.
     */
-  def this(cause: Throwable) {
+  def this(cause: Throwable) = {
     this(Option(cause).map(_.toString).orNull, cause)
   }
 
   /** Create an empty exception.
     */
-  def this() {
+  def this() = {
     this(null: String)
   }
 }

@@ -1,7 +1,9 @@
 package ndarray
 
+import exceptions.ShapeException
+
 import scala.reflect.{ClassTag, classTag}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** An N-dimensional array.
   */
@@ -179,7 +181,10 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     * @param other
     *   The array with which to compare.
     */
-  def arrayEquals(other: NDArray[T]): Boolean
+  def arrayEquals(other: NDArray[T]): Boolean = this == other match {
+    case Success(mask) => mask.flatten().forall(identity)
+    case _ => false
+  }
 
   /** Returns false if the arrays have the same shape and elements.
     *
@@ -188,6 +193,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     */
   def arrayNotEquals(other: NDArray[T]): Boolean = !arrayEquals(other)
 
+  //TODO implement ~=
   /** Returns a mask describing the equality of the arrays.
     *
     * @param other
@@ -198,7 +204,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   false otherwise. The mask is of the same shape as the arrays. If the
     *   arrays are of different shapes, returns Failure.
     */
-  def ==(other: NDArray[T]): Try[NDArray[Boolean]]
+  def ==(other: NDArray[T]): Try[NDArray[Boolean]] = Failure(new ShapeException())
 
   /** Returns true if the arrays have the same shape and elements within error.
     *
@@ -211,7 +217,10 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
   def arrayApproximatelyEquals(
       other: NDArray[T],
       epsilon: Double = 1e-5
-  ): Boolean
+  ): Boolean = this.~=(other, epsilon = epsilon) match {
+    case Success(mask) => mask.flatten().forall(identity)
+    case _ => false
+  }
 
   /** Returns false if the arrays have the same shape and elements within error.
     *
@@ -226,6 +235,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
       epsilon: Double = 1e-5
   ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
 
+  //TODO implement ~=
   /** Returns a mask describing the approximate equality of the arrays.
     *
     * @param other
@@ -240,5 +250,5 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     *   the same shape as the arrays. If the arrays are of different shapes,
     *   returns Failure.
     */
-  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]]
+  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] = Failure(new ShapeException)
 }

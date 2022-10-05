@@ -31,13 +31,12 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       Array(BATCH_SIZE_PLACEHOLDER, numFeatures),
       units,
       weightsInitialization =
-        Some(NDArray.ones[Float](Array(numFeatures, units)))
+        Some(NDArray.ones[Float](List(numFeatures, units)))
     )
     val sampleBatchSize = 2
-    val inputs = NDArray.arange[Float](Array(sampleBatchSize, numFeatures))
+    val inputs = NDArray.arange[Float](List(sampleBatchSize, numFeatures))
     val outputs = dense(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
-    // TODO float comparison is dangerous! We need "np.isclose"
-    assert(outputs.flatten() sameElements Array(6, 6, 22, 22))
+    assert(outputs arrayApproximatelyEquals NDArray[Float](List(6f, 6f, 22f, 22f)))
   }
 }
