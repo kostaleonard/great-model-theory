@@ -45,6 +45,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr2.flatten().forall(_.isInstanceOf[Hello]))
   }
 
+  it should "be equal in comparison with an array of the same elements" in {
+    val arr1 = NDArray.arange[Int](List(2, 3))
+    val arr2 = NDArray.arange[Int](List(2, 3))
+    assert(arr1 arrayEquals arr2)
+  }
+
+  it should "not be equal in comparison with an array of different elements" in {
+    val arr1 = NDArray.arange[Int](List(2, 3))
+    val arr2 = NDArray.zeros[Int](List(2, 3))
+    assert(arr1 arrayNotEquals arr2)
+  }
+
+  it should "not be equal in comparison with an array of different shape" in {
+    val arr1 = NDArray.arange[Int](List(2, 3))
+    val arr2 = NDArray.arange[Int](List(3, 2))
+    assert(arr1 arrayNotEquals arr2)
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)

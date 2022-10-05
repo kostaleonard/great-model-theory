@@ -1,6 +1,7 @@
 package ndarray
 
 import scala.reflect.{ClassTag, classTag}
+import scala.util.Try
 
 /** An N-dimensional array.
   */
@@ -158,6 +159,7 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
     )
   )
 
+  //TODO this should use Try/Success/Failure with ShapeException
   /** Returns an NDArray with the same elements as the input, but with the given
     * shape.
     *
@@ -170,4 +172,73 @@ class NDArray[T] private (val shape: Array[Int], val elements: Array[T]) {
 
   // TODO add indices method to get List[Array[Int]] for all indices in order: (0, 0), (0, 1), (0, 2), ...
   // TODO can we make this class implement Iterable?
+
+  //TODO add tests for these
+  /** Returns true if the arrays have the same shape and elements.
+    *
+    * @param other
+    *   The array with which to compare.
+    */
+  def arrayEquals(other: NDArray[T]): Boolean
+
+  /** Returns false if the arrays have the same shape and elements.
+    *
+    * @param other
+    *   The array with which to compare.
+    */
+  def arrayNotEquals(other: NDArray[T]): Boolean = !arrayEquals(other)
+
+  /** Returns a mask describing the equality of the arrays.
+    *
+    * @param other
+    *   The array with which to compare. Must be the same shape as this array.
+    * @return
+    *   A mask describing the equality of the arrays at each position. Each
+    *   element of the mask is true if the arrays are equal at that position,
+    *   false otherwise. The mask is of the same shape as the arrays. If the
+    *   arrays are of different shapes, returns Failure.
+    */
+  def ==(other: NDArray[T]): Try[NDArray[Boolean]]
+
+  /** Returns true if the arrays have the same shape and elements within error.
+    *
+    * @param other
+    *   The array with which to compare.
+    * @param epsilon
+    *   The range within which elements are considered equal, i.e.,
+    *   [[abs(a - b) <= epsilon]].
+    */
+  def arrayApproximatelyEquals(
+      other: NDArray[T],
+      epsilon: Double = 1e-5
+  ): Boolean
+
+  /** Returns false if the arrays have the same shape and elements within error.
+    *
+    * @param other
+    *   The array with which to compare.
+    * @param epsilon
+    *   The range within which elements are considered equal, i.e.,
+    *   [[abs(a - b) <= epsilon]].
+    */
+  def arrayNotApproximatelyEquals(
+      other: NDArray[T],
+      epsilon: Double = 1e-5
+  ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
+
+  /** Returns a mask describing the approximate equality of the arrays.
+    *
+    * @param other
+    *   The array with which to compare.
+    * @param epsilon
+    *   The range within which elements are considered equal, i.e.,
+    *   [[abs(a - b) <= epsilon]].
+    * @return
+    *   A mask describing the approximate equality of the arrays at each
+    *   position. Each element of the mask is true if the arrays are
+    *   approximately equal at that position, false otherwise. The mask is of
+    *   the same shape as the arrays. If the arrays are of different shapes,
+    *   returns Failure.
+    */
+  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]]
 }

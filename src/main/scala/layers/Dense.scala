@@ -1,11 +1,13 @@
 package layers
 
+import activations.{Activation, Identity}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
 
 //TODO add glorot uniform as function in companion object?
 //TODO eventually we want to not need/allow users to supply the input shape
+//TODO set default activation to ReLU or Sigmoid
 /** A densely connected neural network layer.
   *
   * Implements the operation
@@ -31,8 +33,10 @@ import scala.reflect.ClassTag
   *   [[(inputShape.last, units)]]. If not provided, the weights matrix is
   *   randomly initialized.
   * @param biasesInitialization
-  *   The initial biases vector to use. Must be of shape [[(units]]. If not
+  *   The initial biases vector to use. Must be of shape [[(units)]]. If not
   *   provided, the biases vector is set to zero.
+  * @param activation
+  *   The activation function to apply after the dense transformation.
   * @tparam T
   *   The array element type.
   */
@@ -40,7 +44,8 @@ class Dense[T: ClassTag](
     inputShape: Array[Int],
     units: Int,
     weightsInitialization: Option[NDArray[T]] = None,
-    biasesInitialization: Option[NDArray[T]] = None
+    biasesInitialization: Option[NDArray[T]] = None,
+    activation: Activation[T] = Identity[T]()
 ) extends Layer[T] {
   val weights: NDArray[T] = weightsInitialization.getOrElse(
     NDArray.random[T](List(inputShape.last, units))
