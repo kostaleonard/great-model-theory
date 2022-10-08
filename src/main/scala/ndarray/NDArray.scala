@@ -244,10 +244,11 @@ class NDArray[T: ClassTag] private (
       epsilon: Double = 1e-5
   ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
 
+  //TODO see Array[T].sum() for a way this might work with typing to force numerics
   /** Returns a mask describing the approximate equality of the arrays.
     *
     * @param other
-    *   The array with which to compare.
+    *   The array with which to compare. Must be the same shape as this array.
     * @param epsilon
     *   The range within which elements are considered equal, i.e.,
     *   [[abs(a - b) <= epsilon]].
@@ -301,4 +302,20 @@ class NDArray[T: ClassTag] private (
       }
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
+
+  //TODO Try/Success/Failure?
+  //TODO force T to have + defined
+  /** Returns the result of element-wise addition of the two NDArrays.
+    *
+    * @param other
+    *   The array to add. Must be the same shape as this array.
+    * @return
+    *   An NDArray of the same size
+    */
+  def +[B >: T](other: NDArray[T])(implicit num: Numeric[B]): NDArray[B] = {
+    val thisFlat = flatten()
+    val otherFlat = other.flatten()
+    val result = thisFlat.indices.map(idx => thisFlat(idx) + otherFlat(idx))
+    NDArray[T](result).reshape(shape)
+  }
 }

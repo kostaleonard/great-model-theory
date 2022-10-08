@@ -173,6 +173,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
   }
 
+  it should "define + for element-wise addition" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
+    assert((arr1 + arr2).flatten() sameElements Array(1, 2, 5, 5, 8))
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)
