@@ -310,13 +310,15 @@ class NDArray[T: ClassTag] private (
     */
   def +[B >: T: ClassTag](
       other: NDArray[T]
-  )(implicit num: Numeric[B]): NDArray[B] = {
+  )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+    shape sameElements other.shape
+  ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result).reshape(shape.toList)
-  }
+    Success(NDArray(result).reshape(shape.toList))
+  } else Failure(new ShapeException("Arrays must have same shape for +"))
 
   /** Returns the sum of all elements.
     *
