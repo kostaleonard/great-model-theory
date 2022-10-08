@@ -189,6 +189,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "retain the same shape in element-wise addition" in {
+    val arr1 = NDArray.arange[Int](List(2, 3, 4))
+    val arr2 = NDArray.arange[Int](List(2, 3, 4))
+    assert((arr1 + arr2).shape sameElements Array(2, 3, 4))
+  }
+
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)

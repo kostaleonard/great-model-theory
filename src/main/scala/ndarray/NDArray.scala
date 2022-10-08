@@ -315,7 +315,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result)
+    NDArray(result).reshape(shape.toList)
   }
 
   /** Returns the sum of all elements.
@@ -330,4 +330,16 @@ class NDArray[T: ClassTag] private (
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
+
+  /** Returns a slice of the NDArray.
+    *
+    * @param indices
+    *   The
+    * @return
+    */
+  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+    // TODO implement slice
+    // TODO docstring
+    NDArray.empty
+  }
 }
