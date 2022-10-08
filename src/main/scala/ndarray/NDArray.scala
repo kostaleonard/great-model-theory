@@ -336,12 +336,17 @@ class NDArray[T: ClassTag] private (
   /** Returns a slice of the NDArray.
     *
     * @param indices
-    *   The
+    *   The indices on which to collect elements from the array. Each member of
+    *   indices can be None (take all elements along this dimension) or List of
+    *   Int (take all elements for the values of this dimension specified in the
+    *   list; if the list contains only one element, do not flatten this
+    *   dimension).
     * @return
+    *   A slice of the NDArray. The shape is determined by indices.
     */
-  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+  def slice(indices: List[Option[List[Int]]]): Try[NDArray[T]] = {
     // TODO implement slice
     // TODO docstring
-    NDArray.empty
+    Failure(new ShapeException())
   }
 }
