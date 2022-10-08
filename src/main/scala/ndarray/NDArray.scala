@@ -312,12 +312,11 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size
     */
-  def +[B: Numeric, C: Numeric: ClassTag](other: NDArray[B]): NDArray[C] = {
-//    val thisFlat = flatten()
-//    val otherFlat = other.flatten()
-//    val result = thisFlat.indices.map(idx => thisFlat(idx) + otherFlat(idx))
-//    NDArray[T](result).reshape(shape)
-    NDArray.empty
+  def +[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): NDArray[B] = {
+    val thisFlat = flatten()
+    val otherFlat = other.flatten()
+    val result = thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
+    NDArray(result)
   }
 
   /** Returns the sum of all elements.
@@ -329,4 +328,6 @@ class NDArray[T: ClassTag] private (
     *   The result type of the `+` operator.
     */
   def sum[B >: T](implicit num: Numeric[B]): B = flatten().reduce(num.plus)
+
+  //TODO add toString method
 }

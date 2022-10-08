@@ -173,18 +173,17 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
   }
 
-  // TODO add element-wise addition tests
-//  it should "define + for element-wise addition" in {
-//    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
-//    val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
-//    assert((arr1 + arr2).flatten() sameElements Array(1, 2, 5, 5, 8))
-//  }
-//
-//  it should "define + for element-wise addition with different types" in {
-//    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
-//    val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
-//    assert((arr1 +[Double, Double] arr2) arrayNotApproximatelyEquals NDArray(List(1.0, 2.1, 5.0, 5.7, 8.5)))
-//  }
+  it should "define + for element-wise addition (Int)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
+    assert((arr1 + arr2).flatten() sameElements Array(1, 2, 5, 5, 8))
+  }
+
+  it should "define + for element-wise addition (Double)" in {
+    val arr1 = NDArray[Double](List(0.0, 1.0, 2.0, 3.0, 4.0))
+    val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
+    assert((arr1 + arr2) arrayApproximatelyEquals NDArray[Double](List(1.0, 2.1, 5.0, 5.7, 8.5)))
+  }
 
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
