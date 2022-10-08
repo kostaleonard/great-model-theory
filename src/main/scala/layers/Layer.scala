@@ -3,13 +3,17 @@ package layers
 import ndarray.NDArray
 
 /** A neural network layer.
+  *
+  * @tparam T
+  *   The array element type.
   */
 abstract class Layer[T] {
 
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
-    *   The input tensor of arbitrary shape.
+    *   The input tensor of arbitrary shape. The first dimension is the batch
+    *   dimension.
     */
-  def call(inputs: NDArray[T]): NDArray[T]
+  def apply(inputs: NDArray[T]): NDArray[T]
 }
