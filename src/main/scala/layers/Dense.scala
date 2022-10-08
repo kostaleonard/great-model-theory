@@ -5,9 +5,6 @@ import ndarray.NDArray
 
 import scala.reflect.ClassTag
 
-//TODO add glorot uniform as function in companion object?
-//TODO eventually we want to not need/allow users to supply the input shape
-//TODO set default activation to ReLU or Sigmoid
 /** A densely connected neural network layer.
   *
   * Implements the operation
@@ -53,7 +50,6 @@ class Dense[T: ClassTag](
   val biases: NDArray[T] =
     biasesInitialization.getOrElse(NDArray.zeros[T](List(units)))
 
-  // TODO implement actual dense transformation
   /** Returns the layer's transformation on the inputs.
     *
     * Multiplies all values of the input tensor by the learned layer weights.

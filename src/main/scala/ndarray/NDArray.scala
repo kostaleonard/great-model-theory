@@ -29,7 +29,6 @@ object NDArray {
   def ofValue[T: ClassTag](shape: Seq[Int], value: T) =
     new NDArray[T](shape.toArray, Array.fill[T](shape.product)(value))
 
-  // TODO force T to be a numeric type--add subclass?
   /** Returns an array filled with zeros.
     *
     * @param shape
@@ -164,7 +163,6 @@ class NDArray[T: ClassTag] private (
     )
   )
 
-  // TODO this should use Try/Success/Failure with ShapeException
   /** Returns an NDArray with the same elements as the input, but with the given
     * shape.
     *
@@ -174,9 +172,6 @@ class NDArray[T: ClassTag] private (
     */
   def reshape(targetShape: Seq[Int]): NDArray[T] =
     new NDArray[T](targetShape.toArray, elements)
-
-  // TODO add indices method to get List[Array[Int]] for all indices in order: (0, 0), (0, 1), (0, 2), ...
-  // TODO can we make this class implement Iterable?
 
   /** Returns true if the arrays have the same shape and elements.
     *
@@ -214,7 +209,6 @@ class NDArray[T: ClassTag] private (
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
 
-  // TODO this only works for numeric types--make this Try/Success/Fail?
   /** Returns true if the arrays have the same shape and elements within error.
     *
     * @param other
@@ -244,7 +238,6 @@ class NDArray[T: ClassTag] private (
       epsilon: Double = 1e-5
   ): Boolean = !arrayApproximatelyEquals(other, epsilon = epsilon)
 
-  // TODO see Array[T].sum() for a way this might work with typing to force numerics
   /** Returns a mask describing the approximate equality of the arrays.
     *
     * @param other
@@ -335,26 +328,6 @@ class NDArray[T: ClassTag] private (
     */
   def sum[B >: T](implicit num: Numeric[B]): B = flatten().reduce(num.plus)
 
-  def dot[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): NDArray[B] = {
-    // TODO implement dot
-    // TODO docstring
-    NDArray.empty
-  }
-
-  /** Returns a slice of the NDArray.
-    *
-    * @param indices
-    *   The
-    * @return
-    */
-  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
-    // TODO implement slice
-    // TODO docstring
-    NDArray.empty
-  }
-
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
-
-  // TODO add toString method
 }
