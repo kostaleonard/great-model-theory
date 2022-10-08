@@ -182,12 +182,36 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "define + for element-wise addition (Double)" in {
     val arr1 = NDArray[Double](List(0.0, 1.0, 2.0, 3.0, 4.0))
     val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
-    assert((arr1 + arr2) arrayApproximatelyEquals NDArray[Double](List(1.0, 2.1, 5.0, 5.7, 8.5)))
+    assert(
+      (arr1 + arr2) arrayApproximatelyEquals NDArray[Double](
+        List(1.0, 2.1, 5.0, 5.7, 8.5)
+      )
+    )
   }
 
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)
+  }
+
+  it should "remove length 1 dimensions when squeezed (rank 3)" in {
+    val arr = NDArray.arange[Int](List(2, 1, 3))
+    val squeezed = arr.squeeze()
+    assert(squeezed.shape sameElements Array(2, 3))
+    assert(squeezed.flatten() sameElements arr.flatten())
+  }
+
+  it should "remove length 1 dimensions when squeezed (rank 5)" in {
+    val arr = NDArray.arange[Int](List(2, 1, 1, 3, 1))
+    val squeezed = arr.squeeze()
+    assert(squeezed.shape sameElements Array(2, 3))
+    assert(squeezed.flatten() sameElements arr.flatten())
+  }
+
+  it should "leave arrays with no length 1 dimensions unchanged when squeezed" in {
+    val arr = NDArray.arange[Int](List(2, 3))
+    val squeezed = arr.squeeze()
+    assert(arr arrayEquals squeezed)
   }
 
   "An NDArray.empty array" should "have no elements" in {

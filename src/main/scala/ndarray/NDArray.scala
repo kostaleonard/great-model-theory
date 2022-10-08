@@ -303,19 +303,25 @@ class NDArray[T: ClassTag] private (
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
 
-  // TODO Try/Success/Failure?
-  // TODO force T to have + defined
   /** Returns the result of element-wise addition of the two NDArrays.
     *
     * @param other
     *   The array to add. Must be the same shape as this array.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations which
+    *   includes the `+` operator to be used in forming the sum.
+    * @tparam B
+    *   The result type of the `+` operator.
     * @return
     *   An NDArray of the same size
     */
-  def +[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): NDArray[B] = {
+  def +[B >: T: ClassTag](
+      other: NDArray[T]
+  )(implicit num: Numeric[B]): NDArray[B] = {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
-    val result = thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
+    val result =
+      thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
     NDArray(result)
   }
 
@@ -329,5 +335,26 @@ class NDArray[T: ClassTag] private (
     */
   def sum[B >: T](implicit num: Numeric[B]): B = flatten().reduce(num.plus)
 
-  //TODO add toString method
+  def dot[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): NDArray[B] = {
+    // TODO implement dot
+    // TODO docstring
+    NDArray.empty
+  }
+
+  /** Returns a slice of the NDArray.
+    *
+    * @param indices
+    *   The
+    * @return
+    */
+  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+    // TODO implement slice
+    // TODO docstring
+    NDArray.empty
+  }
+
+  /** Returns a new NDArray with dimensions of length 1 removed. */
+  def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
+
+  // TODO add toString method
 }
