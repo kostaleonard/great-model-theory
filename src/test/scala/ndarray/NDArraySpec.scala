@@ -262,6 +262,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(sliced.flatten() sameElements Array(4, 8, 16, 20))
   }
 
+  it should "return the matrix multiplication of two 2D arrays" in {
+    //Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
+    val arr1 = NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
+    val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(List(3, 3))
+    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6)).reshape(List(4, 3))
+    val matmulResult = arr1 matmul arr2
+    assert(matmulResult.isSuccess)
+    assert(matmulResult.get arrayEquals expectedResult)
+  }
+
+  it should "fail to matrix multiply two 2D arrays with mismatching shapes" in {
+    val arr1 = NDArray.ones[Int](List(3, 2))
+    val arr2 = NDArray.ones[Int](List(3, 2))
+    val matmulResult = arr1 matmul arr2
+    assert(matmulResult.isFailure)
+  }
+
+  it should "fail to matrix multiply non-2D arrays" in {
+    val arr1 = NDArray.ones[Int](List(3, 2))
+    val arr2 = NDArray.ones[Int](List(2, 2, 2))
+    val matmulResult = arr1 matmul arr2
+    assert(matmulResult.isFailure)
+  }
+
   it should "return the dot product of two 1D arrays" in {
     val arr1 = NDArray.arange[Int](List(5))
     val arr2 = NDArray.ones[Int](List(5))
@@ -276,6 +300,16 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr2 = NDArray.ones[Int](List(5))
     val dotProduct = arr1 dot arr2
     assert(dotProduct.isFailure)
+  }
+
+  it should "return the matrix multiplication of two 2D arrays using dot" in {
+    //Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
+    val arr1 = NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
+    val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(List(3, 3))
+    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6)).reshape(List(4, 3))
+    val matmulResult = arr1 dot arr2
+    assert(matmulResult.isSuccess)
+    assert(matmulResult.get arrayEquals expectedResult)
   }
 
   "An NDArray.empty array" should "have no elements" in {

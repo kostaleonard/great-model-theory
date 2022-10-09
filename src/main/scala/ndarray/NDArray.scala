@@ -371,6 +371,41 @@ class NDArray[T: ClassTag] private (
     NDArray(sliceElements).reshape(resultShape)
   }
 
+  /** Returns the result of matrix multiplication of 2D arrays.
+    *
+    * @param other
+    *   The array to multiply. Must be 2D.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @tparam B
+    *   The result type of numeric operations.
+    * @return
+    *   The result of matrix multiplication of 2D arrays. If this array is of
+    *   shape (m, n) and the other array is of shape (n, o), the result will be
+    *   of shape (m, o).
+    */
+  def matmul[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): Try[NDArray[B]] =
+    if(shape.length != 2 || other.shape.length != 2)
+      Failure(new ShapeException("matmul inputs must be 2D arrays"))
+    else if(shape(1) != other.shape(0))
+      Failure(new ShapeException("Array 1 columns do not match array 2 rows"))
+    else
+    {
+      val numRows = shape(0)
+      val numCols = other.shape(1)
+      var newElementsReversed = List.empty[B]
+      (0 until numRows).foreach{ r =>
+        (0 until numCols).foreach{ c =>
+          val rowVector = slice(List(Some(List(r)), None)).squeeze()
+          val colVector = other.slice(List(None, Some(List(c)))).squeeze()
+          //The dot product of 1D arrays is a scalar.
+          val vectorDotProduct = rowVector dot[B] colVector
+          newElementsReversed = vectorDotProduct.get.apply(List(0)) +: newElementsReversed
+        }
+      }
+      Success(NDArray[B](newElementsReversed.reverse).reshape(List(numRows, numCols)))
+    }
+
   /** Returns the dot product of this array with another array.
     *
     * If both this and other are 1-D arrays, it is inner product of vectors. If
@@ -384,10 +419,9 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array to dot.
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `+` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     * @tparam B
-    *   The result type of the `+` operator.
+    *   The result type of numeric operations.
     */
   def dot[B >: T: ClassTag](
       other: NDArray[T]
@@ -414,10 +448,11 @@ class NDArray[T: ClassTag] private (
         )
     }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
+    else if(shape.length == 2 && other.shape.length == 2) matmul(other)
     else {
       // TODO implement dot
       // TODO docstring
-      Failure(new Exception())
+      Failure(new NotImplementedError())
     }
   }
 }
