@@ -310,13 +310,15 @@ class NDArray[T: ClassTag] private (
     */
   def +[B >: T: ClassTag](
       other: NDArray[T]
-  )(implicit num: Numeric[B]): NDArray[B] = {
+  )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+    shape sameElements other.shape
+  ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result)
-  }
+    Success(NDArray(result).reshape(shape.toList))
+  } else Failure(new ShapeException("Arrays must have same shape for +"))
 
   /** Returns the sum of all elements.
     *
@@ -330,4 +332,42 @@ class NDArray[T: ClassTag] private (
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
+
+  /** Returns a slice of the NDArray.
+    *
+    * @param indices
+    *   The indices on which to collect elements from the array. Each member of
+    *   indices can be None (take all elements along this dimension) or List of
+    *   Int (take all elements for the values of this dimension specified in the
+    *   list; if the list contains only one element, do not flatten this
+    *   dimension).
+    * @return
+    *   A slice of the NDArray. The shape is determined by indices.
+    */
+  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+    def dimensionsCombinations(
+        dimensionIndices: List[List[Int]]
+    ): List[List[Int]] = {
+      dimensionIndices.foldRight(List.empty[List[Int]])(
+        (oneDimIndices, accum) =>
+          oneDimIndices.flatMap(dimIndex =>
+            if (accum.isEmpty) List(List(dimIndex))
+            else accum.map(dimIndex +: _)
+          )
+      )
+    }
+    val dimensionIndices = indices.indices
+      .map(dimensionIdx =>
+        indices(dimensionIdx) match {
+          case None            => List.range(0, shape(dimensionIdx))
+          case Some(indexList) => indexList
+        }
+      )
+      .toList
+    val resultShape = dimensionIndices.map(_.length)
+    val sliceIndices = dimensionsCombinations(dimensionIndices)
+    val sliceElements =
+      sliceIndices.map(elementIndices => apply(elementIndices))
+    NDArray(sliceElements).reshape(resultShape)
+  }
 }
