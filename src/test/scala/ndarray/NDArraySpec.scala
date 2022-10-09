@@ -232,47 +232,34 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr arrayEquals squeezed)
   }
 
-  it should "fail to slice when provided an invalid shape" in {
-    val arr = NDArray.arange[Int](List(2, 3, 4))
-    val sliced = arr.slice(List(None, None))
-    assert(sliced.isFailure)
-  }
-
-  it should "fail to slice when provided invalid dimensions" in {
-    val arr = NDArray.arange[Int](List(2, 3, 4))
-    val sliced = arr.slice(List(Some(List(2)), None, None))
-    assert(sliced.isFailure)
-  }
-
   it should "return all elements when provided None for each dimension in a slice" in {
     val arr = NDArray.arange[Int](List(2, 3, 4))
     val sliced = arr.slice(List(None, None, None))
-    assert(sliced.isSuccess)
-    assert(sliced.get arrayEquals arr)
+    assert(sliced arrayEquals arr)
   }
 
   it should "return an array with the rows requested in a slice" in {
     val arr = NDArray.arange[Int](List(2, 3, 4))
     val sliced = arr.slice(List(Some(List(0)), None, None))
-    assert(sliced.isSuccess)
-    assert(sliced.get.shape sameElements Array(1, 3, 4))
-    assert(sliced.get.flatten() sameElements (0 until 12))
+    assert(sliced.shape sameElements Array(1, 3, 4))
+    assert(sliced.flatten() sameElements (0 until 12))
   }
 
   it should "return an array with the columns requested in a slice" in {
     val arr = NDArray.arange[Int](List(2, 3, 4))
     val sliced = arr.slice(List(None, Some(List(1, 2)), None))
-    assert(sliced.isSuccess)
-    assert(sliced.get.shape sameElements Array(2, 2, 4))
-    assert(sliced.get.flatten() sameElements Array(4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 20, 21, 22, 23))
+    assert(sliced.shape sameElements Array(2, 2, 4))
+    assert(
+      sliced.flatten() sameElements Array(4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18,
+        19, 20, 21, 22, 23)
+    )
   }
 
   it should "return an array with the elements requested in a slice" in {
     val arr = NDArray.arange[Int](List(2, 3, 4))
     val sliced = arr.slice(List(None, Some(List(1, 2)), Some(List(0))))
-    assert(sliced.isSuccess)
-    assert(sliced.get.shape sameElements Array(2, 2, 1))
-    assert(sliced.get.flatten() sameElements Array(4, 8, 16, 20))
+    assert(sliced.shape sameElements Array(2, 2, 1))
+    assert(sliced.flatten() sameElements Array(4, 8, 16, 20))
   }
 
   "An NDArray.empty array" should "have no elements" in {

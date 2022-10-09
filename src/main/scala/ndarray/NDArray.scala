@@ -344,21 +344,30 @@ class NDArray[T: ClassTag] private (
     * @return
     *   A slice of the NDArray. The shape is determined by indices.
     */
-  def slice(indices: List[Option[List[Int]]]): Try[NDArray[T]] =
-    if(indices.length != shape.length) Failure(new ShapeException("indices must have same length as shape"))
-    else
-  {
-    def dimensionsCombinations(dimensionIndices: List[List[Int]]): List[List[Int]] = {
-      dimensionIndices.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
-        oneDimIndices.flatMap(dimIndex => if(accum.isEmpty) List(List(dimIndex)) else accum.map(dimIndex +: _)))
+  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+    def dimensionsCombinations(
+        dimensionIndices: List[List[Int]]
+    ): List[List[Int]] = {
+      dimensionIndices.foldRight(List.empty[List[Int]])(
+        (oneDimIndices, accum) =>
+          oneDimIndices.flatMap(dimIndex =>
+            if (accum.isEmpty) List(List(dimIndex))
+            else accum.map(dimIndex +: _)
+          )
+      )
     }
-    val dimensionIndices = indices.indices.map(dimensionIdx => indices(dimensionIdx) match {
-      case None => List.range(0, shape(dimensionIdx))
-      case Some(indexList) => indexList
-    }).toList
+    val dimensionIndices = indices.indices
+      .map(dimensionIdx =>
+        indices(dimensionIdx) match {
+          case None            => List.range(0, shape(dimensionIdx))
+          case Some(indexList) => indexList
+        }
+      )
+      .toList
     val resultShape = dimensionIndices.map(_.length)
     val sliceIndices = dimensionsCombinations(dimensionIndices)
-    val sliceElements = sliceIndices.map(elementIndices => apply(elementIndices))
-    Success(NDArray(sliceElements).reshape(resultShape))
+    val sliceElements =
+      sliceIndices.map(elementIndices => apply(elementIndices))
+    NDArray(sliceElements).reshape(resultShape)
   }
 }
