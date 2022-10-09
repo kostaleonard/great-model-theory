@@ -370,4 +370,54 @@ class NDArray[T: ClassTag] private (
       sliceIndices.map(elementIndices => apply(elementIndices))
     NDArray(sliceElements).reshape(resultShape)
   }
+
+  /** Returns the dot product of this array with another array.
+    *
+    * If both this and other are 1-D arrays, it is inner product of vectors. If
+    * both this and other are 2-D arrays, it is matrix multiplication. If this
+    * is an N-D array and other is a 1-D array, it is a sum product over the
+    * last axis of this and other. If this is an N-D array and other is an M-D
+    * array (where M>=2), it is a sum product over the last axis of this and the
+    * second-to-last axis of other: dot(this, other)[i, j, k, m] = sum(this[i,
+    * j, :] * other[k, :, m]).
+    *
+    * @param other
+    *   The array to dot.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations which
+    *   includes the `+` operator to be used in forming the sum.
+    * @tparam B
+    *   The result type of the `+` operator.
+    */
+  def dot[B >: T: ClassTag](
+      other: NDArray[T]
+  )(implicit num: Numeric[B]): Try[NDArray[B]] = {
+    def vectorInnerProduct(): Try[NDArray[B]] = {
+      val thisFlat = flatten()
+      val otherFlat = other.flatten()
+      if (thisFlat.length != otherFlat.length)
+        Failure(
+          new ShapeException(
+            "1D arrays must be of the same length to compute dot product"
+          )
+        )
+      else
+        Success(
+          NDArray(
+            List(
+              thisFlat
+                .zip(otherFlat)
+                .map(tup => num.times(tup._1, tup._2))
+                .reduce(num.plus)
+            )
+          )
+        )
+    }
+    if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
+    else {
+      // TODO implement dot
+      // TODO docstring
+      Failure(new Exception())
+    }
+  }
 }

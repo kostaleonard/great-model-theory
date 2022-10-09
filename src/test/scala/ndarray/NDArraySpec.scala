@@ -262,6 +262,22 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(sliced.flatten() sameElements Array(4, 8, 16, 20))
   }
 
+  it should "return the dot product of two 1D arrays" in {
+    val arr1 = NDArray.arange[Int](List(5))
+    val arr2 = NDArray.ones[Int](List(5))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isSuccess)
+    assert(dotProduct.get.shape sameElements Array(1))
+    assert(dotProduct.get.apply(List(0)) == 10)
+  }
+
+  it should "fail to return the dot product of two 1D arrays of different lengths" in {
+    val arr1 = NDArray.arange[Int](List(6))
+    val arr2 = NDArray.ones[Int](List(5))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isFailure)
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)
