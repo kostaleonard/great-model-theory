@@ -238,6 +238,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(sliced.isFailure)
   }
 
+  it should "fail to slice when provided invalid dimensions" in {
+    val arr = NDArray.arange[Int](List(2, 3, 4))
+    val sliced = arr.slice(List(Some(List(2)), None, None))
+    assert(sliced.isFailure)
+  }
+
   it should "return all elements when provided None for each dimension in a slice" in {
     val arr = NDArray.arange[Int](List(2, 3, 4))
     val sliced = arr.slice(List(None, None, None))
