@@ -2,6 +2,8 @@ package layers
 
 import ndarray.NDArray
 
+import scala.util.Try
+
 /** A neural network layer.
   *
   * @tparam T
@@ -15,5 +17,5 @@ abstract class Layer[T] {
     *   The input tensor of arbitrary shape. The first dimension is the batch
     *   dimension.
     */
-  def apply(inputs: NDArray[T]): NDArray[T]
+  def apply(inputs: NDArray[T]): Try[NDArray[T]]
 }
