@@ -76,6 +76,28 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "compute the dot product of the inputs and weights and add biases" in {
+    val numFeatures = 4
+    val units = 2
+    val dense = new Dense[Float](
+      Array(BATCH_SIZE_PLACEHOLDER, numFeatures),
+      units,
+      weightsInitialization =
+        Some(NDArray.arange[Float](List(numFeatures, units))),
+      biasesInitialization = Some(NDArray.ones[Float](List(units)))
+    )
+    val sampleBatchSize = 2
+    val inputs = NDArray.arange[Float](List(sampleBatchSize, numFeatures))
+    val outputs = dense(inputs)
+    assert(outputs.isSuccess)
+    assert(outputs.get.shape sameElements Array(sampleBatchSize, units))
+    assert(
+      outputs.get arrayApproximatelyEquals NDArray[Float](
+        List(29f, 35f, 77f, 99f)
+      ).reshape(List(sampleBatchSize, units))
+    )
+  }
+
   it should "fail to transform incorrectly shaped inputs" in {
     val numFeatures = 4
     val units = 2
