@@ -263,10 +263,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return the matrix multiplication of two 2D arrays" in {
-    //Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
-    val arr1 = NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
+    // Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
+    val arr1 =
+      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
     val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(List(3, 3))
-    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6)).reshape(List(4, 3))
+    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
+      .reshape(List(4, 3))
     val matmulResult = arr1 matmul arr2
     assert(matmulResult.isSuccess)
     assert(matmulResult.get arrayEquals expectedResult)
@@ -303,13 +305,43 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return the matrix multiplication of two 2D arrays using dot" in {
-    //Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
-    val arr1 = NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
+    // Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
+    val arr1 =
+      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(List(4, 3))
     val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(List(3, 3))
-    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6)).reshape(List(4, 3))
+    val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
+      .reshape(List(4, 3))
     val matmulResult = arr1 dot arr2
     assert(matmulResult.isSuccess)
     assert(matmulResult.get arrayEquals expectedResult)
+  }
+
+  it should "return the inner products over the last axis of a multidimensional array (2D) and a 1D array using dot" in {
+    // Example multiplication computed with np.dot.
+    val arr1 = NDArray.arange[Int](List(3, 4))
+    val arr2 = NDArray.ones[Int](List(4))
+    val expectedResult = NDArray[Int](List(6, 22, 38))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isSuccess)
+    assert(dotProduct.get arrayEquals expectedResult)
+  }
+
+  it should "return the inner products over the last axis of a multidimensional array (3D) and a 1D array using dot" in {
+    // Example multiplication computed with np.dot.
+    val arr1 = NDArray.arange[Int](List(2, 3, 4))
+    val arr2 = NDArray.ones[Int](List(4))
+    val expectedResult =
+      NDArray[Int](List(6, 22, 38, 54, 70, 86)).reshape(List(2, 3))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isSuccess)
+    assert(dotProduct.get arrayEquals expectedResult)
+  }
+
+  it should "fail to return the dot product over the last axis of a multidimensional array (2D) and a 1D array using dot when the last axis shape does not match" in {
+    val arr1 = NDArray.arange[Int](List(4, 3))
+    val arr2 = NDArray.ones[Int](List(4))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isFailure)
   }
 
   "An NDArray.empty array" should "have no elements" in {

@@ -345,17 +345,6 @@ class NDArray[T: ClassTag] private (
     *   A slice of the NDArray. The shape is determined by indices.
     */
   def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
-    def dimensionsCombinations(
-        dimensionIndices: List[List[Int]]
-    ): List[List[Int]] = {
-      dimensionIndices.foldRight(List.empty[List[Int]])(
-        (oneDimIndices, accum) =>
-          oneDimIndices.flatMap(dimIndex =>
-            if (accum.isEmpty) List(List(dimIndex))
-            else accum.map(dimIndex +: _)
-          )
-      )
-    }
     val dimensionIndices = indices.indices
       .map(dimensionIdx =>
         indices(dimensionIdx) match {
@@ -365,7 +354,7 @@ class NDArray[T: ClassTag] private (
       )
       .toList
     val resultShape = dimensionIndices.map(_.length)
-    val sliceIndices = dimensionsCombinations(dimensionIndices)
+    val sliceIndices = dimensionCombinations(dimensionIndices)
     val sliceElements =
       sliceIndices.map(elementIndices => apply(elementIndices))
     NDArray(sliceElements).reshape(resultShape)
@@ -384,37 +373,43 @@ class NDArray[T: ClassTag] private (
     *   shape (m, n) and the other array is of shape (n, o), the result will be
     *   of shape (m, o).
     */
-  def matmul[B >: T: ClassTag](other: NDArray[T])(implicit num: Numeric[B]): Try[NDArray[B]] =
-    if(shape.length != 2 || other.shape.length != 2)
+  def matmul[B >: T: ClassTag](
+      other: NDArray[T]
+  )(implicit num: Numeric[B]): Try[NDArray[B]] =
+    if (shape.length != 2 || other.shape.length != 2)
       Failure(new ShapeException("matmul inputs must be 2D arrays"))
-    else if(shape(1) != other.shape(0))
+    else if (shape(1) != other.shape(0))
       Failure(new ShapeException("Array 1 columns do not match array 2 rows"))
-    else
-    {
+    else {
       val numRows = shape(0)
       val numCols = other.shape(1)
       var newElementsReversed = List.empty[B]
-      (0 until numRows).foreach{ r =>
-        (0 until numCols).foreach{ c =>
+      (0 until numRows).foreach { r =>
+        (0 until numCols).foreach { c =>
           val rowVector = slice(List(Some(List(r)), None)).squeeze()
           val colVector = other.slice(List(None, Some(List(c)))).squeeze()
-          //The dot product of 1D arrays is a scalar.
-          val vectorDotProduct = rowVector dot[B] colVector
-          newElementsReversed = vectorDotProduct.get.apply(List(0)) +: newElementsReversed
+          // The dot product of 1D arrays is a scalar.
+          val vectorDotProduct = rowVector dot [B] colVector
+          newElementsReversed =
+            vectorDotProduct.get.apply(List(0)) +: newElementsReversed
         }
       }
-      Success(NDArray[B](newElementsReversed.reverse).reshape(List(numRows, numCols)))
+      Success(
+        NDArray[B](newElementsReversed.reverse).reshape(List(numRows, numCols))
+      )
     }
 
   /** Returns the dot product of this array with another array.
     *
     * If both this and other are 1-D arrays, it is inner product of vectors. If
     * both this and other are 2-D arrays, it is matrix multiplication. If this
-    * is an N-D array and other is a 1-D array, it is a sum product over the
-    * last axis of this and other. If this is an N-D array and other is an M-D
-    * array (where M>=2), it is a sum product over the last axis of this and the
-    * second-to-last axis of other: dot(this, other)[i, j, k, m] = sum(this[i,
-    * j, :] * other[k, :, m]).
+    * is an N-D array and other is a 1-D array, it is an inner product over the
+    * last axis of this and other; e.g., if this.shape is (m, n) and other.shape
+    * is (n,), the result is an NDArray of shape (m,) which is the inner product
+    * of all m length n 1D arrays in this with other. If this is an N-D array
+    * and other is an M-D array (where M>=2), it is a sum product over the last
+    * axis of this and the second-to-last axis of other: dot(this, other)[i, j,
+    * k, m] = sum(this[i, j, :] * other[k, :, m]).
     *
     * @param other
     *   The array to dot.
@@ -447,12 +442,50 @@ class NDArray[T: ClassTag] private (
           )
         )
     }
+    def lastAxisInnerProduct(): Try[NDArray[B]] =
+      if (shape.last != other.shape.head)
+        Failure(
+          new ShapeException("Last axes must match for last axis inner product")
+        )
+      else {
+        val resultShape = shape.dropRight(1)
+        val dimensionIndices = resultShape.map(List.range(0, _)).toList
+        val sliceIndices = dimensionCombinations(dimensionIndices)
+        // Because this is a 1D vector inner product, each array holds a scalar.
+        val newElementsArrays = sliceIndices.map { indices =>
+          val sliceIndicesComplete = indices.map(idx => Some(List(idx))) :+ None
+          (slice(sliceIndicesComplete).squeeze() dot [B] other).get
+        }
+        val newElements = newElementsArrays.map(_.flatten().head)
+        Success(NDArray[B](newElements).reshape(resultShape.toList))
+      }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
-    else if(shape.length == 2 && other.shape.length == 2) matmul(other)
+    else if (shape.length == 2 && other.shape.length == 2) matmul(other)
+    else if (other.shape.length == 1) lastAxisInnerProduct()
     else {
       // TODO implement dot
       // TODO docstring
       Failure(new NotImplementedError())
     }
+  }
+
+  /** Returns the list of all combinations of the given lists by index.
+    *
+    * For example, the list List(List(0, 1), List(0, 1, 2)) would return
+    * List(List(0, 0), List(0, 1), List(0, 2), List(1, 0), List(1, 1), List(1,
+    * 2)).
+    *
+    * @param dimensionIndices
+    *   A list of lists indicating which indices to combine on each dimension.
+    */
+  private def dimensionCombinations(
+      dimensionIndices: List[List[Int]]
+  ): List[List[Int]] = {
+    dimensionIndices.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
+      oneDimIndices.flatMap(dimIndex =>
+        if (accum.isEmpty) List(List(dimIndex))
+        else accum.map(dimIndex +: _)
+      )
+    )
   }
 }
