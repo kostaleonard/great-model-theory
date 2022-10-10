@@ -370,6 +370,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(dotProduct.isFailure)
   }
 
+  it should "map a function to every element" in {
+    val arr = NDArray.ones[Int](List(2, 3))
+    val mapped = arr.map(_ * 2)
+    assert(mapped.shape sameElements arr.shape)
+    assert(mapped.flatten().forall(_ == 2))
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)

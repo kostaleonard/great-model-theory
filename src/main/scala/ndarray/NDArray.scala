@@ -521,4 +521,14 @@ class NDArray[T: ClassTag] private (
       )
     )
   }
+
+  /** Maps a function to every element in the NDArray, preserving the shape.
+    *
+    * @param f
+    *   The function to apply to every element in the array.
+    * @tparam B
+    *   The return type of the map function.
+    */
+  def map[B: ClassTag](f: T => B): NDArray[B] =
+    NDArray(flatten().toList.map(f)).reshape(shape.toList)
 }

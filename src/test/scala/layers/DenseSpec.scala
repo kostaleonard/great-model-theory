@@ -1,5 +1,6 @@
 package layers
 
+import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
