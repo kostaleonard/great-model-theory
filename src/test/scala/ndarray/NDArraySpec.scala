@@ -337,9 +337,35 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(dotProduct.get arrayEquals expectedResult)
   }
 
-  it should "fail to return the dot product over the last axis of a multidimensional array (2D) and a 1D array using dot when the last axis shape does not match" in {
+  it should "fail to return the dot product over the last axis of a multidimensional array and a 1D array using dot when the last axis shape does not match" in {
     val arr1 = NDArray.arange[Int](List(4, 3))
     val arr2 = NDArray.ones[Int](List(4))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isFailure)
+  }
+
+  it should "return the inner products of two multidimensional arrays using dot" in {
+    // Example multiplication computed with np.dot.
+    val arr1 = NDArray.arange[Int](List(2, 3, 4))
+    val arr2 = NDArray.arange[Int](List(4, 2))
+    val expectedResult =
+      NDArray[Int](List(28, 34, 76, 98, 124, 162, 172, 226, 220, 290, 268, 354))
+        .reshape(List(2, 3, 2))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isSuccess)
+    assert(dotProduct.get arrayEquals expectedResult)
+  }
+
+  it should "fail to return the inner products of two multidimensional arrays using dot when shapes don't match" in {
+    val arr1 = NDArray.arange[Int](List(2, 3, 2))
+    val arr2 = NDArray.ones[Int](List(4, 2))
+    val dotProduct = arr1 dot arr2
+    assert(dotProduct.isFailure)
+  }
+
+  it should "fail to return the dot product on for shapes with no defined operation" in {
+    val arr1 = NDArray.arange[Int](List(3))
+    val arr2 = NDArray.ones[Int](List(3, 2))
     val dotProduct = arr1 dot arr2
     assert(dotProduct.isFailure)
   }

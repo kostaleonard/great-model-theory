@@ -407,9 +407,9 @@ class NDArray[T: ClassTag] private (
     * last axis of this and other; e.g., if this.shape is (m, n) and other.shape
     * is (n,), the result is an NDArray of shape (m,) which is the inner product
     * of all m length n 1D arrays in this with other. If this is an N-D array
-    * and other is an M-D array (where M>=2), it is a sum product over the last
-    * axis of this and the second-to-last axis of other: dot(this, other)[i, j,
-    * k, m] = sum(this[i, j, :] * other[k, :, m]).
+    * and other is an M-D array (where M>=2), it is an inner product over the
+    * last axis of this and the second-to-last axis of other: dot(this,
+    * other)[i, j, k, m] = sum(this[i, j, :] * other[k, :, m]).
     *
     * @param other
     *   The array to dot.
@@ -459,14 +459,47 @@ class NDArray[T: ClassTag] private (
         val newElements = newElementsArrays.map(_.flatten().head)
         Success(NDArray[B](newElements).reshape(resultShape.toList))
       }
+    def multidimensionalInnerProduct(): Try[NDArray[B]] =
+      if (shape.last != other.shape(other.shape.length - 2))
+        Failure(
+          new ShapeException(
+            "Last axes must match second to last axis for multidimensional inner product"
+          )
+        )
+      else {
+        val resultShape =
+          shape.dropRight(1) ++ other.shape.dropRight(2) :+ other.shape.last
+        val dimensionIndicesThis =
+          shape.dropRight(1).map(List.range(0, _)).toList
+        val sliceIndicesThis = dimensionCombinations(dimensionIndicesThis)
+        val dimensionIndicesOther = (other.shape.dropRight(
+          2
+        ) :+ other.shape.last).map(List.range(0, _)).toList
+        val sliceIndicesOther = dimensionCombinations(dimensionIndicesOther)
+        // Because this is a 1D vector inner product, each array holds a scalar.
+        val newElements = sliceIndicesThis.map { indicesThis =>
+          val sliceIndicesThisComplete =
+            indicesThis.map(idx => Some(List(idx))) :+ None
+          sliceIndicesOther.map { indicesOther =>
+            val sliceIndicesOtherIntermediate =
+              indicesOther.map(idx => Some(List(idx)))
+            val sliceIndicesOtherComplete = sliceIndicesOtherIntermediate.slice(
+              0,
+              sliceIndicesOtherIntermediate.length - 2
+            ) ++ List(None, sliceIndicesOtherIntermediate.last)
+            (slice(sliceIndicesThisComplete).squeeze() dot [B] other
+              .slice(sliceIndicesOtherComplete)
+              .squeeze()).get.flatten().head
+          }
+        }.flatten
+        Success(NDArray[B](newElements).reshape(resultShape.toList))
+      }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
     else if (shape.length == 2 && other.shape.length == 2) matmul(other)
     else if (other.shape.length == 1) lastAxisInnerProduct()
-    else {
-      // TODO implement dot
-      // TODO docstring
-      Failure(new NotImplementedError())
-    }
+    else if (shape.length > 1 && other.shape.length > 1)
+      multidimensionalInnerProduct()
+    else Failure(new ShapeException("dot undefined for these shapes"))
   }
 
   /** Returns the list of all combinations of the given lists by index.
