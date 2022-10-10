@@ -1,9 +1,11 @@
 package layers
 
 import activations.{Activation, Identity}
+import exceptions.ShapeException
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 /** A densely connected neural network layer.
   *
@@ -43,7 +45,8 @@ class Dense[T: ClassTag](
     weightsInitialization: Option[NDArray[T]] = None,
     biasesInitialization: Option[NDArray[T]] = None,
     activation: Activation[T] = Identity[T]()
-) extends Layer[T] {
+)(implicit num: Numeric[T])
+    extends Layer[T] {
   val weights: NDArray[T] = weightsInitialization.getOrElse(
     NDArray.random[T](List(inputShape.last, units))
   )
@@ -58,5 +61,17 @@ class Dense[T: ClassTag](
     *   The input tensor of arbitrary shape. The first dimension is the batch
     *   dimension.
     */
-  def apply(inputs: NDArray[T]): NDArray[T] = inputs
+  def apply(inputs: NDArray[T]): Try[NDArray[T]] =
+    if (!(inputs.shape.tail sameElements inputShape.tail))
+      Failure(new ShapeException("Inputs did not match expected input shape"))
+    else {
+      val dotProduct = inputs dot weights
+      val biasesBroadcast = NDArray(
+        (0 until inputs.shape.dropRight(1).product).flatMap(_ =>
+          biases.flatten()
+        )
+      ).reshape(dotProduct.get.shape.toList)
+      val withBiases = dotProduct.get + biasesBroadcast
+      Success(activation.activation(withBiases.get))
+    }
 }
