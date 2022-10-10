@@ -477,7 +477,7 @@ class NDArray[T: ClassTag] private (
         ) :+ other.shape.last).map(List.range(0, _)).toList
         val sliceIndicesOther = dimensionCombinations(dimensionIndicesOther)
         // Because this is a 1D vector inner product, each array holds a scalar.
-        val newElements = sliceIndicesThis.map { indicesThis =>
+        val newElements = sliceIndicesThis.flatMap { indicesThis =>
           val sliceIndicesThisComplete =
             indicesThis.map(idx => Some(List(idx))) :+ None
           sliceIndicesOther.map { indicesOther =>
@@ -491,7 +491,7 @@ class NDArray[T: ClassTag] private (
               .slice(sliceIndicesOtherComplete)
               .squeeze()).get.flatten().head
           }
-        }.flatten
+        }
         Success(NDArray[B](newElements).reshape(resultShape.toList))
       }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
