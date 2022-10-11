@@ -37,6 +37,4 @@ class Model[T](layers: List[Layer[T]]) {
     }
     applyRecursive(inputs, layers)
   }
-
-  // TODO fit, predict (this is just apply), and evaluate
 }
