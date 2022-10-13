@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class NDArraySpec extends AnyFlatSpec with Matchers {
+
   "An N-dimensional array" should "have the correct number of elements (rank 2)" in {
     val arr = NDArray.zeros[Int](List(2, 3))
     assert(arr.flatten().length == 6)
@@ -207,6 +208,40 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert((arr1 + arr2).isFailure)
   }
 
+  it should "define - for element-wise subtraction (Int)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
+    val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
+    val addition = arr1 - arr2
+    assert(addition.isSuccess)
+    assert(addition.get.flatten() sameElements Array(-1, 0, -1, 1, 0))
+  }
+
+  it should "define - for element-wise subtraction (Double)" in {
+    val arr1 = NDArray[Double](List(0.0, 1.0, 2.0, 3.0, 4.0))
+    val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
+    val addition = arr1 - arr2
+    assert(addition.isSuccess)
+    assert(
+      addition.get arrayApproximatelyEquals NDArray[Double](
+        List(-1.0, -0.1, -1.0, 0.3, -0.5)
+      )
+    )
+  }
+
+  it should "retain the same shape in element-wise subtraction" in {
+    val arr1 = NDArray.arange[Int](List(2, 3, 4))
+    val arr2 = NDArray.arange[Int](List(2, 3, 4))
+    val addition = arr1 - arr2
+    assert(addition.isSuccess)
+    assert(addition.get.shape sameElements Array(2, 3, 4))
+  }
+
+  it should "fail to perform element-wise subtraction on arrays with different shape" in {
+    val arr1 = NDArray.arange[Int](List(2, 3))
+    val arr2 = NDArray.arange[Int](List(3, 2))
+    assert((arr1 - arr2).isFailure)
+  }
+
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)
@@ -375,6 +410,27 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mapped = arr.map(_ * 2)
     assert(mapped.shape sameElements arr.shape)
     assert(mapped.flatten().forall(_ == 2))
+  }
+
+  it should "reduce an array along an axis (axis 0)" in {
+    val arr = NDArray.ones[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().sum, 0)
+    assert(reduced.shape sameElements Array(3))
+    assert(reduced arrayEquals NDArray[Int](List(2, 2, 2)))
+  }
+
+  it should "reduce an array along an axis (axis 1)" in {
+    val arr = NDArray.ones[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().sum, 1)
+    assert(reduced.shape sameElements Array(2))
+    assert(reduced arrayEquals NDArray[Int](List(3, 3)))
+  }
+
+  it should "apply the reduction in order" in {
+    val arr = NDArray.arange[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().head, 0)
+    assert(reduced.shape sameElements Array(3))
+    assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
   }
 
   "An NDArray.empty array" should "have no elements" in {
