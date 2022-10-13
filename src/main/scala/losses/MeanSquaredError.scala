@@ -19,8 +19,11 @@ class MeanSquaredError[T] extends Loss[T] {
     *   The ground truth tensor of shape (batchSize, d0, d1, ..., dN).
     * @param y_pred
     *   The prediction tensor of shape (batchSize, d0, d1, ..., dN).
-    *  @return
+    * @return
     *   The loss tensor of shape (batchSize, d0, d1, ..., dN-1).
     */
-  override def compute_loss(y_true: NDArray[T], y_pred: NDArray[T]): NDArray[T] = ???
+  override def compute_loss(
+      y_true: NDArray[T],
+      y_pred: NDArray[T]
+  ): NDArray[T] = ???
 }
