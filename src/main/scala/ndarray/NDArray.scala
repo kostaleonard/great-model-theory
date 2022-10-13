@@ -306,7 +306,7 @@ class NDArray[T: ClassTag] private (
     * @tparam B
     *   The result type of the `+` operator.
     * @return
-    *   An NDArray of the same size
+    *   An NDArray of the same size.
     */
   def +[B >: T: ClassTag](
       other: NDArray[T]
@@ -319,6 +319,30 @@ class NDArray[T: ClassTag] private (
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
     Success(NDArray(result).reshape(shape.toList))
   } else Failure(new ShapeException("Arrays must have same shape for +"))
+
+  /** Returns the result of element-wise subtraction of the two NDArrays.
+    *
+    * @param other
+    *   The array to subtract. Must be the same shape as this array.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations which
+    *   includes the `-` operator to be used in forming the sum.
+    * @tparam B
+    *   The result type of the `-` operator.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def -[B >: T: ClassTag](
+                           other: NDArray[T]
+                         )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+    shape sameElements other.shape
+  ) {
+    val thisFlat = flatten()
+    val otherFlat = other.flatten()
+    val result =
+      thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
+    Success(NDArray(result).reshape(shape.toList))
+  } else Failure(new ShapeException("Arrays must have same shape for -"))
 
   /** Returns the sum of all elements.
     *

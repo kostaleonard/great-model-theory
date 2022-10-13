@@ -9,7 +9,7 @@ import ndarray.NDArray
   * @tparam T
   *   The array element type.
   */
-class MeanSquaredError[T] extends Loss[T] {
+class MeanSquaredError[T](implicit num: Numeric[T]) extends Loss[T] {
 
   /** Returns the mean squared error by index.
     *
