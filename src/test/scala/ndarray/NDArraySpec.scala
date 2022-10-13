@@ -4,6 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class NDArraySpec extends AnyFlatSpec with Matchers {
+
   "An N-dimensional array" should "have the correct number of elements (rank 2)" in {
     val arr = NDArray.zeros[Int](List(2, 3))
     assert(arr.flatten().length == 6)
