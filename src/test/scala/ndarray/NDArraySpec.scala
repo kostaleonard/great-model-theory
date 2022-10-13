@@ -412,6 +412,20 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(mapped.flatten().forall(_ == 2))
   }
 
+  it should "reduce an array along an axis (axis 0)" in {
+    val arr = NDArray.ones[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().sum, 0)
+    assert(reduced.shape sameElements Array(3))
+    assert(reduced arrayEquals NDArray[Int](List(2, 2, 2)))
+  }
+
+  it should "reduce an array along an axis (axis 1)" in {
+    val arr = NDArray.ones[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().sum, 1)
+    assert(reduced.shape sameElements Array(2))
+    assert(reduced arrayEquals NDArray[Int](List(3, 3)))
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)

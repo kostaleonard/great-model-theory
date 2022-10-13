@@ -333,8 +333,8 @@ class NDArray[T: ClassTag] private (
     *   An NDArray of the same size.
     */
   def -[B >: T: ClassTag](
-                           other: NDArray[T]
-                         )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+      other: NDArray[T]
+  )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
@@ -555,4 +555,21 @@ class NDArray[T: ClassTag] private (
     */
   def map[B: ClassTag](f: T => B): NDArray[B] =
     NDArray(flatten().toList.map(f)).reshape(shape.toList)
+
+  /** Returns a new NDArray by reducing slices on the given axis.
+    *
+    * @param f
+    *   A function that takes a 1D array as input and produces a single output.
+    * @param axis
+    *   The axis along which to take slices of the array. These slices are
+    *   passed to the reduction function f. If axis is 0, the reduction function
+    *   is applied on slices (None, i, j, ...) for all dimensions i, j, ...
+    * @tparam B
+    *   The return type of the map function.
+    * @return
+    *   The reduced array. The axis dimension will be eliminated in the
+    *   reduction. Reducing with a summation function would collapse the
+    *   dimension by summing all elements in each slice.
+    */
+  def reduce[B: ClassTag](f: NDArray[T] => B, axis: Int): NDArray[B] = ???
 }

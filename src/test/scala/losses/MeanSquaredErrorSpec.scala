@@ -51,7 +51,7 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
     assert(loss.shape sameElements Array(2, 3))
     assert(
       loss arrayApproximatelyEquals NDArray[Float](
-        List(2.5f, 6.5f, 0.0f, 0.5f, 0.0f, 1.0f)
+        List(6.5f, 0.5f, 2.0f, 0.5f, 0.5f, 0.5f)
       ).reshape(List(2, 3))
     )
   }
