@@ -571,5 +571,28 @@ class NDArray[T: ClassTag] private (
     *   reduction. Reducing with a summation function would collapse the
     *   dimension by summing all elements in each slice.
     */
-  def reduce[B: ClassTag](f: NDArray[T] => B, axis: Int): NDArray[B] = ???
+  def reduce[B: ClassTag](f: NDArray[T] => B, axis: Int): NDArray[B] = {
+    val dimensionsIndices = shape.indices
+      .map(idx =>
+        if (idx == axis) List(-1)
+        else (0 until shape(idx)).toList
+      )
+      .toList
+    val combinations = dimensionCombinations(dimensionsIndices)
+    val sliceCombinations = combinations.map(combination =>
+      combination.indices
+        .map(idx =>
+          if (idx == axis) None
+          else Some(List(combination(idx)))
+        )
+        .toList
+    )
+    val slices = sliceCombinations.map(slice)
+    val newElements = slices.map(f)
+    val newShape = shape.indices.flatMap(idx =>
+      if (idx == axis) None
+      else Some(shape(idx))
+    )
+    NDArray[B](newElements).reshape(newShape)
+  }
 }

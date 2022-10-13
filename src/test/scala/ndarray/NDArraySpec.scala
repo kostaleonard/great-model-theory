@@ -426,6 +426,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(reduced arrayEquals NDArray[Int](List(3, 3)))
   }
 
+  it should "apply the reduction in order" in {
+    val arr = NDArray.arange[Int](List(2, 3))
+    val reduced = arr.reduce(slice => slice.flatten().head, 0)
+    assert(reduced.shape sameElements Array(3))
+    assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)
