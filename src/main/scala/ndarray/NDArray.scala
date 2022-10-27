@@ -378,7 +378,7 @@ class NDArray[T: ClassTag] private (
       )
       .toList
     val resultShape = dimensionIndices.map(_.length)
-    val sliceIndices = dimensionCombinations(dimensionIndices)
+    val sliceIndices = listCartesianProduct(dimensionIndices)
     val sliceElements =
       sliceIndices.map(elementIndices => apply(elementIndices))
     NDArray(sliceElements).reshape(resultShape)
@@ -474,7 +474,7 @@ class NDArray[T: ClassTag] private (
       else {
         val resultShape = shape.dropRight(1)
         val dimensionIndices = resultShape.map(List.range(0, _)).toList
-        val sliceIndices = dimensionCombinations(dimensionIndices)
+        val sliceIndices = listCartesianProduct(dimensionIndices)
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElementsArrays = sliceIndices.map { indices =>
           val sliceIndicesComplete = indices.map(idx => Some(List(idx))) :+ None
@@ -495,11 +495,11 @@ class NDArray[T: ClassTag] private (
           shape.dropRight(1) ++ other.shape.dropRight(2) :+ other.shape.last
         val dimensionIndicesThis =
           shape.dropRight(1).map(List.range(0, _)).toList
-        val sliceIndicesThis = dimensionCombinations(dimensionIndicesThis)
+        val sliceIndicesThis = listCartesianProduct(dimensionIndicesThis)
         val dimensionIndicesOther = (other.shape.dropRight(
           2
         ) :+ other.shape.last).map(List.range(0, _)).toList
-        val sliceIndicesOther = dimensionCombinations(dimensionIndicesOther)
+        val sliceIndicesOther = listCartesianProduct(dimensionIndicesOther)
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElements = sliceIndicesThis.flatMap { indicesThis =>
           val sliceIndicesThisComplete =
@@ -532,13 +532,18 @@ class NDArray[T: ClassTag] private (
     * List(List(0, 0), List(0, 1), List(0, 2), List(1, 0), List(1, 1), List(1,
     * 2)).
     *
-    * @param dimensionIndices
-    *   A list of lists indicating which indices to combine on each dimension.
+    * @param lists
+    *   A list of lists. The elements of each list will be combined with the
+    *   elements of all other lists in cartesian product fashion.
+    * @return
+    *   The list of all combinations of the given lists by index. If the input
+    *   lists are of lengths n1, n2, n3, ..., then the output will be of shape
+    *   (n1, n2, n3, ...).
     */
-  private def dimensionCombinations(
-      dimensionIndices: List[List[Int]]
+  private def listCartesianProduct(
+      lists: List[List[Int]]
   ): List[List[Int]] = {
-    dimensionIndices.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
+    lists.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
       oneDimIndices.flatMap(dimIndex =>
         if (accum.isEmpty) List(List(dimIndex))
         else accum.map(dimIndex +: _)
@@ -578,7 +583,7 @@ class NDArray[T: ClassTag] private (
         else (0 until shape(idx)).toList
       )
       .toList
-    val combinations = dimensionCombinations(dimensionsIndices)
+    val combinations = listCartesianProduct(dimensionsIndices)
     val sliceCombinations = combinations.map(combination =>
       combination.indices
         .map(idx =>
