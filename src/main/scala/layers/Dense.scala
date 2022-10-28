@@ -61,7 +61,7 @@ class Dense[T: ClassTag](
     *   The input tensor of arbitrary shape. The first dimension is the batch
     *   dimension.
     */
-  def apply(inputs: NDArray[T]): Try[NDArray[T]] =
+  override def apply(inputs: NDArray[T]): Try[NDArray[T]] =
     if (!(inputs.shape.tail sameElements inputShape.tail))
       Failure(new ShapeException("Inputs did not match expected input shape"))
     else {

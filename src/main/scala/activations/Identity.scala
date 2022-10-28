@@ -17,5 +17,5 @@ case class Identity[T]() extends Activation[T] {
     *   The input tensor of arbitrary shape. The first dimension is the batch
     *   dimension.
     */
-  def activation(inputs: NDArray[T]): NDArray[T] = inputs
+  override def activation(inputs: NDArray[T]): NDArray[T] = inputs
 }
