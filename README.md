@@ -4,13 +4,17 @@ A deep learning library for Scala.
 
 ## Motivation
 
-This project is (currently) exploratory in nature. I enjoy programming in Scala, but mostly use Python day-to-day; this
-work provides context and challenge for exercising my Scala skills. That fact influenced many design decisions,
-including the reimplementation of NDArrays already widely available in [DL4J/ND4J](https://deeplearning4j.konduit.ai/nd4j/tutorials/quickstart).
+This project is (currently) exploratory in nature. I enjoy programming in Scala,
+but mostly use Python day-to-day; this work provides context and challenge for
+exercising my Scala skills. That fact influenced many design decisions,
+including the reimplementation of NDArrays already widely available in
+[DL4J/ND4J](https://deeplearning4j.konduit.ai/nd4j/tutorials/quickstart).
 
 ## Usage
 
-The package follows conventions commonly found in deep learning libraries like TensorFlow.
+The package follows conventions commonly found in deep learning libraries like
+TensorFlow. The full API reference is available
+[on GitHub Pages](https://kostaleonard.github.io/igneous/).
 
 ```scala
 import layers.Dense
@@ -31,5 +35,6 @@ val outputs = model(inputs)
 
 ## On the package name
 
-The phonetic equivalent of "Scala" in Russian means "rock" or "crag." I happened to be doing something in Russian
-around the time that I made this project, hence "igneous."
+The phonetic equivalent of "Scala" in Russian means "rock" or "crag." I happened
+to be doing something in Russian around the time that I made this project, hence
+"igneous."
