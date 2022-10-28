@@ -9,10 +9,10 @@ import scala.util.{Failure, Success, Try}
 
 /** A densely connected neural network layer.
   *
-  * Implements the operation
-  * [[outputs = activation(dot(inputs, kernel) + bias)]] where activation is the
-  * element-wise activation function, kernel is a weights matrix created by the
-  * layer, and bias is a bias vector created by the layer.
+  * Implements the operation outputs = activation(dot(inputs, kernel) + bias)
+  * where activation is the element-wise activation function, kernel is a
+  * weights matrix created by the layer, and bias is a bias vector created by
+  * the layer.
   *
   * If the input to the layer has a rank greater than 2, then this layer
   * computes the dot product between the inputs and the kernel along the last
@@ -28,11 +28,10 @@ import scala.util.{Failure, Success, Try}
   * @param units
   *   The number of neurons in the layer.
   * @param weightsInitialization
-  *   The initial weights matrix to use. Must be of shape
-  *   [[(inputShape.last, units)]]. If not provided, the weights matrix is
-  *   randomly initialized.
+  *   The initial weights matrix to use. Must be of shape (inputShape.last,
+  *   units). If not provided, the weights matrix is randomly initialized.
   * @param biasesInitialization
-  *   The initial biases vector to use. Must be of shape [[(units)]]. If not
+  *   The initial biases vector to use. Must be of shape (units). If not
   *   provided, the biases vector is set to zero.
   * @param activation
   *   The activation function to apply after the dense transformation.
