@@ -103,7 +103,7 @@ object NDArray {
   /** Returns an array whose elements are randomly initialized.
     *
     * Elements are drawn from a uniform distribution using scala.util.Random, so
-    * Floats are in [0, 1), Ints are in [[Int.MinValue, Int.MaxValue]], etc.
+    * Floats are in [0, 1), Ints are in [Int.MinValue, Int.MaxValue], etc.
     *
     * @param shape
     *   The shape of the array. For example, an array with shape (2, 3) is a
@@ -154,8 +154,7 @@ class NDArray[T: ClassTag] private (
   /** Returns an element from the array.
     *
     * @param indices
-    *   The indices to an element in the array. Must be of length
-    *   [[shape.length]].
+    *   The indices to an element in the array. Must be of length shape.length.
     */
   def apply(indices: Seq[Int]): T = elements(
     indices.indices.foldRight(0)((idx, accumulator) =>
@@ -167,8 +166,7 @@ class NDArray[T: ClassTag] private (
     * shape.
     *
     * @param targetShape
-    *   The shape of the output array. The product must equal
-    *   [[elements.length]].
+    *   The shape of the output array. The product must equal elements.length.
     */
   def reshape(targetShape: Seq[Int]): NDArray[T] =
     new NDArray[T](targetShape.toArray, elements)
@@ -214,8 +212,8 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare.
     * @param epsilon
-    *   The range within which elements are considered equal, i.e.,
-    *   [[abs(a - b) <= epsilon]].
+    *   The range within which elements are considered equal, i.e., abs(a - b)
+    *   <= epsilon.
     */
   def arrayApproximatelyEquals(
       other: NDArray[T],
@@ -230,8 +228,8 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare.
     * @param epsilon
-    *   The range within which elements are considered equal, i.e.,
-    *   [[abs(a - b) <= epsilon]].
+    *   The range within which elements are considered equal, i.e., abs(a - b)
+    *   <= epsilon.
     */
   def arrayNotApproximatelyEquals(
       other: NDArray[T],
@@ -243,8 +241,8 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare. Must be the same shape as this array.
     * @param epsilon
-    *   The range within which elements are considered equal, i.e.,
-    *   [[abs(a - b) <= epsilon]].
+    *   The range within which elements are considered equal, i.e., abs(a - b)
+    *   <= epsilon.
     * @return
     *   A mask describing the approximate equality of the arrays at each
     *   position. Each element of the mask is true if the arrays are
