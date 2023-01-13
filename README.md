@@ -32,9 +32,3 @@ val sampleBatchSize = 2
 val inputs = NDArray.ones[Float](List(sampleBatchSize, numFeatures))
 val outputs = model(inputs)
 ```
-
-## On the package name
-
-The phonetic equivalent of "Scala" in Russian means "rock" or "crag." I happened
-to be doing something in Russian around the time that I made this project, hence
-"igneous."
