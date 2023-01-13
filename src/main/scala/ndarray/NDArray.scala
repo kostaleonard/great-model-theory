@@ -301,14 +301,12 @@ class NDArray[T: ClassTag] private (
     * @param num
     *   An implicit parameter defining a set of numeric operations which
     *   includes the `+` operator to be used in forming the sum.
-    * @tparam B
-    *   The result type of the `+` operator.
     * @return
     *   An NDArray of the same size.
     */
-  def +[B >: T: ClassTag](
+  def +(
       other: NDArray[T]
-  )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
@@ -325,14 +323,12 @@ class NDArray[T: ClassTag] private (
     * @param num
     *   An implicit parameter defining a set of numeric operations which
     *   includes the `-` operator to be used in forming the sum.
-    * @tparam B
-    *   The result type of the `-` operator.
     * @return
     *   An NDArray of the same size.
     */
-  def -[B >: T: ClassTag](
+  def -(
       other: NDArray[T]
-  )(implicit num: Numeric[B]): Try[NDArray[B]] = if (
+  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
@@ -347,10 +343,8 @@ class NDArray[T: ClassTag] private (
     * @param num
     *   An implicit parameter defining a set of numeric operations which
     *   includes the `+` operator to be used in forming the sum.
-    * @tparam B
-    *   The result type of the `+` operator.
     */
-  def sum[B >: T](implicit num: Numeric[B]): B = flatten().reduce(num.plus)
+  def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
@@ -388,16 +382,14 @@ class NDArray[T: ClassTag] private (
     *   The array to multiply. Must be 2D.
     * @param num
     *   An implicit parameter defining a set of numeric operations.
-    * @tparam B
-    *   The result type of numeric operations.
     * @return
     *   The result of matrix multiplication of 2D arrays. If this array is of
     *   shape (m, n) and the other array is of shape (n, o), the result will be
     *   of shape (m, o).
     */
-  def matmul[B >: T: ClassTag](
+  def matmul(
       other: NDArray[T]
-  )(implicit num: Numeric[B]): Try[NDArray[B]] =
+  )(implicit num: Numeric[T]): Try[NDArray[T]] =
     if (shape.length != 2 || other.shape.length != 2)
       Failure(new ShapeException("matmul inputs must be 2D arrays"))
     else if (shape(1) != other.shape(0))
@@ -405,19 +397,19 @@ class NDArray[T: ClassTag] private (
     else {
       val numRows = shape(0)
       val numCols = other.shape(1)
-      var newElementsReversed = List.empty[B]
+      var newElementsReversed = List.empty[T]
       (0 until numRows).foreach { r =>
         (0 until numCols).foreach { c =>
           val rowVector = slice(List(Some(List(r)), None)).squeeze()
           val colVector = other.slice(List(None, Some(List(c)))).squeeze()
           // The dot product of 1D arrays is a scalar.
-          val vectorDotProduct = rowVector dot [B] colVector
+          val vectorDotProduct = rowVector dot colVector
           newElementsReversed =
             vectorDotProduct.get.apply(List(0)) +: newElementsReversed
         }
       }
       Success(
-        NDArray[B](newElementsReversed.reverse).reshape(List(numRows, numCols))
+        NDArray[T](newElementsReversed.reverse).reshape(List(numRows, numCols))
       )
     }
 
@@ -437,13 +429,11 @@ class NDArray[T: ClassTag] private (
     *   The array to dot.
     * @param num
     *   An implicit parameter defining a set of numeric operations.
-    * @tparam B
-    *   The result type of numeric operations.
     */
-  def dot[B >: T: ClassTag](
+  def dot(
       other: NDArray[T]
-  )(implicit num: Numeric[B]): Try[NDArray[B]] = {
-    def vectorInnerProduct(): Try[NDArray[B]] = {
+  )(implicit num: Numeric[T]): Try[NDArray[T]] = {
+    def vectorInnerProduct(): Try[NDArray[T]] = {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       if (thisFlat.length != otherFlat.length)
@@ -464,7 +454,7 @@ class NDArray[T: ClassTag] private (
           )
         )
     }
-    def lastAxisInnerProduct(): Try[NDArray[B]] =
+    def lastAxisInnerProduct(): Try[NDArray[T]] =
       if (shape.last != other.shape.head)
         Failure(
           new ShapeException("Last axes must match for last axis inner product")
@@ -476,12 +466,12 @@ class NDArray[T: ClassTag] private (
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElementsArrays = sliceIndices.map { indices =>
           val sliceIndicesComplete = indices.map(idx => Some(List(idx))) :+ None
-          (slice(sliceIndicesComplete).squeeze() dot [B] other).get
+          (slice(sliceIndicesComplete).squeeze() dot other).get
         }
         val newElements = newElementsArrays.map(_.flatten().head)
-        Success(NDArray[B](newElements).reshape(resultShape.toList))
+        Success(NDArray[T](newElements).reshape(resultShape.toList))
       }
-    def multidimensionalInnerProduct(): Try[NDArray[B]] =
+    def multidimensionalInnerProduct(): Try[NDArray[T]] =
       if (shape.last != other.shape(other.shape.length - 2))
         Failure(
           new ShapeException(
@@ -509,12 +499,12 @@ class NDArray[T: ClassTag] private (
               0,
               sliceIndicesOtherIntermediate.length - 2
             ) ++ List(None, sliceIndicesOtherIntermediate.last)
-            (slice(sliceIndicesThisComplete).squeeze() dot [B] other
+            (slice(sliceIndicesThisComplete).squeeze() dot other
               .slice(sliceIndicesOtherComplete)
               .squeeze()).get.flatten().head
           }
         }
-        Success(NDArray[B](newElements).reshape(resultShape.toList))
+        Success(NDArray[T](newElements).reshape(resultShape.toList))
       }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
     else if (shape.length == 2 && other.shape.length == 2) matmul(other)
@@ -568,7 +558,7 @@ class NDArray[T: ClassTag] private (
     *   passed to the reduction function f. If axis is 0, the reduction function
     *   is applied on slices (None, i, j, ...) for all dimensions i, j, ...
     * @tparam B
-    *   The return type of the map function.
+    *   The return type of the reduce function.
     * @return
     *   The reduced array. The axis dimension will be eliminated in the
     *   reduction. Reducing with a summation function would collapse the
