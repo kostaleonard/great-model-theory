@@ -39,8 +39,8 @@ import scala.util.{Failure, Success, Try}
   *   The array element type.
   */
 class Dense[T: ClassTag](
-    inputShape: Array[Int],
-    units: Int,
+    val inputShape: Array[Int],
+    val units: Int,
     weightsInitialization: Option[NDArray[T]] = None,
     biasesInitialization: Option[NDArray[T]] = None,
     activation: Activation[T] = Identity[T]()

@@ -140,7 +140,7 @@ object NDArray {
   */
 class NDArray[T: ClassTag] private (
     val shape: Array[Int],
-    val elements: Array[T]
+    elements: Array[T]
 ) {
   private val strides = Array.fill[Int](shape.length)(1)
   strides.indices.reverse.drop(1).foreach { idx =>
