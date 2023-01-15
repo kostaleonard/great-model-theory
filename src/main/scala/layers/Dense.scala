@@ -1,12 +1,36 @@
 package layers
 
 import activations.{Activation, Identity}
-import autodifferentiation.{Add, DifferentiableFunction, MatMul, Parameter, Sigmoid, Variable}
+import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter, Sigmoid, Variable}
 import exceptions.ShapeException
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
+
+object Dense {
+
+  def withInitialization[T: ClassTag](previousLayer: Layer[T],
+                            units: Int,
+                            weightsInitialization: Option[NDArray[T]] = None,
+                            biasesInitialization: Option[NDArray[T]] = None,
+                            activation: Activation[T] = Identity[T]())(implicit num: Numeric[T]): Dense[T] = {
+    val weights: NDArray[T] = weightsInitialization.getOrElse(
+      NDArray.random[T](List(previousLayer.getOutputShape.last, units))
+    )
+    val biases: NDArray[T] =
+      biasesInitialization.getOrElse(NDArray.zeros[T](List(units)))
+    Dense(previousLayer, units, weights, biases, activation)
+  }
+
+  def withRandomWeights[T: ClassTag](previousLayer: Layer[T],
+             units: Int,
+             activation: Activation[T] = Identity[T]())(implicit num: Numeric[T]): Dense[T] = {
+    val weights = NDArray.random[T](List(previousLayer.getOutputShape.last, units))
+    val biases = NDArray.zeros[T](List(units))
+    Dense(previousLayer, units, weights, biases, activation)
+  }
+}
 
 //TODO fix docstring
 /** A densely connected neural network layer.
@@ -40,20 +64,14 @@ import scala.util.{Failure, Success, Try}
   * @tparam T
   *   The array element type.
   */
-class Dense[T: ClassTag](
-    val previousLayer: Layer[T],
-    val units: Int,
-    weightsInitialization: Option[NDArray[T]] = None,
-    biasesInitialization: Option[NDArray[T]] = None,
-    activation: Activation[T] = Identity[T]()
+case class Dense[T: ClassTag] private (
+    previousLayer: Layer[T],
+    units: Int,
+    weights: NDArray[T],
+    biases: NDArray[T],
+    activation: Activation[T]
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
-  override val layerNum: Int = previousLayer.layerNum + 1
-  val weights: NDArray[T] = weightsInitialization.getOrElse(
-    NDArray.random[T](List(previousLayer.getOutputShape.last, units))
-  )
-  val biases: NDArray[T] =
-    biasesInitialization.getOrElse(NDArray.zeros[T](List(units)))
 
   //TODO use activation function (will need to be differentiable function)
   override def getComputationGraph: DifferentiableFunction[T] =
@@ -61,9 +79,9 @@ class Dense[T: ClassTag](
       Add(
         MatMul(
           previousLayer.getComputationGraph,
-          Parameter(f"weights$layerNum", weights)
+          ModelParameter("weights", weights)
         ),
-        Parameter(f"biases$layerNum", biases)
+        ModelParameter("biases", biases)
       )(implicitNumeric)
     )
 }
