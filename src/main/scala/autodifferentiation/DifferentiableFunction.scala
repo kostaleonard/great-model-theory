@@ -1,6 +1,7 @@
 package autodifferentiation
 
 import ndarray.NDArray
+
 import scala.util.{Failure, Success, Try}
 
 //TODO docstring
@@ -10,24 +11,37 @@ trait DifferentiableFunction[T] {
   def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]]
 
   //TODO docstring
-  def gradient(withRespectToInput: String): DifferentiableFunction[T]
+  def gradient(withRespectToVariable: String): DifferentiableFunction[T]
+
+  //TODO traverse graph and return inputs
+  def getInputs: Set[Input[T]] = ???
+
+  //TODO can compute output shape from using placeholder inputs
+  def getOutputShape: Array[Int] = ???
 }
 
 case class Constant[T](value: NDArray[T]) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]] = Success(value)
 
-  override def gradient(withRespectToInput: String): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
+  override def gradient(withRespectToVariable: String): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
 }
 
-case class Input[T](name: String) extends DifferentiableFunction[T] {
+abstract case class Variable[T](name: String) extends DifferentiableFunction[T] {
+  override def gradient(withRespectToVariable: String): DifferentiableFunction[T] =
+    if(withRespectToVariable == name) Constant(NDArray.ones(Array(1)))
+    else Constant(NDArray.zeros(Array(1)))
+}
+
+case class Parameter[T](override val name: String, value: NDArray[T]) extends Variable[T](name) {
+  override def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]] = Success(value)
+}
+
+case class Input[T](override val name: String, shape: Array[Int]) extends Variable[T](name) {
+  //TODO if the given value for the input is of the wrong shape, also fail
   override def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]] = inputs.get(name) match {
     case Some(value) => Success(value)
-    case None => Failure(new NoSuchElementException(f"Input $name is not defined"))
+    case None => Failure(new NoSuchElementException(f"Variable $name is not defined"))
   }
-
-  override def gradient(withRespectToInput: String): DifferentiableFunction[T] =
-    if(withRespectToInput == name) Constant(NDArray.ones(Array(1)))
-    else Constant(NDArray.zeros(Array(1)))
 }
 
 case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(implicit num: Numeric[T]) extends DifferentiableFunction[T] {
@@ -41,6 +55,18 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(im
       case _ => _
     }
 
-  override def gradient(withRespectToInput: String): DifferentiableFunction[T] =
-    Add(a.gradient(withRespectToInput), b.gradient(withRespectToInput))
+  override def gradient(withRespectToVariable: String): DifferentiableFunction[T] =
+    Add(a.gradient(withRespectToVariable), b.gradient(withRespectToVariable))
+}
+
+case class Sigmoid[T](a: DifferentiableFunction[T]) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: String): DifferentiableFunction[T] = ???
+}
+
+case class MatMul[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T]) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[String, NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: String): DifferentiableFunction[T] = ???
 }
