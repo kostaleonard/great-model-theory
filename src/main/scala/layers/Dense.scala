@@ -1,7 +1,7 @@
 package layers
 
 import activations.{Activation, Identity}
-import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter, Sigmoid, Variable}
+import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter}
 import exceptions.ShapeException
 import ndarray.NDArray
 
@@ -75,13 +75,11 @@ case class Dense[T: ClassTag] private (
 
   //TODO use activation function (will need to be differentiable function)
   override def getComputationGraph: DifferentiableFunction[T] =
-    Sigmoid(
-      Add(
-        MatMul(
-          previousLayer.getComputationGraph,
-          ModelParameter("weights", weights)
-        ),
-        ModelParameter("biases", biases)
-      )(implicitNumeric)
-    )
+    Add(
+      MatMul(
+        previousLayer.getComputationGraph,
+        ModelParameter("weights", weights)
+      ),
+      ModelParameter("biases", biases)
+    )(implicitNumeric)
 }

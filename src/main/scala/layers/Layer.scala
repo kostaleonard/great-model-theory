@@ -3,6 +3,7 @@ package layers
 import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
 import ndarray.NDArray
 
+import scala.reflect.ClassTag
 import scala.util.Try
 
 /** A neural network layer.
@@ -10,7 +11,7 @@ import scala.util.Try
   * @tparam T
   *   The array element type.
   */
-abstract class Layer[T] {
+abstract class Layer[T: ClassTag] {
 
   //TODO docstring
   def getComputationGraph: DifferentiableFunction[T]
