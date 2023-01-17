@@ -73,6 +73,7 @@ case class Dense[T: ClassTag] private (
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
 
+  //TODO this graph is correct, but the tests are failing because NDArray does not support broadcasting
   //TODO use activation function (will need to be differentiable function)
   override def getComputationGraph: DifferentiableFunction[T] =
     Add(

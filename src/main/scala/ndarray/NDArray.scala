@@ -294,6 +294,25 @@ class NDArray[T: ClassTag] private (
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
 
+  /** Returns this array and the input array broadcast to matching dimensions.
+    *
+    * Broadcasting rules follow those in NumPy. This operation compares the
+    * shapes of the two arrays from right to left and determines the final shape
+    * of the broadcast arrays. Two dimensions are compatible when they are equal
+    * or one of them is equal to 1. Missing dimensions are equal to 1.
+    *
+    * Example: You have an array of 256 x 256 x 3 color values (i.e., an image),
+    * and you want to scale each color by a different value. You multiply the
+    * image array by a 1-dimensional array of length 3. During the
+    * multiplication, the latter array is broadcast to 256 x 256 x 3.
+    *
+    * @param other
+    *   The array with which to broadcast.
+    * @return
+    *   This array and the input array broadcast to matching dimensions.
+    */
+  def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] = ???
+
   /** Returns the result of element-wise addition of the two NDArrays.
     *
     * @param other
