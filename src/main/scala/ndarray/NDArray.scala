@@ -299,19 +299,52 @@ class NDArray[T: ClassTag] private (
     * Broadcasting rules follow those in NumPy. This operation compares the
     * shapes of the two arrays from right to left and determines the final shape
     * of the broadcast arrays. Two dimensions are compatible when they are equal
-    * or one of them is equal to 1. Missing dimensions are equal to 1.
+    * or one of them is equal to 1. If one of the two arrays has more dimensions
+    * than the other, missing dimensions are filled in on the left with 1.
     *
     * Example: You have an array of 256 x 256 x 3 color values (i.e., an image),
     * and you want to scale each color by a different value. You multiply the
     * image array by a 1-dimensional array of length 3. During the
-    * multiplication, the latter array is broadcast to 256 x 256 x 3.
+    * multiplication, the latter array is broadcast to 256 x 256 x 3. Note that
+    * the latter array's missing dimensions were filled to 1 x 1 x 3.
     *
     * @param other
     *   The array with which to broadcast.
     * @return
     *   This array and the input array broadcast to matching dimensions.
     */
-  def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] = ???
+  def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] = {
+    val finalNumDimensions = shape.length max other.shape.length
+    val onesPaddedShapeThis = shape.reverse.padTo(finalNumDimensions, 1).reverse
+    val onesPaddedShapeOther = other.shape.reverse.padTo(finalNumDimensions, 1).reverse
+    onesPaddedShapeThis.indices.reverse.foreach{ idx =>
+      val dimensionThis = onesPaddedShapeThis(idx)
+      val dimensionOther = onesPaddedShapeOther(idx)
+      if(dimensionThis == 1) {
+        //TODO
+        val numTimesToRepeat = dimensionOther
+        val shapeUpToIdxThis = onesPaddedShapeThis.take(idx)
+        val dimensionIndices = shapeUpToIdxThis.map(List.range(0, _)).toList
+        val indexCombinations = listCartesianProduct(dimensionIndices)
+        val sliceIndices = indexCombinations.map(elementIndices => elementIndices.map(sliceIndex => Some(List(sliceIndex))) ++ List.fill(onesPaddedShapeThis.length - idx)(None))
+        println(sliceIndices)
+        val newElementsThis = sliceIndices.flatMap{indices =>
+          val sliceToRepeat = broadcastThis.slice(indices).flatten()
+          println(sliceToRepeat.mkString("Array(", ", ", ")"))
+          (0 until numTimesToRepeat).map(sliceToRepeat)
+        }
+        println(f"New elements: $newElementsThis")
+      }
+      else if(dimensionOther == 1) {
+        //TODO
+      }
+      else if(dimensionThis != dimensionOther) {
+        return Failure(new ShapeException(f"Cannot broadcast arrays of shape ${shape.mkString("(", ", ", ")")} and ${other.shape.mkString("(", ", ", ")")}"))
+      }
+    }
+    println()
+    Success(broadcastThis, broadcastOther)
+  }
 
   /** Returns the result of element-wise addition of the two NDArrays.
     *

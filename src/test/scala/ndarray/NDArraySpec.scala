@@ -184,12 +184,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
   }
 
-  it should "broadcast two arrays to matching shape (2 x 3, 2)" in {
+  it should "broadcast two arrays to matching shape (2 x 3, 3)" in {
     val arr1 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
-    val arr2 = NDArray[Int](List(0, 1))
+    val arr2 = NDArray[Int](List(0, 1, 2))
     val broadcast = arr1 broadcastWith arr2
     assert(broadcast.isSuccess)
-    val expectedArr2Broadcast = NDArray[Int](List(0, 0, 0, 1, 1, 1)).reshape(List(2, 3))
+    val expectedArr2Broadcast = NDArray[Int](List(0, 1, 2, 0, 1, 2)).reshape(List(2, 3))
     assert(broadcast.get._1 arrayEquals arr1)
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
   }
@@ -204,12 +204,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
   }
 
-  it should "broadcast two arrays to matching shape (2, 2 x 3)" in {
-    val arr1 = NDArray[Int](List(0, 1))
+  it should "broadcast two arrays to matching shape (3, 2 x 3)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2))
     val arr2 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
     val broadcast = arr1 broadcastWith arr2
     assert(broadcast.isSuccess)
-    val expectedArr1Broadcast = NDArray[Int](List(0, 0, 0, 1, 1, 1)).reshape(List(2, 3))
+    val expectedArr1Broadcast = NDArray[Int](List(0, 1, 2, 0, 1, 2)).reshape(List(2, 3))
     assert(broadcast.get._1 arrayEquals expectedArr1Broadcast)
     assert(broadcast.get._2 arrayEquals arr2)
   }
