@@ -22,5 +22,7 @@ case class Model[T](outputLayer: Layer[T]) {
     * @param inputs
     *   The inputs to the model.
     */
-  def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = outputLayer(inputs)
+  def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = outputLayer(
+    inputs
+  )
 }

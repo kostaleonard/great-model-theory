@@ -17,7 +17,8 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val dense = Dense.withRandomWeights(inputLayer, outputSize)
     val model = new Model[Float](dense)
     val sampleBatchSize = 2
-    val inputs = Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures)))
+    val inputs =
+      Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
     assert(outputs.isSuccess)
     assert(outputs.get.shape sameElements Array(sampleBatchSize, outputSize))
@@ -34,7 +35,8 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val dense2 = Dense.withRandomWeights(dense1, outputSize)
     val model = new Model[Float](dense2)
     val sampleBatchSize = 2
-    val inputs = Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures)))
+    val inputs =
+      Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
     assert(outputs.isSuccess)
     assert(outputs.get.shape sameElements Array(sampleBatchSize, outputSize))
@@ -52,7 +54,8 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val dense = Dense.withRandomWeights(inputLayer, outputSize)
     val model = new Model[Float](dense)
     val sampleBatchSize = 2
-    val inputs = Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures + 1)))
+    val inputs =
+      Map(input -> NDArray.ones[Float](List(sampleBatchSize, numFeatures + 1)))
     val outputs = model(inputs)
     assert(outputs.isFailure)
   }

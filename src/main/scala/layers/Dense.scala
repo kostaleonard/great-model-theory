@@ -10,11 +10,13 @@ import scala.util.{Failure, Success, Try}
 
 object Dense {
 
-  def withInitialization[T: ClassTag](previousLayer: Layer[T],
-                            units: Int,
-                            weightsInitialization: Option[NDArray[T]] = None,
-                            biasesInitialization: Option[NDArray[T]] = None,
-                            activation: Activation[T] = Identity[T]())(implicit num: Numeric[T]): Dense[T] = {
+  def withInitialization[T: ClassTag](
+      previousLayer: Layer[T],
+      units: Int,
+      weightsInitialization: Option[NDArray[T]] = None,
+      biasesInitialization: Option[NDArray[T]] = None,
+      activation: Activation[T] = Identity[T]()
+  )(implicit num: Numeric[T]): Dense[T] = {
     val weights: NDArray[T] = weightsInitialization.getOrElse(
       NDArray.random[T](List(previousLayer.getOutputShape.last, units))
     )
@@ -23,10 +25,13 @@ object Dense {
     Dense(previousLayer, units, weights, biases, activation)
   }
 
-  def withRandomWeights[T: ClassTag](previousLayer: Layer[T],
-             units: Int,
-             activation: Activation[T] = Identity[T]())(implicit num: Numeric[T]): Dense[T] = {
-    val weights = NDArray.random[T](List(previousLayer.getOutputShape.last, units))
+  def withRandomWeights[T: ClassTag](
+      previousLayer: Layer[T],
+      units: Int,
+      activation: Activation[T] = Identity[T]()
+  )(implicit num: Numeric[T]): Dense[T] = {
+    val weights =
+      NDArray.random[T](List(previousLayer.getOutputShape.last, units))
     val biases = NDArray.zeros[T](List(units))
     Dense(previousLayer, units, weights, biases, activation)
   }
@@ -73,8 +78,8 @@ case class Dense[T: ClassTag] private (
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
 
-  //TODO this graph is correct, but the tests are failing because NDArray does not support broadcasting
-  //TODO use activation function (will need to be differentiable function)
+  // TODO this graph is correct, but the tests are failing because NDArray does not support broadcasting
+  // TODO use activation function (will need to be differentiable function)
   override def getComputationGraph: DifferentiableFunction[T] =
     Add(
       MatMul(

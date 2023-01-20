@@ -13,17 +13,18 @@ import scala.util.Try
   */
 abstract class Layer[T: ClassTag] {
 
-  //TODO docstring
+  // TODO docstring
   def getComputationGraph: DifferentiableFunction[T]
 
-  //TODO update docstring
+  // TODO update docstring
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
     *   The input tensor of arbitrary shape. The first dimension is the batch
     *   dimension.
     */
-  def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = getComputationGraph.compute(inputs)
+  def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    getComputationGraph.compute(inputs)
 
   def getInputs: Set[Input[T]] = getComputationGraph.getInputs
 

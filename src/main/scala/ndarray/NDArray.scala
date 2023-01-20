@@ -2,6 +2,7 @@ package ndarray
 
 import exceptions.ShapeException
 
+import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
 import scala.util.{Failure, Success, Try}
 
@@ -307,7 +308,47 @@ class NDArray[T: ClassTag] private (
     * @param targetShape
     *   The shape to which to broadcast the array.
     */
-  def broadcastTo(targetShape: Seq[Int]): Try[NDArray[T]] = ???
+  def broadcastTo(targetShape: Seq[Int]): Try[NDArray[T]] =
+    if (shape.length > targetShape.length)
+      Failure(
+        new ShapeException(
+          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape $targetShape"
+        )
+      )
+    else {
+      val onesPaddedShapeThis =
+        shape.reverse.padTo(targetShape.length, 1).reverse
+      val onesPaddedThis = reshape(onesPaddedShapeThis)
+      onesPaddedThis.broadcastToWithMatchingNumDimensions(
+        targetShape,
+        targetShape.length - 1
+      )
+    }
+
+  @tailrec
+  private def broadcastToWithMatchingNumDimensions(
+      targetShape: Seq[Int],
+      shapeIdx: Int
+  ): Try[NDArray[T]] =
+    if (shapeIdx < 0) Success(this)
+    else if (shape(shapeIdx) == targetShape(shapeIdx))
+      broadcastToWithMatchingNumDimensions(targetShape, shapeIdx - 1)
+    else if (shape(shapeIdx) == 1) {
+      val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
+      val sliceIndices = listCartesianProduct(dimensionIndices)
+      val sliceIndicesComplete = sliceIndices.map(indices =>
+        indices.map(idx => Some(List(idx))) ++ List.fill(targetShape.length - shapeIdx)(None)
+      )
+      val sliceElements = sliceIndicesComplete.flatMap(indices => slice(indices).flatten())
+      val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
+      val broadcastArray = NDArray[T](sliceElements).reshape(newShape)
+      broadcastArray.broadcastToWithMatchingNumDimensions(targetShape, shapeIdx - 1)
+    } else
+      Failure(
+        new ShapeException(
+          s"Cannot broadcast dimension of size ${shape(shapeIdx)} to ${targetShape(shapeIdx)}"
+        )
+      )
 
   /** Returns this array and the input array broadcast to matching dimensions.
     *
@@ -345,14 +386,24 @@ class NDArray[T: ClassTag] private (
   private def getBroadcastShapeWith(other: NDArray[T]): Try[Seq[Int]] = {
     val finalNumDimensions = shape.length max other.shape.length
     val onesPaddedShapeThis = shape.reverse.padTo(finalNumDimensions, 1).reverse
-    val onesPaddedShapeOther = other.shape.reverse.padTo(finalNumDimensions, 1).reverse
+    val onesPaddedShapeOther =
+      other.shape.reverse.padTo(finalNumDimensions, 1).reverse
     val shapesMatch = (0 until finalNumDimensions).forall(idx =>
       onesPaddedShapeThis(idx) == onesPaddedShapeOther(idx) ||
         onesPaddedShapeThis(idx) == 1 ||
         onesPaddedShapeOther(idx) == 1
     )
-    if(shapesMatch) Success((0 until finalNumDimensions).map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx)))
-    else Failure(new ShapeException(s"Could not broadcast arrays of shape ${shape.mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}"))
+    if (shapesMatch)
+      Success(
+        (0 until finalNumDimensions).map(idx =>
+          onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx)
+        )
+      )
+    else
+      Failure(
+        new ShapeException(s"Could not broadcast arrays of shape ${shape
+            .mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}")
+      )
   }
 
   /** Returns the result of element-wise addition of the two NDArrays.
