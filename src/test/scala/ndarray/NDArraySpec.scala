@@ -174,6 +174,65 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
   }
 
+  it should "broadcast an array to the target shape (1 => 2)" in {
+    val arr = NDArray[Int](List(0))
+    val targetShape = List(2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 0))
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (1 => 2 x 2)" in {
+    val arr = NDArray[Int](List(0))
+    val targetShape = List(2, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 0, 0, 0)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (2 => 3 x 2)" in {
+    val arr = NDArray[Int](List(0, 1))
+    val targetShape = List(3, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 1, 0, 1, 0, 1)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (3 x 2 => 2 x 3 x 2)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(3, 2))
+    val targetShape = List(2, 3, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (3 x 1 => 3 x 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2)).reshape(List(3, 1))
+    val targetShape = List(3, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 0, 0, 1, 1, 1, 2, 2, 2)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (2 => 2 x 3)" in {
+    val arr = NDArray[Int](List(0, 1))
+    val targetShape = List(2, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (1 x 2 x 3 => 5 x 1 x 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(1, 2, 3))
+    val targetShape = List(5, 1, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
   it should "broadcast two arrays to matching shape (2 x 3, 1)" in {
     val arr1 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
     val arr2 = NDArray[Int](List(0))
