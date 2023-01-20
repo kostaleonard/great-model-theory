@@ -226,6 +226,20 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(broadcast.isFailure)
   }
 
+  it should "fail to broadcast an array to an invalid target shape (2 x 3 => 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val targetShape = List(3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (2 x 3 => 2 x 1)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val targetShape = List(2, 1)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
   it should "fail to broadcast an array to an invalid target shape (1 x 2 x 3 => 5 x 1 x 3)" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(1, 2, 3))
     val targetShape = List(5, 1, 3)

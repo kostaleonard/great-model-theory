@@ -294,8 +294,19 @@ class NDArray[T: ClassTag] private (
     } else
       Failure(new ShapeException("Arrays must have same shape for comparison"))
 
-  //TODO docstring
-  //TODO tests
+  /** Returns this array broadcast to the target shape.
+    *
+    * Broadcasting rules follow those in NumPy. This operation compares the
+    * shape of this array and the target shape from right to left and determines
+    * whether this array can be broadcast. A dimension in this array's shape is
+    * compatible with a dimension in the target shape when they are equal or
+    * this array's dimension is equal to 1. If the target shape has more
+    * dimensions than this array's shape, missing dimensions are filled in on
+    * the left with 1.
+    *
+    * @param targetShape
+    *   The shape to which to broadcast the array.
+    */
   def broadcastTo(targetShape: Seq[Int]): Try[NDArray[T]] = ???
 
   /** Returns this array and the input array broadcast to matching dimensions.
@@ -314,8 +325,6 @@ class NDArray[T: ClassTag] private (
     *
     * @param other
     *   The array with which to broadcast.
-    * @return
-    *   This array and the input array broadcast to matching dimensions.
     */
   def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] =
     getBroadcastShapeWith(other) match {
