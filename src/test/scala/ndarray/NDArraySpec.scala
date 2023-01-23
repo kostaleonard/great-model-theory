@@ -280,7 +280,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val broadcast = arr1 broadcastWith arr2
     assert(broadcast.isSuccess)
     val expectedArr2Broadcast =
-      NDArray[Int](List(0, 1, 0, 1, 0, 1)).reshape(List(2, 3))
+      NDArray[Int](List(0, 1, 0, 1, 0, 1)).reshape(List(3, 2))
     assert(broadcast.get._1 arrayEquals arr1)
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
   }

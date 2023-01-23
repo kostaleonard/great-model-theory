@@ -337,12 +337,19 @@ class NDArray[T: ClassTag] private (
       val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
       val sliceIndices = listCartesianProduct(dimensionIndices)
       val sliceIndicesComplete = sliceIndices.map(indices =>
-        indices.map(idx => Some(List(idx))) ++ List.fill(targetShape.length - shapeIdx)(None)
+        indices.map(idx => Some(List(idx))) ++ List.fill(
+          targetShape.length - shapeIdx
+        )(None)
       )
-      val sliceElements = sliceIndicesComplete.flatMap(indices => slice(indices).flatten())
+      val sliceElements = sliceIndicesComplete.flatMap(indices =>
+        (0 until targetShape(shapeIdx)).flatMap(_ => slice(indices).flatten())
+      )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
       val broadcastArray = NDArray[T](sliceElements).reshape(newShape)
-      broadcastArray.broadcastToWithMatchingNumDimensions(targetShape, shapeIdx - 1)
+      broadcastArray.broadcastToWithMatchingNumDimensions(
+        targetShape,
+        shapeIdx - 1
+      )
     } else
       Failure(
         new ShapeException(
