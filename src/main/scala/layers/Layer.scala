@@ -13,22 +13,26 @@ import scala.util.Try
   */
 abstract class Layer[T: ClassTag] {
 
-  // TODO docstring
+  /** Returns the layer's computation graph.
+    *
+    * The computation graph defines the transformations the layer makes on
+    * inputs. It is a composition of `DifferentiableFunction`s from which the
+    * model can compute gradients during training.
+    */
   def getComputationGraph: DifferentiableFunction[T]
 
-  // TODO update docstring
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
-    *   The input tensor of arbitrary shape. The first dimension is the batch
-    *   dimension.
+    *   A Map of `Input` objects to tensors of arbitrary shape. The first
+    *   dimension is the batch dimension.
     */
   def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     getComputationGraph.compute(inputs)
 
+  /** Returns the layer's `Input` objects. */
   def getInputs: Set[Input[T]] = getComputationGraph.getInputs
 
+  /** Returns the layer's output shape. */
   def getOutputShape: Array[Int] = getComputationGraph.getOutputShape
-
-  def getTrainableVariables: Set[ModelParameter[T]] = ???
 }
