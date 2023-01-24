@@ -145,7 +145,7 @@ class NDArray[T: ClassTag] private (
 ) {
   if (shape.isEmpty && !elements.isEmpty)
     throw new ShapeException(
-      s"Could not create array with empty shape and non-empty elements"
+      "Could not create array with empty shape and non-empty elements"
     )
   else if (shape.nonEmpty && shape.product != elements.length)
     throw new ShapeException(
