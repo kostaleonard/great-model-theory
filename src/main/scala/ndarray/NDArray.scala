@@ -143,6 +143,7 @@ class NDArray[T: ClassTag] private (
     val shape: Array[Int],
     elements: Array[T]
 ) {
+  //TODO throw error if shape mismatch--move code from reshape
   private val strides = Array.fill[Int](shape.length)(1)
   strides.indices.reverse.drop(1).foreach { idx =>
     strides(idx) = shape(idx + 1) * strides(idx + 1)
@@ -170,7 +171,8 @@ class NDArray[T: ClassTag] private (
     *   The shape of the output array. The product must equal elements.length.
     */
   def reshape(targetShape: Seq[Int]): NDArray[T] =
-    new NDArray[T](targetShape.toArray, elements)
+    if(targetShape.product != elements.length) throw new ShapeException(s"Could not reshape array with ${elements.length} elements to $targetShape")
+    else new NDArray[T](targetShape.toArray, elements)
 
   /** Returns true if the arrays have the same shape and elements.
     *
@@ -336,7 +338,7 @@ class NDArray[T: ClassTag] private (
     else if (shape(shapeIdx) == 1) {
       val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
       val sliceIndices = listCartesianProduct(dimensionIndices)
-      val sliceIndicesComplete = sliceIndices.map(indices =>
+      val sliceIndicesComplete = if(sliceIndices.isEmpty) List(List.fill(targetShape.length)(None)) else sliceIndices.map(indices =>
         indices.map(idx => Some(List(idx))) ++ List.fill(
           targetShape.length - shapeIdx
         )(None)

@@ -1,5 +1,6 @@
 package ndarray
 
+import exceptions.ShapeException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -36,6 +37,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr2 = arr1.reshape(List(3, 2))
     assert(arr2.shape sameElements Array(3, 2))
     assert(arr1.flatten() sameElements arr2.flatten())
+  }
+
+  it should "throw an error if reshaped to a size that does not match the number of elements" in {
+    val arr = NDArray.zeros[Int](List(2))
+    assertThrows[ShapeException](arr.reshape(List(2, 2)))
   }
 
   it should "be able to contain arbitrary data types" in {
@@ -308,6 +314,10 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
       NDArray[Int](List(4, 5, 6, 4, 5, 6, 4, 5, 6)).reshape(List(3, 3))
     assert(broadcast.get._1 arrayEquals expectedArr1Broadcast)
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
+    val broadcastSum = broadcast.get._1 + broadcast.get._2
+    assert(broadcastSum.isSuccess)
+    val expectedSum = NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
+    assert(broadcastSum.get arrayEquals expectedSum)
   }
 
   it should "broadcast two arrays to matching shape (8 x 1 x 6 x 1, 7 x 1 x 5)" in {
@@ -317,6 +327,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(broadcast.isSuccess)
     assert(broadcast.get._1.shape sameElements Array(8, 7, 6, 5))
     assert(broadcast.get._2.shape sameElements Array(8, 7, 6, 5))
+    // Computed this sum with NumPy.
+    val broadcastSum = broadcast.get._1 + broadcast.get._2
+    assert(broadcastSum.isSuccess)
+    val sumSlice = broadcastSum.get.slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None)).squeeze()
+    val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
+    assert(sumSlice arrayEquals expectedSlice)
   }
 
   it should "fail to broadcast two incompatible arrays (3, 4)" in {
