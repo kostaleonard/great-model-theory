@@ -5,23 +5,39 @@ import ndarray.NDArray
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-//TODO docstring
+/** A function that is differentiable with respect to its variables.
+  *
+  * Used to define a compute graph for neural networks.
+  *
+  * @tparam T
+  *   The array element type.
+  */
 trait DifferentiableFunction[T] {
-  // TODO docstring
+
+  /** Returns the output of the function for the given input values.
+    *
+    * @param inputs
+    *   A Map of `Input` objects to tensors of arbitrary shape.
+    */
   def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]]
 
-  // TODO docstring
+  /** Returns the gradient of the function with respect to a variable.
+    *
+    * @param withRespectToVariable
+    *   The variable with which to compute the gradient. If we call this
+    *   DifferentiableFunction y and the variable x, this operation produces
+    *   dy/dx.
+    */
   def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T]
 
-  // TODO traverse graph and return inputs--you can use Scala reflect to get all of the case class parameters that are DifferentiableFunctions, check if they are Inputs, and recurse; children should not have to implement
+  /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
-  // TODO can compute output shape from using placeholder inputs
-  // TODO exhaustive case matching
+  /** Returns the output shape of the function. */
   def getOutputShape(implicit classTag: ClassTag[T]): Array[Int] =
     computeOnZeroInputs match {
       case Success(outputs) => outputs.shape
-      case _ => ???
+      case _                => ???
     }
 
   private def computeOnZeroInputs(implicit
@@ -34,6 +50,13 @@ trait DifferentiableFunction[T] {
   }
 }
 
+/** A constant (has 0 gradient).
+  *
+  * @param value
+  *   The constant's value.
+  * @tparam T
+  *   The array element type.
+  */
 case class Constant[T: ClassTag](value: NDArray[T])
     extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
@@ -46,7 +69,11 @@ case class Constant[T: ClassTag](value: NDArray[T])
   override def getInputs: Set[Input[T]] = Set.empty
 }
 
-//TODO if we add implicit classtag to gradient and compute, we can make this a trait I think
+/** A variable (has potentially non-zero gradient).
+  *
+  * @tparam T
+  *   The array element type.
+  */
 abstract class Variable[T: ClassTag] extends DifferentiableFunction[T] {
   val name: String
 
@@ -57,6 +84,15 @@ abstract class Variable[T: ClassTag] extends DifferentiableFunction[T] {
     else Constant(NDArray.zeros(List(1)))
 }
 
+/** A model parameter.
+  *
+  * @param name
+  *   The name of the variable.
+  * @param value
+  *   The current value of the parameter.
+  * @tparam T
+  *   The array element type.
+  */
 case class ModelParameter[T: ClassTag](
     override val name: String,
     value: NDArray[T]
@@ -67,9 +103,19 @@ case class ModelParameter[T: ClassTag](
   override def getInputs: Set[Input[T]] = Set.empty
 }
 
+/** An input variable that users supply.
+  *
+  * Passes user-defined values to the computation graph.
+  *
+  * @param name
+  *   The name of the variable.
+  * @param shape
+  *   The shape of the array containing the variable.
+  * @tparam T
+  *   The array element type.
+  */
 case class Input[T: ClassTag](override val name: String, shape: Seq[Int])
     extends Variable[T] {
-  // TODO if the given value for the input is of the wrong shape, also fail
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     inputs.get(this) match {
       case Some(value) => Success(value)
@@ -80,10 +126,20 @@ case class Input[T: ClassTag](override val name: String, shape: Seq[Int])
   override def getInputs: Set[Input[T]] = Set(this)
 }
 
+/** Adds the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
 case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
     implicit num: Numeric[T]
 ) extends DifferentiableFunction[T] {
-  // TODO can I define this short circuit binary computation somewhere? This will probably be a repeated code segment if I don't. Also could clean things up.
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
       case Success(aValue) =>
@@ -102,6 +158,17 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 }
 
+/** Matrix multiplies the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
 case class MatMul[T](
     a: DifferentiableFunction[T],
     b: DifferentiableFunction[T]

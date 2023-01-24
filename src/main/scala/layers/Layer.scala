@@ -24,8 +24,7 @@ abstract class Layer[T: ClassTag] {
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
-    *   A Map of `Input` objects to tensors of arbitrary shape. The first
-    *   dimension is the batch dimension.
+    *   A Map of `Input` objects to tensors of arbitrary shape.
     */
   def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     getComputationGraph.compute(inputs)
