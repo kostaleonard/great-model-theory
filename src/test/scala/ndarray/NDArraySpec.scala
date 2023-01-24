@@ -316,7 +316,8 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
     val broadcastSum = broadcast.get._1 + broadcast.get._2
     assert(broadcastSum.isSuccess)
-    val expectedSum = NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
+    val expectedSum =
+      NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
     assert(broadcastSum.get arrayEquals expectedSum)
   }
 
@@ -330,7 +331,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     // Computed this sum with NumPy.
     val broadcastSum = broadcast.get._1 + broadcast.get._2
     assert(broadcastSum.isSuccess)
-    val sumSlice = broadcastSum.get.slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None)).squeeze()
+    val sumSlice = broadcastSum.get
+      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .squeeze()
     val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
     assert(sumSlice arrayEquals expectedSlice)
   }
