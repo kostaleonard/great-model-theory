@@ -445,10 +445,11 @@ class NDArray[T: ClassTag] private (
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
     Success(NDArray(result).reshape(shape.toList))
-  } else broadcastWith(other) match {
-    case Success((arr1, arr2)) => arr1 + arr2
-    case Failure(failure) => Failure(failure)
-  }
+  } else
+    broadcastWith(other) match {
+      case Success((arr1, arr2)) => arr1 + arr2
+      case Failure(failure)      => Failure(failure)
+    }
 
   /** Returns the result of element-wise subtraction of the two NDArrays.
     *
@@ -470,7 +471,11 @@ class NDArray[T: ClassTag] private (
     val result =
       thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
     Success(NDArray(result).reshape(shape.toList))
-  } else Failure(new ShapeException("Arrays must have same shape for -"))
+  } else
+    broadcastWith(other) match {
+      case Success((arr1, arr2)) => arr1 - arr2
+      case Failure(failure)      => Failure(failure)
+    }
 
   /** Returns the sum of all elements.
     *

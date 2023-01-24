@@ -423,18 +423,18 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "define - for element-wise subtraction (Int)" in {
     val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
     val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
-    assert(addition.get.flatten() sameElements Array(-1, 0, -1, 1, 0))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    assert(subtraction.get.flatten() sameElements Array(-1, 0, -1, 1, 0))
   }
 
   it should "define - for element-wise subtraction (Double)" in {
     val arr1 = NDArray[Double](List(0.0, 1.0, 2.0, 3.0, 4.0))
     val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
     assert(
-      addition.get arrayApproximatelyEquals NDArray[Double](
+      subtraction.get arrayApproximatelyEquals NDArray[Double](
         List(-1.0, -0.1, -1.0, 0.3, -0.5)
       )
     )
@@ -443,9 +443,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "retain the same shape in element-wise subtraction" in {
     val arr1 = NDArray.arange[Int](List(2, 3, 4))
     val arr2 = NDArray.arange[Int](List(2, 3, 4))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
-    assert(addition.get.shape sameElements Array(2, 3, 4))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    assert(subtraction.get.shape sameElements Array(2, 3, 4))
+  }
+
+  it should "broadcast arrays in element-wise subtraction (1, 2 x 2)" in {
+    val arr1 = NDArray[Int](List(1))
+    val arr2 = NDArray[Int](List(0, 1, 2, 3)).reshape(List(2, 2))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(1, 0, -1, -2)).reshape(List(2, 2))
+    assert(subtraction.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise subtraction (3 x 1, 1 x 3)" in {
+    // Example broadcast taken from https://numpy.org/doc/stable/reference/generated/numpy.broadcast.html
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(List(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(List(1, 3))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(-3, -4, -5, -2, -3, -4, -1, -2, -3)).reshape(List(3, 3))
+    assert(subtraction.get arrayEquals expectedSum)
   }
 
   it should "fail to perform element-wise subtraction on arrays with different shape" in {
