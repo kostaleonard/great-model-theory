@@ -1,6 +1,6 @@
 package layers
 
-import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
+import autodifferentiation.{DifferentiableFunction, Input}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag

@@ -2,11 +2,9 @@ package layers
 
 import activations.{Activation, Identity}
 import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter}
-import exceptions.ShapeException
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
 
 object Dense {
 
@@ -37,7 +35,6 @@ object Dense {
   }
 }
 
-//TODO fix docstring
 /** A densely connected neural network layer.
   *
   * Implements the operation outputs = activation(dot(inputs, kernel) + bias)
@@ -53,17 +50,14 @@ object Dense {
   * sub-tensor of shape (1, 1, d1) (there are batchSize * d0 such sub-tensors).
   * The output in this case will have shape (batchSize, d0, units).
   *
-  * @param inputShape
-  *   The shape of the input arrays that will be passed into this layer. The
-  *   first dimension is considered the batch dimension, and is ignored.
+  * @param previousLayer
+  *   The input to this layer.
   * @param units
   *   The number of neurons in the layer.
-  * @param weightsInitialization
-  *   The initial weights matrix to use. Must be of shape (inputShape.last,
-  *   units). If not provided, the weights matrix is randomly initialized.
-  * @param biasesInitialization
-  *   The initial biases vector to use. Must be of shape (units). If not
-  *   provided, the biases vector is set to zero.
+  * @param weights
+  *   The weights matrix to use. Must be of shape (inputShape.last, units).
+  * @param biases
+  *   The biases vector to use. Must be of shape (units).
   * @param activation
   *   The activation function to apply after the dense transformation.
   * @tparam T
@@ -78,8 +72,6 @@ case class Dense[T: ClassTag] private (
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
 
-  // TODO this graph is correct, but the tests are failing because NDArray does not support broadcasting
-  // TODO use activation function (will need to be differentiable function)
   override def getComputationGraph: DifferentiableFunction[T] =
     Add(
       MatMul(
