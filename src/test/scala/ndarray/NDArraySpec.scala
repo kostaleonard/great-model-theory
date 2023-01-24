@@ -380,6 +380,40 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(addition.get.shape sameElements Array(2, 3, 4))
   }
 
+  it should "broadcast arrays in element-wise addition (1, 2 x 2)" in {
+    val arr1 = NDArray[Int](List(1))
+    val arr2 = NDArray[Int](List(0, 1, 2, 3)).reshape(List(2, 2))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(1, 2, 3, 4)).reshape(List(2, 2))
+    assert(addition.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise addition (3 x 1, 1 x 3)" in {
+    // Example broadcast taken from https://numpy.org/doc/stable/reference/generated/numpy.broadcast.html
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(List(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(List(1, 3))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
+    assert(addition.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise addition (8 x 1 x 6 x 1, 7 x 1 x 5)" in {
+    val arr1 = NDArray.arange[Int](List(8, 1, 6, 1))
+    val arr2 = NDArray.arange[Int](List(7, 1, 5))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    // Computed this sum with NumPy.
+    val sumSlice = addition.get
+      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .squeeze()
+    val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
+    assert(sumSlice arrayEquals expectedSlice)
+  }
+
   it should "fail to perform element-wise addition on arrays with different shape" in {
     val arr1 = NDArray.arange[Int](List(2, 3))
     val arr2 = NDArray.arange[Int](List(3, 2))
