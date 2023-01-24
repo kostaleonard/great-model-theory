@@ -1,5 +1,6 @@
 package ndarray
 
+import exceptions.ShapeException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -36,6 +37,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr2 = arr1.reshape(List(3, 2))
     assert(arr2.shape sameElements Array(3, 2))
     assert(arr1.flatten() sameElements arr2.flatten())
+  }
+
+  it should "throw an error if reshaped to a size that does not match the number of elements" in {
+    val arr = NDArray.zeros[Int](List(2))
+    assertThrows[ShapeException](arr.reshape(List(2, 2)))
   }
 
   it should "be able to contain arbitrary data types" in {
@@ -174,6 +180,178 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr1.arrayApproximatelyEquals(arr2, epsilon = 2.0))
   }
 
+  it should "broadcast an array to the target shape (1 => 2)" in {
+    val arr = NDArray[Int](List(0))
+    val targetShape = List(2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](List(0, 0))
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (1 => 2 x 2)" in {
+    val arr = NDArray[Int](List(0))
+    val targetShape = List(2, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast =
+      NDArray[Int](List(0, 0, 0, 0)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (2 => 3 x 2)" in {
+    val arr = NDArray[Int](List(0, 1))
+    val targetShape = List(3, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast =
+      NDArray[Int](List(0, 1, 0, 1, 0, 1)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (3 x 2 => 2 x 3 x 2)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(3, 2))
+    val targetShape = List(2, 3, 2)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast = NDArray[Int](
+      List(0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5)
+    ).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "broadcast an array to the target shape (3 x 1 => 3 x 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2)).reshape(List(3, 1))
+    val targetShape = List(3, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isSuccess)
+    val expectedArrBroadcast =
+      NDArray[Int](List(0, 0, 0, 1, 1, 1, 2, 2, 2)).reshape(targetShape)
+    assert(broadcast.get arrayEquals expectedArrBroadcast)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (2 => 2 x 3)" in {
+    val arr = NDArray[Int](List(0, 1))
+    val targetShape = List(2, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (2 x 3 => 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val targetShape = List(3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (2 x 3 => 2 x 1)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val targetShape = List(2, 1)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast an array to an invalid target shape (1 x 2 x 3 => 5 x 1 x 3)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(1, 2, 3))
+    val targetShape = List(5, 1, 3)
+    val broadcast = arr.broadcastTo(targetShape)
+    assert(broadcast.isFailure)
+  }
+
+  it should "broadcast two arrays to matching shape (2 x 3, 1)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val arr2 = NDArray[Int](List(0))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    val expectedArr2Broadcast =
+      NDArray[Int](List(0, 0, 0, 0, 0, 0)).reshape(List(2, 3))
+    assert(broadcast.get._1 arrayEquals arr1)
+    assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
+  }
+
+  it should "broadcast two arrays to matching shape (2 x 3, 3)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val arr2 = NDArray[Int](List(0, 1, 2))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    val expectedArr2Broadcast =
+      NDArray[Int](List(0, 1, 2, 0, 1, 2)).reshape(List(2, 3))
+    assert(broadcast.get._1 arrayEquals arr1)
+    assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
+  }
+
+  it should "broadcast two arrays to matching shape (3 x 2, 2)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(3, 2))
+    val arr2 = NDArray[Int](List(0, 1))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    val expectedArr2Broadcast =
+      NDArray[Int](List(0, 1, 0, 1, 0, 1)).reshape(List(3, 2))
+    assert(broadcast.get._1 arrayEquals arr1)
+    assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
+  }
+
+  it should "broadcast two arrays to matching shape (3, 2 x 3)" in {
+    val arr1 = NDArray[Int](List(0, 1, 2))
+    val arr2 = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(List(2, 3))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    val expectedArr1Broadcast =
+      NDArray[Int](List(0, 1, 2, 0, 1, 2)).reshape(List(2, 3))
+    assert(broadcast.get._1 arrayEquals expectedArr1Broadcast)
+    assert(broadcast.get._2 arrayEquals arr2)
+  }
+
+  it should "broadcast two arrays to matching shape (3 x 1, 1 x 3)" in {
+    // Example broadcast taken from https://numpy.org/doc/stable/reference/generated/numpy.broadcast.html
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(List(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(List(1, 3))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    val expectedArr1Broadcast =
+      NDArray[Int](List(1, 1, 1, 2, 2, 2, 3, 3, 3)).reshape(List(3, 3))
+    val expectedArr2Broadcast =
+      NDArray[Int](List(4, 5, 6, 4, 5, 6, 4, 5, 6)).reshape(List(3, 3))
+    assert(broadcast.get._1 arrayEquals expectedArr1Broadcast)
+    assert(broadcast.get._2 arrayEquals expectedArr2Broadcast)
+    val broadcastSum = broadcast.get._1 + broadcast.get._2
+    assert(broadcastSum.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
+    assert(broadcastSum.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast two arrays to matching shape (8 x 1 x 6 x 1, 7 x 1 x 5)" in {
+    val arr1 = NDArray.arange[Int](List(8, 1, 6, 1))
+    val arr2 = NDArray.arange[Int](List(7, 1, 5))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isSuccess)
+    assert(broadcast.get._1.shape sameElements Array(8, 7, 6, 5))
+    assert(broadcast.get._2.shape sameElements Array(8, 7, 6, 5))
+    // Computed this sum with NumPy.
+    val broadcastSum = broadcast.get._1 + broadcast.get._2
+    assert(broadcastSum.isSuccess)
+    val sumSlice = broadcastSum.get
+      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .squeeze()
+    val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
+    assert(sumSlice arrayEquals expectedSlice)
+  }
+
+  it should "fail to broadcast two incompatible arrays (3, 4)" in {
+    val arr1 = NDArray.arange[Int](List(3))
+    val arr2 = NDArray.arange[Int](List(4))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isFailure)
+  }
+
+  it should "fail to broadcast two incompatible arrays (2 x 1, 8 x 4 x 3)" in {
+    val arr1 = NDArray.arange[Int](List(2, 1))
+    val arr2 = NDArray.arange[Int](List(8, 4, 3))
+    val broadcast = arr1 broadcastWith arr2
+    assert(broadcast.isFailure)
+  }
+
   it should "define + for element-wise addition (Int)" in {
     val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
     val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
@@ -202,6 +380,40 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(addition.get.shape sameElements Array(2, 3, 4))
   }
 
+  it should "broadcast arrays in element-wise addition (1, 2 x 2)" in {
+    val arr1 = NDArray[Int](List(1))
+    val arr2 = NDArray[Int](List(0, 1, 2, 3)).reshape(List(2, 2))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(1, 2, 3, 4)).reshape(List(2, 2))
+    assert(addition.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise addition (3 x 1, 1 x 3)" in {
+    // Example broadcast taken from https://numpy.org/doc/stable/reference/generated/numpy.broadcast.html
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(List(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(List(1, 3))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(5, 6, 7, 6, 7, 8, 7, 8, 9)).reshape(List(3, 3))
+    assert(addition.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise addition (8 x 1 x 6 x 1, 7 x 1 x 5)" in {
+    val arr1 = NDArray.arange[Int](List(8, 1, 6, 1))
+    val arr2 = NDArray.arange[Int](List(7, 1, 5))
+    val addition = arr1 + arr2
+    assert(addition.isSuccess)
+    // Computed this sum with NumPy.
+    val sumSlice = addition.get
+      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .squeeze()
+    val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
+    assert(sumSlice arrayEquals expectedSlice)
+  }
+
   it should "fail to perform element-wise addition on arrays with different shape" in {
     val arr1 = NDArray.arange[Int](List(2, 3))
     val arr2 = NDArray.arange[Int](List(3, 2))
@@ -211,18 +423,18 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "define - for element-wise subtraction (Int)" in {
     val arr1 = NDArray[Int](List(0, 1, 2, 3, 4))
     val arr2 = NDArray[Int](List(1, 1, 3, 2, 4))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
-    assert(addition.get.flatten() sameElements Array(-1, 0, -1, 1, 0))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    assert(subtraction.get.flatten() sameElements Array(-1, 0, -1, 1, 0))
   }
 
   it should "define - for element-wise subtraction (Double)" in {
     val arr1 = NDArray[Double](List(0.0, 1.0, 2.0, 3.0, 4.0))
     val arr2 = NDArray[Double](List(1.0, 1.1, 3.0, 2.7, 4.5))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
     assert(
-      addition.get arrayApproximatelyEquals NDArray[Double](
+      subtraction.get arrayApproximatelyEquals NDArray[Double](
         List(-1.0, -0.1, -1.0, 0.3, -0.5)
       )
     )
@@ -231,9 +443,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "retain the same shape in element-wise subtraction" in {
     val arr1 = NDArray.arange[Int](List(2, 3, 4))
     val arr2 = NDArray.arange[Int](List(2, 3, 4))
-    val addition = arr1 - arr2
-    assert(addition.isSuccess)
-    assert(addition.get.shape sameElements Array(2, 3, 4))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    assert(subtraction.get.shape sameElements Array(2, 3, 4))
+  }
+
+  it should "broadcast arrays in element-wise subtraction (1, 2 x 2)" in {
+    val arr1 = NDArray[Int](List(1))
+    val arr2 = NDArray[Int](List(0, 1, 2, 3)).reshape(List(2, 2))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(1, 0, -1, -2)).reshape(List(2, 2))
+    assert(subtraction.get arrayEquals expectedSum)
+  }
+
+  it should "broadcast arrays in element-wise subtraction (3 x 1, 1 x 3)" in {
+    // Example broadcast taken from https://numpy.org/doc/stable/reference/generated/numpy.broadcast.html
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(List(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(List(1, 3))
+    val subtraction = arr1 - arr2
+    assert(subtraction.isSuccess)
+    val expectedSum =
+      NDArray[Int](List(-3, -4, -5, -2, -3, -4, -1, -2, -3)).reshape(List(3, 3))
+    assert(subtraction.get arrayEquals expectedSum)
   }
 
   it should "fail to perform element-wise subtraction on arrays with different shape" in {
