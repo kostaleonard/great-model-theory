@@ -4,14 +4,12 @@ import autodifferentiation.Input
 import layers.Layer
 import ndarray.NDArray
 
-import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
-//TODO update docstring
 /** A neural network.
   *
-  * @param layers
-  *   The layers of the neural network.
+  * @param outputLayer
+  *   The final layer of the neural network.
   * @tparam T
   *   The array element type.
   */
