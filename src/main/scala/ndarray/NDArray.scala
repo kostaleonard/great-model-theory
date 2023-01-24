@@ -327,7 +327,7 @@ class NDArray[T: ClassTag] private (
     else {
       val onesPaddedShapeThis =
         shape.reverse.padTo(targetShape.length, 1).reverse
-      val onesPaddedThis = reshape(onesPaddedShapeThis)
+      val onesPaddedThis = reshape(onesPaddedShapeThis.toList)
       onesPaddedThis.broadcastToWithMatchingNumDimensions(
         targetShape,
         targetShape.length - 1
@@ -357,7 +357,7 @@ class NDArray[T: ClassTag] private (
         (0 until targetShape(shapeIdx)).flatMap(_ => slice(indices).flatten())
       )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
-      val broadcastArray = NDArray[T](sliceElements).reshape(newShape)
+      val broadcastArray = NDArray[T](sliceElements).reshape(newShape.toList)
       broadcastArray.broadcastToWithMatchingNumDimensions(
         targetShape,
         shapeIdx - 1

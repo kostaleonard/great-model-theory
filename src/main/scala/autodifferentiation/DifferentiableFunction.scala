@@ -21,6 +21,7 @@ trait DifferentiableFunction[T] {
   def getOutputShape(implicit classTag: ClassTag[T]): Array[Int] =
     computeOnZeroInputs match {
       case Success(outputs) => outputs.shape
+      case _ => ???
     }
 
   private def computeOnZeroInputs(implicit
