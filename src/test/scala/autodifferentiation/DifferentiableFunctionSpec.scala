@@ -41,4 +41,22 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(output.isSuccess)
     assert(output.get arrayEquals NDArray.zeros(value.shape))
   }
+
+  "A Variable" should "have gradient 1 with respect to itself" in {
+    val modelParameter = ModelParameter[Float]("Theta", NDArray.ofValue(Array(2, 3), 5))
+    val gradient = modelParameter.gradient(modelParameter)
+    val output = gradient.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals NDArray.ones(Array(2, 3)))
+  }
+
+  it should "have gradient 0 with respect to other variables" in {
+    val modelParameter = ModelParameter[Float]("Theta", NDArray.ofValue(Array(2, 3), 5))
+    val placeholderVariable = Input[Float]("X", Array(1))
+    // Take the gradient of f() = Theta with respect to unrelated variable X.
+    val gradient = modelParameter.gradient(placeholderVariable)
+    val output = gradient.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals NDArray.zeros(Array(2, 3)))
+  }
 }
