@@ -228,7 +228,10 @@ class NDArray[T: ClassTag] private (
   def arrayApproximatelyEquals(
       other: NDArray[T],
       epsilon: Double = 1e-5
-  ): Boolean = this.~=(other, epsilon = epsilon).flatten().forall(identity)
+  ): Boolean = this.~=(other, epsilon = epsilon) match {
+    case Success(mask) => mask.flatten().forall(identity)
+    case _ => false
+  }
 
   /** Returns false if the arrays have the same shape and elements within error.
     *
@@ -255,10 +258,9 @@ class NDArray[T: ClassTag] private (
     *   position. Each element of the mask is true if the arrays are
     *   approximately equal at that position, false otherwise. The mask is of
     *   the same shape as the arrays when broadcast together. If the arrays are
-    *   of incompatible shapes, returns a 1-element array containing the value
-    *   false.
+    *   of incompatible shapes, returns failure.
     */
-  def ~=(other: NDArray[T], epsilon: Double = 1e-5): NDArray[Boolean] =
+  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] =
     if (shape sameElements other.shape) {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
@@ -272,14 +274,14 @@ class NDArray[T: ClassTag] private (
               thisFlatAsFloat(idx) - otherFlatAsFloat(idx)
             ) <= epsilonAsFloat
           )
-          NDArray[Boolean](mask).reshape(shape.toList)
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
         case _ if classTag[T] == classTag[Double] =>
           val thisFlatAsDouble = thisFlat.asInstanceOf[Array[Double]]
           val otherFlatAsDouble = otherFlat.asInstanceOf[Array[Double]]
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsDouble(idx) - otherFlatAsDouble(idx)) <= epsilon
           )
-          NDArray[Boolean](mask).reshape(shape.toList)
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
         case _ if classTag[T] == classTag[Int] =>
           val epsilonAsInt = epsilon.asInstanceOf[Int]
           val thisFlatAsInt = thisFlat.asInstanceOf[Array[Int]]
@@ -287,7 +289,7 @@ class NDArray[T: ClassTag] private (
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsInt(idx) - otherFlatAsInt(idx)) <= epsilonAsInt
           )
-          NDArray[Boolean](mask).reshape(shape.toList)
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
         case _ if classTag[T] == classTag[Long] =>
           val epsilonAsLong = epsilon.asInstanceOf[Long]
           val thisFlatAsLong = thisFlat.asInstanceOf[Array[Long]]
@@ -297,11 +299,11 @@ class NDArray[T: ClassTag] private (
               thisFlatAsLong(idx) - otherFlatAsLong(idx)
             ) <= epsilonAsLong
           )
-          NDArray[Boolean](mask).reshape(shape.toList)
+          Success(NDArray[Boolean](mask).reshape(shape.toList))
       }
     } else broadcastWith(other) match {
       case Success((broadcastThis, broadcastOther)) => broadcastThis.~=(broadcastOther, epsilon = epsilon)
-      case _ => NDArray(List(false))
+      case Failure(failure) => Failure(failure)
     }
 
   /** Returns this array broadcast to the target shape.
