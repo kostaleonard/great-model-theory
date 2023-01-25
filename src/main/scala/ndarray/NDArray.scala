@@ -179,8 +179,8 @@ class NDArray[T: ClassTag] private (
     * @param targetShape
     *   The shape of the output array. The product must equal elements.length.
     */
-  def reshape(targetShape: Seq[Int]): NDArray[T] =
-    new NDArray[T](targetShape.toArray, elements)
+  def reshape(targetShape: Array[Int]): NDArray[T] =
+    new NDArray[T](targetShape, elements)
 
   /** Returns true if the arrays have the same shape and elements.
     *
@@ -215,7 +215,7 @@ class NDArray[T: ClassTag] private (
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
-      Success(NDArray[Boolean](mask).reshape(shape.toList))
+      Success(NDArray[Boolean](mask).reshape(shape))
     } else
       broadcastWith(other) match {
         case Success((broadcastThis, broadcastOther)) =>
@@ -280,14 +280,14 @@ class NDArray[T: ClassTag] private (
               thisFlatAsFloat(idx) - otherFlatAsFloat(idx)
             ) <= epsilonAsFloat
           )
-          Success(NDArray[Boolean](mask).reshape(shape.toList))
+          Success(NDArray[Boolean](mask).reshape(shape))
         case _ if classTag[T] == classTag[Double] =>
           val thisFlatAsDouble = thisFlat.asInstanceOf[Array[Double]]
           val otherFlatAsDouble = otherFlat.asInstanceOf[Array[Double]]
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsDouble(idx) - otherFlatAsDouble(idx)) <= epsilon
           )
-          Success(NDArray[Boolean](mask).reshape(shape.toList))
+          Success(NDArray[Boolean](mask).reshape(shape))
         case _ if classTag[T] == classTag[Int] =>
           val epsilonAsInt = epsilon.asInstanceOf[Int]
           val thisFlatAsInt = thisFlat.asInstanceOf[Array[Int]]
@@ -295,7 +295,7 @@ class NDArray[T: ClassTag] private (
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsInt(idx) - otherFlatAsInt(idx)) <= epsilonAsInt
           )
-          Success(NDArray[Boolean](mask).reshape(shape.toList))
+          Success(NDArray[Boolean](mask).reshape(shape))
         case _ if classTag[T] == classTag[Long] =>
           val epsilonAsLong = epsilon.asInstanceOf[Long]
           val thisFlatAsLong = thisFlat.asInstanceOf[Array[Long]]
@@ -305,7 +305,7 @@ class NDArray[T: ClassTag] private (
               thisFlatAsLong(idx) - otherFlatAsLong(idx)
             ) <= epsilonAsLong
           )
-          Success(NDArray[Boolean](mask).reshape(shape.toList))
+          Success(NDArray[Boolean](mask).reshape(shape))
       }
     } else
       broadcastWith(other) match {
@@ -327,17 +327,17 @@ class NDArray[T: ClassTag] private (
     * @param targetShape
     *   The shape to which to broadcast the array.
     */
-  def broadcastTo(targetShape: Seq[Int]): Try[NDArray[T]] =
+  def broadcastTo(targetShape: Array[Int]): Try[NDArray[T]] =
     if (shape.length > targetShape.length)
       Failure(
         new ShapeException(
-          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape $targetShape"
+          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape.mkString("Array(", ", ", ")")}"
         )
       )
     else {
       val onesPaddedShapeThis =
         shape.reverse.padTo(targetShape.length, 1).reverse
-      val onesPaddedThis = reshape(onesPaddedShapeThis.toList)
+      val onesPaddedThis = reshape(onesPaddedShapeThis)
       onesPaddedThis.broadcastToWithMatchingNumDimensions(
         targetShape,
         targetShape.length - 1
@@ -346,7 +346,7 @@ class NDArray[T: ClassTag] private (
 
   @tailrec
   private def broadcastToWithMatchingNumDimensions(
-      targetShape: Seq[Int],
+      targetShape: Array[Int],
       shapeIdx: Int
   ): Try[NDArray[T]] =
     if (shapeIdx < 0) Success(this)
@@ -367,7 +367,7 @@ class NDArray[T: ClassTag] private (
         (0 until targetShape(shapeIdx)).flatMap(_ => slice(indices).flatten())
       )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
-      val broadcastArray = NDArray[T](sliceElements).reshape(newShape.toList)
+      val broadcastArray = NDArray[T](sliceElements).reshape(newShape)
       broadcastArray.broadcastToWithMatchingNumDimensions(
         targetShape,
         shapeIdx - 1
@@ -412,7 +412,7 @@ class NDArray[T: ClassTag] private (
     * @return
     *   The shape of the two broadcast arrays.
     */
-  private def getBroadcastShapeWith(other: NDArray[T]): Try[Seq[Int]] = {
+  private def getBroadcastShapeWith(other: NDArray[T]): Try[Array[Int]] = {
     val finalNumDimensions = shape.length max other.shape.length
     val onesPaddedShapeThis = shape.reverse.padTo(finalNumDimensions, 1).reverse
     val onesPaddedShapeOther =
@@ -426,7 +426,7 @@ class NDArray[T: ClassTag] private (
       Success(
         (0 until finalNumDimensions).map(idx =>
           onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx)
-        )
+        ).toArray
       )
     else
       Failure(
@@ -454,7 +454,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape.toList))
+    Success(NDArray(result).reshape(shape))
   } else
     broadcastWith(other) match {
       case Success((arr1, arr2)) => arr1 + arr2
@@ -480,7 +480,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape.toList))
+    Success(NDArray(result).reshape(shape))
   } else
     broadcastWith(other) match {
       case Success((arr1, arr2)) => arr1 - arr2
@@ -496,7 +496,7 @@ class NDArray[T: ClassTag] private (
   def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
-  def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1).toList)
+  def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 
   /** Returns a slice of the NDArray.
     *
@@ -518,7 +518,7 @@ class NDArray[T: ClassTag] private (
         }
       )
       .toList
-    val resultShape = dimensionIndices.map(_.length)
+    val resultShape = dimensionIndices.map(_.length).toArray
     val sliceIndices = listCartesianProduct(dimensionIndices)
     val sliceElements =
       sliceIndices.map(elementIndices => apply(elementIndices))
@@ -558,7 +558,7 @@ class NDArray[T: ClassTag] private (
         }
       }
       Success(
-        NDArray[T](newElementsReversed.reverse).reshape(List(numRows, numCols))
+        NDArray[T](newElementsReversed.reverse).reshape(Array(numRows, numCols))
       )
     }
 
@@ -618,7 +618,7 @@ class NDArray[T: ClassTag] private (
           (slice(sliceIndicesComplete).squeeze() dot other).get
         }
         val newElements = newElementsArrays.map(_.flatten().head)
-        Success(NDArray[T](newElements).reshape(resultShape.toList))
+        Success(NDArray[T](newElements).reshape(resultShape))
       }
     def multidimensionalInnerProduct(): Try[NDArray[T]] =
       if (shape.last != other.shape(other.shape.length - 2))
@@ -653,7 +653,7 @@ class NDArray[T: ClassTag] private (
               .squeeze()).get.flatten().head
           }
         }
-        Success(NDArray[T](newElements).reshape(resultShape.toList))
+        Success(NDArray[T](newElements).reshape(resultShape))
       }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
     else if (shape.length == 2 && other.shape.length == 2) matmul(other)
@@ -696,7 +696,7 @@ class NDArray[T: ClassTag] private (
     *   The return type of the map function.
     */
   def map[B: ClassTag](f: T => B): NDArray[B] =
-    NDArray(flatten().toList.map(f)).reshape(shape.toList)
+    NDArray(flatten().toList.map(f)).reshape(shape)
 
   /** Returns a new NDArray by reducing slices on the given axis.
     *
@@ -734,7 +734,7 @@ class NDArray[T: ClassTag] private (
     val newShape = shape.indices.flatMap(idx =>
       if (idx == axis) None
       else Some(shape(idx))
-    )
+    ).toArray
     NDArray[B](newElements).reshape(newShape)
   }
 }
