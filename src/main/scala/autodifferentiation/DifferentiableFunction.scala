@@ -33,7 +33,6 @@ trait DifferentiableFunction[T] {
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
-  //TODO use Try
   /** Returns the output shape of the function. */
   def getOutputShape(implicit classTag: ClassTag[T]): Array[Int] =
     computeOnZeroInputs match {
@@ -185,7 +184,6 @@ case class MatMul[T](
       case failure => failure
     }
 
-  //TODO implement gradient
   override def gradient(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] = ???

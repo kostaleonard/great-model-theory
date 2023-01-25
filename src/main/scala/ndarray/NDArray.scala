@@ -356,9 +356,9 @@ class NDArray[T: ClassTag] private (
     else if (shape(shapeIdx) == 1) {
       val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
       val sliceIndices = listCartesianProduct(dimensionIndices)
-      //TODO remove type info
-      val sliceIndicesComplete: List[Array[Option[Array[Int]]]] =
-        if (sliceIndices.isEmpty) List(Array.fill(targetShape.length)(None))
+      val sliceIndicesComplete =
+        if (sliceIndices.isEmpty)
+          List(Array.fill[Option[Array[Int]]](targetShape.length)(None))
         else
           sliceIndices.map(indices =>
             indices.map(idx => Some(Array(idx))).toArray ++ Array.fill(
@@ -500,7 +500,6 @@ class NDArray[T: ClassTag] private (
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 
-  //TODO argument should be array
   /** Returns a slice of the NDArray.
     *
     * @param indices
@@ -516,10 +515,11 @@ class NDArray[T: ClassTag] private (
     val dimensionIndices = indices.indices
       .map(dimensionIdx =>
         indices(dimensionIdx) match {
-          case None            => List.range(0, shape(dimensionIdx))
+          case None             => List.range(0, shape(dimensionIdx))
           case Some(indexArray) => indexArray.toList
         }
-      ).toList
+      )
+      .toList
     val resultShape = dimensionIndices.map(_.length)
     val sliceIndices = listCartesianProduct(dimensionIndices)
     val sliceElements =
@@ -616,7 +616,8 @@ class NDArray[T: ClassTag] private (
         val sliceIndices = listCartesianProduct(dimensionIndices)
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElementsArrays = sliceIndices.map { indices =>
-          val sliceIndicesComplete = (indices.map(idx => Some(Array(idx))) :+ None).toArray
+          val sliceIndicesComplete =
+            (indices.map(idx => Some(Array(idx))) :+ None).toArray
           (slice(sliceIndicesComplete).squeeze() dot other).get
         }
         val newElements = newElementsArrays.map(_.flatten().head)
