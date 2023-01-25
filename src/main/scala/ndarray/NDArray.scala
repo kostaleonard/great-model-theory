@@ -205,8 +205,9 @@ class NDArray[T: ClassTag] private (
     * @return
     *   A mask describing the equality of the arrays at each position. Each
     *   element of the mask is true if the arrays are equal at that position,
-    *   false otherwise. The mask is of the same shape as the arrays. If the
-    *   arrays are of different shapes, returns Failure.
+    *   false otherwise. The mask is of the same shape as the arrays when
+    *   broadcast together. If the arrays are of incompatible shapes, returns
+    *   failure.
     */
   def ==(other: NDArray[T]): Try[NDArray[Boolean]] =
     if (shape sameElements other.shape) {
@@ -215,7 +216,11 @@ class NDArray[T: ClassTag] private (
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
       Success(NDArray[Boolean](mask).reshape(shape.toList))
     } else
-      Failure(new ShapeException("Arrays must have same shape for comparison"))
+      broadcastWith(other) match {
+        case Success((broadcastThis, broadcastOther)) =>
+          broadcastThis == broadcastOther
+        case Failure(failure) => Failure(failure)
+      }
 
   /** Returns true if the arrays have the same shape and elements within error.
     *
@@ -257,8 +262,8 @@ class NDArray[T: ClassTag] private (
     *   A mask describing the approximate equality of the arrays at each
     *   position. Each element of the mask is true if the arrays are
     *   approximately equal at that position, false otherwise. The mask is of
-    *   the same shape as the arrays. If the arrays are of different shapes,
-    *   returns Failure.
+    *   the same shape as the arrays when broadcast together. If the arrays are
+    *   of incompatible shapes, returns failure.
     */
   def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] =
     if (shape sameElements other.shape) {
@@ -302,7 +307,11 @@ class NDArray[T: ClassTag] private (
           Success(NDArray[Boolean](mask).reshape(shape.toList))
       }
     } else
-      Failure(new ShapeException("Arrays must have same shape for comparison"))
+      broadcastWith(other) match {
+        case Success((broadcastThis, broadcastOther)) =>
+          broadcastThis.~=(broadcastOther, epsilon = epsilon)
+        case Failure(failure) => Failure(failure)
+      }
 
   /** Returns this array broadcast to the target shape.
     *

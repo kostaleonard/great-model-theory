@@ -93,7 +93,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(!mask.get.apply(List(5)))
   }
 
-  it should "fail on == comparison with an array of different shape" in {
+  it should "produce a mask on == comparison with arrays that can be broadcast together (3 x 1, 3)" in {
+    val arr1 = NDArray(List(0, 1, 2)).reshape(List(3, 1))
+    val arr2 = NDArray(List(1, 1, 1))
+    val mask = arr1 == arr2
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements Array(3, 3))
+    assert(!mask.get.apply(List(0, 0)))
+    assert(!mask.get.apply(List(0, 1)))
+    assert(!mask.get.apply(List(0, 2)))
+    assert(mask.get.apply(List(1, 0)))
+    assert(mask.get.apply(List(1, 1)))
+    assert(mask.get.apply(List(1, 2)))
+    assert(!mask.get.apply(List(2, 0)))
+    assert(!mask.get.apply(List(2, 1)))
+    assert(!mask.get.apply(List(2, 2)))
+  }
+
+  it should "produce a 1-element array on == comparison with arrays that cannot be broadcast together" in {
     val arr1 = NDArray.arange[Int](List(2, 3))
     val arr2 = NDArray.arange[Int](List(3, 2))
     val mask = arr1 == arr2
@@ -155,7 +172,36 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(!mask.get.apply(List(4)))
   }
 
-  it should "fail on ~= comparison with an array of different shape" in {
+  it should "produce a mask on ~= comparison with arrays that can be broadcast together (3 x 1, 3)" in {
+    val arr1 = NDArray[Double](List(0, 1, 2)).reshape(List(3, 1))
+    val arr2 = NDArray[Double](List(0.1, 0.9999999, 2.0))
+    val mask = arr1 ~= arr2
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements Array(3, 3))
+    assert(!mask.get.apply(List(0, 0)))
+    assert(!mask.get.apply(List(0, 1)))
+    assert(!mask.get.apply(List(0, 2)))
+    assert(!mask.get.apply(List(1, 0)))
+    assert(mask.get.apply(List(1, 1)))
+    assert(!mask.get.apply(List(1, 2)))
+    assert(!mask.get.apply(List(2, 0)))
+    assert(!mask.get.apply(List(2, 1)))
+    assert(mask.get.apply(List(2, 2)))
+  }
+
+  it should "produce a mask on ~= comparison with arrays that can be broadcast together and large epsilon (2 x 1, 2)" in {
+    val arr1 = NDArray[Double](List(0, 1)).reshape(List(2, 1))
+    val arr2 = NDArray[Double](List(0.1, 0.9999999))
+    val mask = arr1.~=(arr2, epsilon = 0.5)
+    assert(mask.isSuccess)
+    assert(mask.get.shape sameElements Array(2, 2))
+    assert(mask.get.apply(List(0, 0)))
+    assert(!mask.get.apply(List(0, 1)))
+    assert(!mask.get.apply(List(1, 0)))
+    assert(mask.get.apply(List(1, 1)))
+  }
+
+  it should "fail on ~= comparison with arrays that cannot be broadcast together" in {
     val arr1 = NDArray.arange[Double](List(2, 3))
     val arr2 = NDArray.arange[Double](List(3, 2))
     val mask = arr1 ~= arr2
