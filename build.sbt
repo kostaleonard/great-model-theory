@@ -4,7 +4,7 @@ ThisBuild / scalaVersion := "2.13.9"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "igneous",
+    name := "great-model-theory",
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.12" % Test
   )
 
