@@ -186,10 +186,7 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare.
     */
-  def arrayEquals(other: NDArray[T]): Boolean = this == other match {
-    case Success(mask) => mask.flatten().forall(identity)
-    case _             => false
-  }
+  def arrayEquals(other: NDArray[T]): Boolean = (this == other).flatten().forall(identity)
 
   /** Returns false if the arrays have the same shape and elements.
     *
@@ -205,17 +202,17 @@ class NDArray[T: ClassTag] private (
     * @return
     *   A mask describing the equality of the arrays at each position. Each
     *   element of the mask is true if the arrays are equal at that position,
-    *   false otherwise. The mask is of the same shape as the arrays. If the
-    *   arrays are of different shapes, returns Failure.
+    *   false otherwise. The mask is of the same shape as the arrays when
+    *   broadcast together. If the arrays are of incompatible shapes, returns
+    *   a 1-element array containing the value false.
     */
-  def ==(other: NDArray[T]): Try[NDArray[Boolean]] =
+  def ==(other: NDArray[T]): NDArray[Boolean] =
     if (shape sameElements other.shape) {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
-      Success(NDArray[Boolean](mask).reshape(shape.toList))
-    } else
-      Failure(new ShapeException("Arrays must have same shape for comparison"))
+      NDArray[Boolean](mask).reshape(shape.toList)
+    } else NDArray(List(false))
 
   /** Returns true if the arrays have the same shape and elements within error.
     *

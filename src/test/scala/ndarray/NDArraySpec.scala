@@ -74,30 +74,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val arr1 = NDArray.arange[Int](List(2, 3))
     val arr2 = NDArray.arange[Int](List(2, 3))
     val mask = arr1 == arr2
-    assert(mask.isSuccess)
-    assert(mask.get.shape sameElements arr1.shape)
-    assert(mask.get.flatten().forall(identity))
+    assert(mask.shape sameElements arr1.shape)
+    assert(mask.flatten().forall(identity))
   }
 
   it should "produce a mask of only the equal elements on == comparison with an array of the same shape and different elements" in {
     val arr1 = NDArray(List(0, 1, 2, 3, 4, 5))
     val arr2 = NDArray(List(0, 1, 9, 9, 4, 9))
     val mask = arr1 == arr2
-    assert(mask.isSuccess)
-    assert(mask.get.shape sameElements arr1.shape)
-    assert(mask.get.apply(List(0)))
-    assert(mask.get.apply(List(1)))
-    assert(!mask.get.apply(List(2)))
-    assert(!mask.get.apply(List(3)))
-    assert(mask.get.apply(List(4)))
-    assert(!mask.get.apply(List(5)))
+    assert(mask.shape sameElements arr1.shape)
+    assert(mask(List(0)))
+    assert(mask(List(1)))
+    assert(!mask(List(2)))
+    assert(!mask(List(3)))
+    assert(mask(List(4)))
+    assert(!mask(List(5)))
   }
 
-  it should "fail on == comparison with an array of different shape" in {
+  //TODO == for broadcast
+
+  it should "produce a 1-element array on == comparison with arrays that cannot be broadcast together" in {
     val arr1 = NDArray.arange[Int](List(2, 3))
     val arr2 = NDArray.arange[Int](List(3, 2))
     val mask = arr1 == arr2
-    assert(mask.isFailure)
+    assert(mask.shape sameElements Array(1))
   }
 
   it should "be approximately equal in comparison with an array of the same shape and similar elements" in {
