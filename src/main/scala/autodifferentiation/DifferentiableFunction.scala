@@ -30,6 +30,8 @@ trait DifferentiableFunction[T] {
     */
   def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T]
 
+  //TODO implement
+  //TODO add tests for this under DifferentiableFunction ("A DifferentiableFunction should...")
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
@@ -74,8 +76,9 @@ case class Constant[T: ClassTag](value: NDArray[T])
   * @tparam T
   *   The array element type.
   */
-abstract class Variable[T: ClassTag] extends DifferentiableFunction[T] {
+trait Variable[T] extends DifferentiableFunction[T] {
   val name: String
+  implicit val classTag: ClassTag[T]
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -93,10 +96,10 @@ abstract class Variable[T: ClassTag] extends DifferentiableFunction[T] {
   * @tparam T
   *   The array element type.
   */
-case class ModelParameter[T: ClassTag](
+case class ModelParameter[T](
     override val name: String,
     value: NDArray[T]
-) extends Variable[T] {
+)(override implicit val classTag: ClassTag[T]) extends Variable[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     Success(value)
 
@@ -114,7 +117,7 @@ case class ModelParameter[T: ClassTag](
   * @tparam T
   *   The array element type.
   */
-case class Input[T: ClassTag](override val name: String, shape: Array[Int])
+case class Input[T](override val name: String, shape: Array[Int])(override implicit val classTag: ClassTag[T])
     extends Variable[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     inputs.get(this) match {
