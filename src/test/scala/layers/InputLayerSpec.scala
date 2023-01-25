@@ -9,7 +9,7 @@ class InputLayerSpec extends AnyFlatSpec with Matchers {
 
   "An InputLayer" should "create a computation graph with a single input node" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     assert(inputLayer.getComputationGraph == input)
   }

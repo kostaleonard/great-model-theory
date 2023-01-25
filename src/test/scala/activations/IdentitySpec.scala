@@ -8,7 +8,7 @@ class IdentitySpec extends AnyFlatSpec with Matchers {
 
   "An Identity activation" should "make no change to the inputs" in {
     val identity = Identity[Float]()
-    val arr = NDArray.arange[Float](List(2, 3))
+    val arr = NDArray.arange[Float](Array(2, 3))
     assert(arr.flatten() sameElements identity.activation(arr).flatten())
   }
 }

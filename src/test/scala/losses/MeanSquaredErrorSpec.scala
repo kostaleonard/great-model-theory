@@ -61,8 +61,8 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "fail to compute the loss on mismatching shapes" in {
-    val y_true = NDArray.ones[Float](List(2, 3))
-    val y_pred = NDArray.ones[Float](List(3, 2))
+    val y_true = NDArray.ones[Float](Array(2, 3))
+    val y_pred = NDArray.ones[Float](Array(3, 2))
     val mse = new MeanSquaredError[Float]
     val loss = mse.compute_loss(y_true, y_pred)
     assert(loss.isFailure)

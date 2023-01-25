@@ -16,10 +16,10 @@ object Dense {
       activation: Activation[T] = Identity[T]()
   )(implicit num: Numeric[T]): Dense[T] = {
     val weights: NDArray[T] = weightsInitialization.getOrElse(
-      NDArray.random[T](List(previousLayer.getOutputShape.last, units))
+      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
     )
     val biases: NDArray[T] =
-      biasesInitialization.getOrElse(NDArray.zeros[T](List(units)))
+      biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
     Dense(previousLayer, units, weights, biases, activation)
   }
 
@@ -29,8 +29,8 @@ object Dense {
       activation: Activation[T] = Identity[T]()
   )(implicit num: Numeric[T]): Dense[T] = {
     val weights =
-      NDArray.random[T](List(previousLayer.getOutputShape.last, units))
-    val biases = NDArray.zeros[T](List(units))
+      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
+    val biases = NDArray.zeros[T](Array(units))
     Dense(previousLayer, units, weights, biases, activation)
   }
 }
