@@ -10,7 +10,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
 
   "A Dense layer" should "have randomly initialized weights" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, 2)
     val head = dense.weights(List(0, 0))
@@ -19,7 +19,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
 
   it should "have zero-initialized biases" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, 2)
     assert(dense.biases.flatten().forall(_ == 0))
@@ -27,7 +27,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
 
   it should "have weights and biases of the correct shapes" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, 2)
     assert(dense.weights.shape sameElements Array(4, 2))
@@ -36,26 +36,26 @@ class DenseSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the dot product of the inputs and weights (rank 2)" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val units = 2
     val dense = Dense.withInitialization(
       inputLayer,
       units,
       weightsInitialization =
-        Some(NDArray.arange[Float](List(numFeatures, units))),
+        Some(NDArray.arange[Float](Array(numFeatures, units))),
       biasesInitialization = None
     )
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.arange[Float](List(sampleBatchSize, numFeatures)))
+      Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
     assert(outputs.isSuccess)
     assert(outputs.get.shape sameElements Array(sampleBatchSize, units))
     assert(
       outputs.get arrayApproximatelyEquals NDArray[Float](
         List(28f, 34f, 76f, 98f)
-      ).reshape(List(sampleBatchSize, units))
+      ).reshape(Array(sampleBatchSize, units))
     )
   }
 
@@ -64,7 +64,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeaturesCols = 3
     val input = Input[Float](
       "X",
-      List(BATCH_SIZE_PLACEHOLDER, numFeaturesRows, numFeaturesCols)
+      Array(BATCH_SIZE_PLACEHOLDER, numFeaturesRows, numFeaturesCols)
     )
     val inputLayer = InputLayer(input)
     val units = 2
@@ -72,13 +72,13 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       inputLayer,
       units,
       weightsInitialization =
-        Some(NDArray.arange[Float](List(numFeaturesCols, units))),
+        Some(NDArray.arange[Float](Array(numFeaturesCols, units))),
       biasesInitialization = None
     )
     val sampleBatchSize = 2
     val inputs = Map(
       input -> NDArray.arange[Float](
-        List(sampleBatchSize, numFeaturesRows, numFeaturesCols)
+        Array(sampleBatchSize, numFeaturesRows, numFeaturesCols)
       )
     )
     val outputs = dense(inputs)
@@ -94,43 +94,43 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       outputs.get arrayApproximatelyEquals NDArray[Float](
         List(10f, 13f, 28f, 40f, 46f, 67f, 64f, 94f, 82f, 121f, 100f, 148f,
           118f, 175f, 136f, 202f)
-      ).reshape(List(sampleBatchSize, numFeaturesRows, units))
+      ).reshape(Array(sampleBatchSize, numFeaturesRows, units))
     )
   }
 
   it should "compute the dot product of the inputs and weights and add biases" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val units = 2
     val dense = Dense.withInitialization(
       inputLayer,
       units,
       weightsInitialization =
-        Some(NDArray.arange[Float](List(numFeatures, units))),
-      biasesInitialization = Some(NDArray.ones[Float](List(units)))
+        Some(NDArray.arange[Float](Array(numFeatures, units))),
+      biasesInitialization = Some(NDArray.ones[Float](Array(units)))
     )
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.arange[Float](List(sampleBatchSize, numFeatures)))
+      Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
     assert(outputs.isSuccess)
     assert(outputs.get.shape sameElements Array(sampleBatchSize, units))
     assert(
       outputs.get arrayApproximatelyEquals NDArray[Float](
         List(29f, 35f, 77f, 99f)
-      ).reshape(List(sampleBatchSize, units))
+      ).reshape(Array(sampleBatchSize, units))
     )
   }
 
   it should "fail to transform incorrectly shaped inputs" in {
     val numFeatures = 4
-    val input = Input[Float]("X", List(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, 2)
     val sampleBatchSize = 2
     val inputs = Map(
-      input -> NDArray.arange[Float](List(sampleBatchSize, numFeatures + 1))
+      input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures + 1))
     )
     val outputs = dense(inputs)
     assert(outputs.isFailure)

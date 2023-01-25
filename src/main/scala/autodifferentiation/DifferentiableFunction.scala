@@ -64,7 +64,7 @@ case class Constant[T: ClassTag](value: NDArray[T])
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape.toList))
+  ): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
 
   override def getInputs: Set[Input[T]] = Set.empty
 }
@@ -80,8 +80,8 @@ abstract class Variable[T: ClassTag] extends DifferentiableFunction[T] {
   override def gradient(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] =
-    if (withRespectToVariable == this) Constant(NDArray.ones(List(1)))
-    else Constant(NDArray.zeros(List(1)))
+    if (withRespectToVariable == this) Constant(NDArray.ones(Array(1)))
+    else Constant(NDArray.zeros(Array(1)))
 }
 
 /** A model parameter.
@@ -114,7 +114,7 @@ case class ModelParameter[T: ClassTag](
   * @tparam T
   *   The array element type.
   */
-case class Input[T: ClassTag](override val name: String, shape: Seq[Int])
+case class Input[T: ClassTag](override val name: String, shape: Array[Int])
     extends Variable[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     inputs.get(this) match {
