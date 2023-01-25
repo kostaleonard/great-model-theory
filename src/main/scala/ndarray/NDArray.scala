@@ -167,7 +167,7 @@ class NDArray[T: ClassTag] private (
     * @param indices
     *   The indices to an element in the array. Must be of length shape.length.
     */
-  def apply(indices: Seq[Int]): T = elements(
+  def apply(indices: Array[Int]): T = elements(
     indices.indices.foldRight(0)((idx, accumulator) =>
       indices(idx) * strides(idx) + accumulator
     )
@@ -357,10 +357,11 @@ class NDArray[T: ClassTag] private (
       val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
       val sliceIndices = listCartesianProduct(dimensionIndices)
       val sliceIndicesComplete =
-        if (sliceIndices.isEmpty) List(List.fill(targetShape.length)(None))
+        if (sliceIndices.isEmpty)
+          List(Array.fill[Option[Array[Int]]](targetShape.length)(None))
         else
           sliceIndices.map(indices =>
-            indices.map(idx => Some(List(idx))) ++ List.fill(
+            indices.map(idx => Some(Array(idx))).toArray ++ Array.fill(
               targetShape.length - shapeIdx
             )(None)
           )
@@ -510,20 +511,20 @@ class NDArray[T: ClassTag] private (
     * @return
     *   A slice of the NDArray. The shape is determined by indices.
     */
-  def slice(indices: List[Option[List[Int]]]): NDArray[T] = {
+  def slice(indices: Array[Option[Array[Int]]]): NDArray[T] = {
     val dimensionIndices = indices.indices
       .map(dimensionIdx =>
         indices(dimensionIdx) match {
-          case None            => List.range(0, shape(dimensionIdx))
-          case Some(indexList) => indexList
+          case None             => List.range(0, shape(dimensionIdx))
+          case Some(indexArray) => indexArray.toList
         }
       )
       .toList
-    val resultShape = dimensionIndices.map(_.length).toArray
+    val resultShape = dimensionIndices.map(_.length)
     val sliceIndices = listCartesianProduct(dimensionIndices)
     val sliceElements =
-      sliceIndices.map(elementIndices => apply(elementIndices))
-    NDArray(sliceElements).reshape(resultShape)
+      sliceIndices.map(elementIndices => apply(elementIndices.toArray))
+    NDArray(sliceElements).reshape(resultShape.toArray)
   }
 
   /** Returns the result of matrix multiplication of 2D arrays.
@@ -550,12 +551,12 @@ class NDArray[T: ClassTag] private (
       var newElementsReversed = List.empty[T]
       (0 until numRows).foreach { r =>
         (0 until numCols).foreach { c =>
-          val rowVector = slice(List(Some(List(r)), None)).squeeze()
-          val colVector = other.slice(List(None, Some(List(c)))).squeeze()
+          val rowVector = slice(Array(Some(Array(r)), None)).squeeze()
+          val colVector = other.slice(Array(None, Some(Array(c)))).squeeze()
           // The dot product of 1D arrays is a scalar.
           val vectorDotProduct = rowVector dot colVector
           newElementsReversed =
-            vectorDotProduct.get.apply(List(0)) +: newElementsReversed
+            vectorDotProduct.get.apply(Array(0)) +: newElementsReversed
         }
       }
       Success(
@@ -615,7 +616,8 @@ class NDArray[T: ClassTag] private (
         val sliceIndices = listCartesianProduct(dimensionIndices)
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElementsArrays = sliceIndices.map { indices =>
-          val sliceIndicesComplete = indices.map(idx => Some(List(idx))) :+ None
+          val sliceIndicesComplete =
+            (indices.map(idx => Some(Array(idx))) :+ None).toArray
           (slice(sliceIndicesComplete).squeeze() dot other).get
         }
         val newElements = newElementsArrays.map(_.flatten().head)
@@ -641,10 +643,10 @@ class NDArray[T: ClassTag] private (
         // Because this is a 1D vector inner product, each array holds a scalar.
         val newElements = sliceIndicesThis.flatMap { indicesThis =>
           val sliceIndicesThisComplete =
-            indicesThis.map(idx => Some(List(idx))) :+ None
+            (indicesThis.map(idx => Some(Array(idx))) :+ None).toArray
           sliceIndicesOther.map { indicesOther =>
             val sliceIndicesOtherIntermediate =
-              indicesOther.map(idx => Some(List(idx)))
+              indicesOther.map(idx => Some(Array(idx))).toArray
             val sliceIndicesOtherComplete = sliceIndicesOtherIntermediate.slice(
               0,
               sliceIndicesOtherIntermediate.length - 2
@@ -726,9 +728,9 @@ class NDArray[T: ClassTag] private (
       combination.indices
         .map(idx =>
           if (idx == axis) None
-          else Some(List(combination(idx)))
+          else Some(Array(combination(idx)))
         )
-        .toList
+        .toArray
     )
     val slices = sliceCombinations.map(slice)
     val newElements = slices.map(f)

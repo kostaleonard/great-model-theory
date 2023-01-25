@@ -13,7 +13,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, 2)
-    val head = dense.weights(List(0, 0))
+    val head = dense.weights(Array(0, 0))
     assert(!dense.weights.flatten().forall(_ == head))
   }
 

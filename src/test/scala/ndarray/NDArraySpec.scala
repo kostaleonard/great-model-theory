@@ -23,13 +23,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return the element at the given indices" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
-    assert(arr1(List(0, 0)) == 0)
-    assert(arr1(List(0, 1)) == 1)
-    assert(arr1(List(1, 0)) == 3)
-    assert(arr1(List(1, 2)) == 5)
+    assert(arr1(Array(0, 0)) == 0)
+    assert(arr1(Array(0, 1)) == 1)
+    assert(arr1(Array(1, 0)) == 3)
+    assert(arr1(Array(1, 2)) == 5)
     val arr2 = NDArray.arange[Int](Array(2, 3, 4))
-    assert(arr2(List(0, 2, 1)) == 9)
-    assert(arr2(List(1, 1, 0)) == 16)
+    assert(arr2(Array(0, 2, 1)) == 9)
+    assert(arr2(Array(1, 1, 0)) == 16)
   }
 
   it should "return an NDArray with the same elements but new shape when reshaped" in {
@@ -85,12 +85,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mask = arr1 == arr2
     assert(mask.isSuccess)
     assert(mask.get.shape sameElements arr1.shape)
-    assert(mask.get.apply(List(0)))
-    assert(mask.get.apply(List(1)))
-    assert(!mask.get.apply(List(2)))
-    assert(!mask.get.apply(List(3)))
-    assert(mask.get.apply(List(4)))
-    assert(!mask.get.apply(List(5)))
+    assert(mask.get.apply(Array(0)))
+    assert(mask.get.apply(Array(1)))
+    assert(!mask.get.apply(Array(2)))
+    assert(!mask.get.apply(Array(3)))
+    assert(mask.get.apply(Array(4)))
+    assert(!mask.get.apply(Array(5)))
   }
 
   it should "produce a mask on == comparison with arrays that can be broadcast together (3 x 1, 3)" in {
@@ -99,15 +99,15 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mask = arr1 == arr2
     assert(mask.isSuccess)
     assert(mask.get.shape sameElements Array(3, 3))
-    assert(!mask.get.apply(List(0, 0)))
-    assert(!mask.get.apply(List(0, 1)))
-    assert(!mask.get.apply(List(0, 2)))
-    assert(mask.get.apply(List(1, 0)))
-    assert(mask.get.apply(List(1, 1)))
-    assert(mask.get.apply(List(1, 2)))
-    assert(!mask.get.apply(List(2, 0)))
-    assert(!mask.get.apply(List(2, 1)))
-    assert(!mask.get.apply(List(2, 2)))
+    assert(!mask.get.apply(Array(0, 0)))
+    assert(!mask.get.apply(Array(0, 1)))
+    assert(!mask.get.apply(Array(0, 2)))
+    assert(mask.get.apply(Array(1, 0)))
+    assert(mask.get.apply(Array(1, 1)))
+    assert(mask.get.apply(Array(1, 2)))
+    assert(!mask.get.apply(Array(2, 0)))
+    assert(!mask.get.apply(Array(2, 1)))
+    assert(!mask.get.apply(Array(2, 2)))
   }
 
   it should "produce a 1-element array on == comparison with arrays that cannot be broadcast together" in {
@@ -165,11 +165,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mask = arr1 ~= arr2
     assert(mask.isSuccess)
     assert(mask.get.shape sameElements arr1.shape)
-    assert(!mask.get.apply(List(0)))
-    assert(mask.get.apply(List(1)))
-    assert(mask.get.apply(List(2)))
-    assert(mask.get.apply(List(3)))
-    assert(!mask.get.apply(List(4)))
+    assert(!mask.get.apply(Array(0)))
+    assert(mask.get.apply(Array(1)))
+    assert(mask.get.apply(Array(2)))
+    assert(mask.get.apply(Array(3)))
+    assert(!mask.get.apply(Array(4)))
   }
 
   it should "produce a mask on ~= comparison with arrays that can be broadcast together (3 x 1, 3)" in {
@@ -178,15 +178,15 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mask = arr1 ~= arr2
     assert(mask.isSuccess)
     assert(mask.get.shape sameElements Array(3, 3))
-    assert(!mask.get.apply(List(0, 0)))
-    assert(!mask.get.apply(List(0, 1)))
-    assert(!mask.get.apply(List(0, 2)))
-    assert(!mask.get.apply(List(1, 0)))
-    assert(mask.get.apply(List(1, 1)))
-    assert(!mask.get.apply(List(1, 2)))
-    assert(!mask.get.apply(List(2, 0)))
-    assert(!mask.get.apply(List(2, 1)))
-    assert(mask.get.apply(List(2, 2)))
+    assert(!mask.get.apply(Array(0, 0)))
+    assert(!mask.get.apply(Array(0, 1)))
+    assert(!mask.get.apply(Array(0, 2)))
+    assert(!mask.get.apply(Array(1, 0)))
+    assert(mask.get.apply(Array(1, 1)))
+    assert(!mask.get.apply(Array(1, 2)))
+    assert(!mask.get.apply(Array(2, 0)))
+    assert(!mask.get.apply(Array(2, 1)))
+    assert(mask.get.apply(Array(2, 2)))
   }
 
   it should "produce a mask on ~= comparison with arrays that can be broadcast together and large epsilon (2 x 1, 2)" in {
@@ -195,10 +195,10 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val mask = arr1.~=(arr2, epsilon = 0.5)
     assert(mask.isSuccess)
     assert(mask.get.shape sameElements Array(2, 2))
-    assert(mask.get.apply(List(0, 0)))
-    assert(!mask.get.apply(List(0, 1)))
-    assert(!mask.get.apply(List(1, 0)))
-    assert(mask.get.apply(List(1, 1)))
+    assert(mask.get.apply(Array(0, 0)))
+    assert(!mask.get.apply(Array(0, 1)))
+    assert(!mask.get.apply(Array(1, 0)))
+    assert(mask.get.apply(Array(1, 1)))
   }
 
   it should "fail on ~= comparison with arrays that cannot be broadcast together" in {
@@ -378,7 +378,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val broadcastSum = broadcast.get._1 + broadcast.get._2
     assert(broadcastSum.isSuccess)
     val sumSlice = broadcastSum.get
-      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .slice(Array(Some(Array(1)), Some(Array(2)), Some(Array(3)), None))
       .squeeze()
     val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
     assert(sumSlice arrayEquals expectedSlice)
@@ -454,7 +454,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(addition.isSuccess)
     // Computed this sum with NumPy.
     val sumSlice = addition.get
-      .slice(List(Some(List(1)), Some(List(2)), Some(List(3)), None))
+      .slice(Array(Some(Array(1)), Some(Array(2)), Some(Array(3)), None))
       .squeeze()
     val expectedSlice = NDArray[Int](List(19, 20, 21, 22, 23))
     assert(sumSlice arrayEquals expectedSlice)
@@ -550,20 +550,20 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return all elements when provided None for each dimension in a slice" in {
     val arr = NDArray.arange[Int](Array(2, 3, 4))
-    val sliced = arr.slice(List(None, None, None))
+    val sliced = arr.slice(Array(None, None, None))
     assert(sliced arrayEquals arr)
   }
 
   it should "return an array with the rows requested in a slice" in {
     val arr = NDArray.arange[Int](Array(2, 3, 4))
-    val sliced = arr.slice(List(Some(List(0)), None, None))
+    val sliced = arr.slice(Array(Some(Array(0)), None, None))
     assert(sliced.shape sameElements Array(1, 3, 4))
     assert(sliced.flatten() sameElements (0 until 12))
   }
 
   it should "return an array with the columns requested in a slice" in {
     val arr = NDArray.arange[Int](Array(2, 3, 4))
-    val sliced = arr.slice(List(None, Some(List(1, 2)), None))
+    val sliced = arr.slice(Array(None, Some(Array(1, 2)), None))
     assert(sliced.shape sameElements Array(2, 2, 4))
     assert(
       sliced.flatten() sameElements Array(4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18,
@@ -573,7 +573,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return an array with the elements requested in a slice" in {
     val arr = NDArray.arange[Int](Array(2, 3, 4))
-    val sliced = arr.slice(List(None, Some(List(1, 2)), Some(List(0))))
+    val sliced = arr.slice(Array(None, Some(Array(1, 2)), Some(Array(0))))
     assert(sliced.shape sameElements Array(2, 2, 1))
     assert(sliced.flatten() sameElements Array(4, 8, 16, 20))
   }
@@ -613,7 +613,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val dotProduct = arr1 dot arr2
     assert(dotProduct.isSuccess)
     assert(dotProduct.get.shape sameElements Array(1))
-    assert(dotProduct.get.apply(List(0)) == 10)
+    assert(dotProduct.get.apply(Array(0)) == 10)
   }
 
   it should "fail to return the dot product of two 1D arrays of different lengths" in {
@@ -765,18 +765,18 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   "An NDArray.arange array" should "contain elements (0, 1, 2, ...) as index increments" in {
     val arr = NDArray.arange[Int](Array(2, 3, 2))
-    assert(arr(List(0, 0, 0)) == 0)
-    assert(arr(List(0, 0, 1)) == 1)
-    assert(arr(List(0, 1, 0)) == 2)
-    assert(arr(List(0, 1, 1)) == 3)
-    assert(arr(List(0, 2, 0)) == 4)
-    assert(arr(List(0, 2, 1)) == 5)
-    assert(arr(List(1, 0, 0)) == 6)
-    assert(arr(List(1, 0, 1)) == 7)
-    assert(arr(List(1, 1, 0)) == 8)
-    assert(arr(List(1, 1, 1)) == 9)
-    assert(arr(List(1, 2, 0)) == 10)
-    assert(arr(List(1, 2, 1)) == 11)
+    assert(arr(Array(0, 0, 0)) == 0)
+    assert(arr(Array(0, 0, 1)) == 1)
+    assert(arr(Array(0, 1, 0)) == 2)
+    assert(arr(Array(0, 1, 1)) == 3)
+    assert(arr(Array(0, 2, 0)) == 4)
+    assert(arr(Array(0, 2, 1)) == 5)
+    assert(arr(Array(1, 0, 0)) == 6)
+    assert(arr(Array(1, 0, 1)) == 7)
+    assert(arr(Array(1, 1, 0)) == 8)
+    assert(arr(Array(1, 1, 1)) == 9)
+    assert(arr(Array(1, 2, 0)) == 10)
+    assert(arr(Array(1, 2, 1)) == 11)
   }
 
   it should "contain elements (0, 1, 2, ...) when flattened" in {
@@ -793,7 +793,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   "An NDArray.random[Float] array" should "contain different elements in [0, 1)" in {
     val arr = NDArray.random[Float](Array(2, 3))
     assert(arr.flatten().forall(element => 0 <= element && element < 1))
-    val head = arr(List(0, 0))
+    val head = arr(Array(0, 0))
     assert(!arr.flatten().forall(_ == head))
   }
 
@@ -804,7 +804,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
         .flatten()
         .forall(element => Int.MinValue <= element && element <= Int.MaxValue)
     )
-    val head = arr(List(0, 0))
+    val head = arr(Array(0, 0))
     assert(!arr.flatten().forall(_ == head))
   }
 }
