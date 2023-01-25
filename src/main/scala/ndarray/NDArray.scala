@@ -212,7 +212,10 @@ class NDArray[T: ClassTag] private (
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
       NDArray[Boolean](mask).reshape(shape.toList)
-    } else NDArray(List(false))
+    } else broadcastWith(other) match {
+      case Success((broadcastThis, broadcastOther)) => broadcastThis == broadcastOther
+      case _ => NDArray(List(false))
+    }
 
   /** Returns true if the arrays have the same shape and elements within error.
     *

@@ -91,7 +91,21 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(!mask(List(5)))
   }
 
-  //TODO == for broadcast
+  it should "produce a mask on == comparison with arrays that can be broadcast together (3 x 1, 1 x 3)" in {
+    val arr1 = NDArray(List(0, 1, 2)).reshape(List(3, 1))
+    val arr2 = NDArray(List(1, 1, 1))
+    val mask = arr1 == arr2
+    assert(mask.shape sameElements Array(3, 3))
+    assert(!mask(List(0, 0)))
+    assert(!mask(List(0, 1)))
+    assert(!mask(List(0, 2)))
+    assert(mask(List(1, 0)))
+    assert(mask(List(1, 1)))
+    assert(mask(List(1, 2)))
+    assert(!mask(List(2, 0)))
+    assert(!mask(List(2, 1)))
+    assert(!mask(List(2, 2)))
+  }
 
   it should "produce a 1-element array on == comparison with arrays that cannot be broadcast together" in {
     val arr1 = NDArray.arange[Int](List(2, 3))
