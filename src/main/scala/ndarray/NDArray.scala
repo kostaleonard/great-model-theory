@@ -188,7 +188,7 @@ class NDArray[T: ClassTag] private (
     */
   def arrayEquals(other: NDArray[T]): Boolean = this == other match {
     case Success(mask) => mask.flatten().forall(identity)
-    case _ => false
+    case _             => false
   }
 
   /** Returns false if the arrays have the same shape and elements.
@@ -215,10 +215,12 @@ class NDArray[T: ClassTag] private (
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
       Success(NDArray[Boolean](mask).reshape(shape.toList))
-    } else broadcastWith(other) match {
-      case Success((broadcastThis, broadcastOther)) => broadcastThis == broadcastOther
-      case Failure(failure) => Failure(failure)
-    }
+    } else
+      broadcastWith(other) match {
+        case Success((broadcastThis, broadcastOther)) =>
+          broadcastThis == broadcastOther
+        case Failure(failure) => Failure(failure)
+      }
 
   /** Returns true if the arrays have the same shape and elements within error.
     *
@@ -233,7 +235,7 @@ class NDArray[T: ClassTag] private (
       epsilon: Double = 1e-5
   ): Boolean = this.~=(other, epsilon = epsilon) match {
     case Success(mask) => mask.flatten().forall(identity)
-    case _ => false
+    case _             => false
   }
 
   /** Returns false if the arrays have the same shape and elements within error.
@@ -304,10 +306,12 @@ class NDArray[T: ClassTag] private (
           )
           Success(NDArray[Boolean](mask).reshape(shape.toList))
       }
-    } else broadcastWith(other) match {
-      case Success((broadcastThis, broadcastOther)) => broadcastThis.~=(broadcastOther, epsilon = epsilon)
-      case Failure(failure) => Failure(failure)
-    }
+    } else
+      broadcastWith(other) match {
+        case Success((broadcastThis, broadcastOther)) =>
+          broadcastThis.~=(broadcastOther, epsilon = epsilon)
+        case Failure(failure) => Failure(failure)
+      }
 
   /** Returns this array broadcast to the target shape.
     *
