@@ -511,7 +511,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val subtraction = arr1 - arr2
     assert(subtraction.isSuccess)
     val expectedSum =
-      NDArray[Int](List(-3, -4, -5, -2, -3, -4, -1, -2, -3)).reshape(Array(3, 3))
+      NDArray[Int](List(-3, -4, -5, -2, -3, -4, -1, -2, -3)).reshape(
+        Array(3, 3)
+      )
     assert(subtraction.get arrayEquals expectedSum)
   }
 
@@ -579,8 +581,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "return the matrix multiplication of two 2D arrays" in {
     // Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
     val arr1 =
-      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(Array(4, 3))
-    val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
+      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(
+        Array(4, 3)
+      )
+    val arr2 =
+      NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
     val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
       .reshape(Array(4, 3))
     val matmulResult = arr1 matmul arr2
@@ -621,8 +626,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "return the matrix multiplication of two 2D arrays using dot" in {
     // Example multiplication taken from https://en.wikipedia.org/wiki/Matrix_multiplication
     val arr1 =
-      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(Array(4, 3))
-    val arr2 = NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
+      NDArray[Int](List(1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2)).reshape(
+        Array(4, 3)
+      )
+    val arr2 =
+      NDArray[Int](List(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
     val expectedResult = NDArray[Int](List(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
       .reshape(Array(4, 3))
     val matmulResult = arr1 dot arr2

@@ -68,17 +68,17 @@ object NDArray {
       NDArray.ofValue[Long](shape, 1).asInstanceOf[NDArray[T]]
   }
 
-  //TODO argument type?
   /** Returns an array from the given sequence.
     *
     * @param seq
-    *   A sequence of array elements. The output array will have the same shape
-    *   as this sequence.
+    *   A sequence of array elements.
     * @tparam T
     *   The array element type.
     */
-  def apply[T: ClassTag](seq: Seq[T]): NDArray[T] =
-    new NDArray[T](Array(seq.length), seq.toArray)
+  def apply[T: ClassTag](seq: Seq[T]): NDArray[T] = {
+    val elements = seq.toArray
+    new NDArray[T](Array(elements.length), elements)
+  }
 
   /** Returns an array whose elements are 0, 1, 2, etc. when flattened.
     *
@@ -331,7 +331,8 @@ class NDArray[T: ClassTag] private (
     if (shape.length > targetShape.length)
       Failure(
         new ShapeException(
-          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape.mkString("Array(", ", ", ")")}"
+          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape
+              .mkString("Array(", ", ", ")")}"
         )
       )
     else {
@@ -424,9 +425,9 @@ class NDArray[T: ClassTag] private (
     )
     if (shapesMatch)
       Success(
-        (0 until finalNumDimensions).map(idx =>
-          onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx)
-        ).toArray
+        (0 until finalNumDimensions)
+          .map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx))
+          .toArray
       )
     else
       Failure(
@@ -731,10 +732,12 @@ class NDArray[T: ClassTag] private (
     )
     val slices = sliceCombinations.map(slice)
     val newElements = slices.map(f)
-    val newShape = shape.indices.flatMap(idx =>
-      if (idx == axis) None
-      else Some(shape(idx))
-    ).toArray
+    val newShape = shape.indices
+      .flatMap(idx =>
+        if (idx == axis) None
+        else Some(shape(idx))
+      )
+      .toArray
     NDArray[B](newElements).reshape(newShape)
   }
 }
