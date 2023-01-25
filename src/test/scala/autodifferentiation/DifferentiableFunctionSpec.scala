@@ -5,6 +5,22 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
+  "A DifferentiableFunction" should "return its output shape (1)" in {
+    val input = Input[Float]("X", Array(1))
+    val addition = Add(input, Constant(NDArray.ones[Float](Array(1))))
+    val shape = addition.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(1))
+  }
+
+  it should "return its output shape, with broadcasting (2 x 2)" in {
+    val input = Input[Float]("X", Array(2, 2))
+    val addition = Add(input, Constant(NDArray.ones[Float](Array(1))))
+    val shape = addition.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(2, 2))
+  }
+
   "A Constant" should "return its preset value when computed" in {
     val value = NDArray.ones[Int](Array(3))
     val constant = Constant(value)

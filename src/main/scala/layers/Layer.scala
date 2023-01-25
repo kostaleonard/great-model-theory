@@ -33,5 +33,5 @@ abstract class Layer[T: ClassTag] {
   def getInputs: Set[Input[T]] = getComputationGraph.getInputs
 
   /** Returns the layer's output shape. */
-  def getOutputShape: Array[Int] = getComputationGraph.getOutputShape
+  def getOutputShape: Try[Array[Int]] = getComputationGraph.getOutputShape
 }

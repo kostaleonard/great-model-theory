@@ -14,7 +14,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, outputSize)
+    val dense = Dense.withRandomWeights(inputLayer, outputSize).get
     val model = new Model[Float](dense)
     val sampleBatchSize = 2
     val inputs =
@@ -31,8 +31,8 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense1 = Dense.withRandomWeights(inputLayer, hiddenSize)
-    val dense2 = Dense.withRandomWeights(dense1, outputSize)
+    val dense1 = Dense.withRandomWeights(inputLayer, hiddenSize).get
+    val dense2 = Dense.withRandomWeights(dense1, outputSize).get
     val model = new Model[Float](dense2)
     val sampleBatchSize = 2
     val inputs =
@@ -51,7 +51,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, outputSize)
+    val dense = Dense.withRandomWeights(inputLayer, outputSize).get
     val model = new Model[Float](dense)
     val sampleBatchSize = 2
     val inputs =

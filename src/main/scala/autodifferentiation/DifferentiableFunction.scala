@@ -33,12 +33,11 @@ trait DifferentiableFunction[T] {
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
-  // TODO add Try
   /** Returns the output shape of the function. */
-  def getOutputShape(implicit classTag: ClassTag[T]): Array[Int] =
+  def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Int]] =
     computeOnZeroInputs match {
-      case Success(outputs) => outputs.shape
-      case _                => ???
+      case Success(outputs) => Success(outputs.shape)
+      case Failure(failure) => Failure(failure)
     }
 
   private def computeOnZeroInputs(implicit

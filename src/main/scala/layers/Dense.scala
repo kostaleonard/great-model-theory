@@ -5,34 +5,43 @@ import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 object Dense {
 
+  // TODO test failure case
   def withInitialization[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
       weightsInitialization: Option[NDArray[T]] = None,
       biasesInitialization: Option[NDArray[T]] = None,
       activation: Activation[T] = Identity[T]()
-  )(implicit num: Numeric[T]): Dense[T] = {
-    val weights: NDArray[T] = weightsInitialization.getOrElse(
-      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
-    )
-    val biases: NDArray[T] =
-      biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
-    Dense(previousLayer, units, weights, biases, activation)
-  }
+  )(implicit num: Numeric[T]): Try[Dense[T]] =
+    previousLayer.getOutputShape match {
+      case Success(outputShape) =>
+        val weights: NDArray[T] = weightsInitialization.getOrElse(
+          NDArray.random[T](Array(outputShape.last, units))
+        )
+        val biases: NDArray[T] =
+          biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
+        Success(Dense(previousLayer, units, weights, biases, activation))
+      case Failure(failure) => Failure(failure)
+    }
 
+  // TODO test failure case
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
       activation: Activation[T] = Identity[T]()
-  )(implicit num: Numeric[T]): Dense[T] = {
-    val weights =
-      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
-    val biases = NDArray.zeros[T](Array(units))
-    Dense(previousLayer, units, weights, biases, activation)
-  }
+  )(implicit num: Numeric[T]): Try[Dense[T]] =
+    previousLayer.getOutputShape match {
+      case Success(outputShape) =>
+        val weights =
+          NDArray.random[T](Array(outputShape.last, units))
+        val biases = NDArray.zeros[T](Array(units))
+        Success(Dense(previousLayer, units, weights, biases, activation))
+      case Failure(failure) => Failure(failure)
+    }
 }
 
 /** A densely connected neural network layer.

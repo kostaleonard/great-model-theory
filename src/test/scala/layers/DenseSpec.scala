@@ -12,7 +12,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2)
+    val dense = Dense.withRandomWeights(inputLayer, 2).get
     val head = dense.weights(Array(0, 0))
     assert(!dense.weights.flatten().forall(_ == head))
   }
@@ -21,7 +21,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2)
+    val dense = Dense.withRandomWeights(inputLayer, 2).get
     assert(dense.biases.flatten().forall(_ == 0))
   }
 
@@ -29,7 +29,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2)
+    val dense = Dense.withRandomWeights(inputLayer, 2).get
     assert(dense.weights.shape sameElements Array(4, 2))
     assert(dense.biases.shape sameElements Array(2))
   }
@@ -39,13 +39,15 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val units = 2
-    val dense = Dense.withInitialization(
-      inputLayer,
-      units,
-      weightsInitialization =
-        Some(NDArray.arange[Float](Array(numFeatures, units))),
-      biasesInitialization = None
-    )
+    val dense = Dense
+      .withInitialization(
+        inputLayer,
+        units,
+        weightsInitialization =
+          Some(NDArray.arange[Float](Array(numFeatures, units))),
+        biasesInitialization = None
+      )
+      .get
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
@@ -68,13 +70,15 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     )
     val inputLayer = InputLayer(input)
     val units = 2
-    val dense = Dense.withInitialization(
-      inputLayer,
-      units,
-      weightsInitialization =
-        Some(NDArray.arange[Float](Array(numFeaturesCols, units))),
-      biasesInitialization = None
-    )
+    val dense = Dense
+      .withInitialization(
+        inputLayer,
+        units,
+        weightsInitialization =
+          Some(NDArray.arange[Float](Array(numFeaturesCols, units))),
+        biasesInitialization = None
+      )
+      .get
     val sampleBatchSize = 2
     val inputs = Map(
       input -> NDArray.arange[Float](
@@ -103,13 +107,15 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
     val units = 2
-    val dense = Dense.withInitialization(
-      inputLayer,
-      units,
-      weightsInitialization =
-        Some(NDArray.arange[Float](Array(numFeatures, units))),
-      biasesInitialization = Some(NDArray.ones[Float](Array(units)))
-    )
+    val dense = Dense
+      .withInitialization(
+        inputLayer,
+        units,
+        weightsInitialization =
+          Some(NDArray.arange[Float](Array(numFeatures, units))),
+        biasesInitialization = Some(NDArray.ones[Float](Array(units)))
+      )
+      .get
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
@@ -127,7 +133,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2)
+    val dense = Dense.withRandomWeights(inputLayer, 2).get
     val sampleBatchSize = 2
     val inputs = Map(
       input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures + 1))
