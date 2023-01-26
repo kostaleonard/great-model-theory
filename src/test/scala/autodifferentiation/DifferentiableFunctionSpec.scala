@@ -1,5 +1,6 @@
 package autodifferentiation
 
+import layers.{Dense, InputLayer}
 import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -58,5 +59,37 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals NDArray.zeros(Array(2, 3)))
+  }
+
+  "A ModelParameter" should "return its current value when computed" in {
+    val value = NDArray.ofValue[Float](Array(2, 3), 5)
+    val modelParameter = ModelParameter[Float]("Theta", value)
+    val output = modelParameter.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals value)
+  }
+
+  "An Input" should "return the user-supplied value when computed" in {
+    val input = Input[Float]("X", Array(2, 2))
+    val value = NDArray.ofValue[Float](input.shape, 4)
+    val output = input.compute(Map(input -> value))
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals value)
+  }
+
+  it should "fail to compute when the user-supplied value does not match the Input shape" in {
+    //TODO Inputs need a shape argument so that we can compute output shapes and instantiate model parameters. I want to see those transformations (e.g., in Dense) fail as a sanity check before we implement this logic.
+    val numFeatures = 4
+    val input = Input[Float]("X", Array(1, numFeatures))
+    val inputLayer = InputLayer(input)
+    val dense = Dense.withRandomWeights(inputLayer, 2).get
+    val output = dense(Map(input -> NDArray.zeros(Array(numFeatures))))
+    assert(output.isFailure)
+  }
+
+  it should "fail to compute when the user does not supply a necessary Input" in {
+    val input = Input[Float]("X", Array(2, 2))
+    val output = input.compute(Map.empty)
+    assert(output.isFailure)
   }
 }
