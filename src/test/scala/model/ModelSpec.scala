@@ -7,12 +7,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class ModelSpec extends AnyFlatSpec with Matchers {
-  private val BATCH_SIZE_PLACEHOLDER = 1
 
   "A Model" should "apply a single layer to the input" in {
     val numFeatures = 4
     val outputSize = 2
-    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, outputSize).get
     val model = new Model[Float](dense)
@@ -29,7 +28,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val hiddenSize = 3
     val outputSize = 2
-    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
     val dense1 = Dense.withRandomWeights(inputLayer, hiddenSize).get
     val dense2 = Dense.withRandomWeights(dense1, outputSize).get
@@ -49,7 +48,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
   it should "fail to apply layers on incorrectly shaped input" in {
     val numFeatures = 4
     val outputSize = 2
-    val input = Input[Float]("X", Array(BATCH_SIZE_PLACEHOLDER, numFeatures))
+    val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, outputSize).get
     val model = new Model[Float](dense)

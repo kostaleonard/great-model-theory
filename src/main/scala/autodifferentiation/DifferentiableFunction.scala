@@ -1,5 +1,6 @@
 package autodifferentiation
 
+import exceptions.ShapeException
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -30,11 +31,12 @@ trait DifferentiableFunction[T] {
     */
   def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T]
 
-  //TODO implement
-  //TODO add tests for this under DifferentiableFunction ("A DifferentiableFunction should...")
+  // TODO implement
+  // TODO add tests for this under DifferentiableFunction ("A DifferentiableFunction should...")
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
+  // TODO can we implement this without filling placeholder dimensions in inputs? Should return Try[Array[Option[Int]]]
   /** Returns the output shape of the function. */
   def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Int]] =
     computeOnZeroInputs match {
@@ -47,7 +49,14 @@ trait DifferentiableFunction[T] {
   ): Try[NDArray[T]] = {
     val inputs = getInputs
     val zeroInputs =
-      inputs.map(input => input -> NDArray.zeros[T](input.shape)).toMap
+      inputs
+        .map(input =>
+          input -> NDArray.zeros[T](input.shapeWithPlaceholders.map {
+            case Some(dimension) => dimension
+            case _               => 1
+          })
+        )
+        .toMap
     compute(zeroInputs)
   }
 }
@@ -99,7 +108,8 @@ trait Variable[T] extends DifferentiableFunction[T] {
 case class ModelParameter[T](
     override val name: String,
     value: NDArray[T]
-)(override implicit val classTag: ClassTag[T]) extends Variable[T] {
+)(override implicit val classTag: ClassTag[T])
+    extends Variable[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     Success(value)
 
@@ -112,23 +122,52 @@ case class ModelParameter[T](
   *
   * @param name
   *   The name of the variable.
-  * @param shape
-  *   The shape of the array containing the variable.
+  * @param shapeWithPlaceholders
+  *   The shape of the array containing the variable, with None for dimensions
+  *   that can vary at run time (e.g., the batch dimension).
   * @tparam T
   *   The array element type.
   */
-case class Input[T](override val name: String, shape: Array[Int])(override implicit val classTag: ClassTag[T])
+case class Input[T](
+    override val name: String,
+    shapeWithPlaceholders: Array[Option[Int]]
+)(override implicit val classTag: ClassTag[T])
     extends Variable[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     inputs.get(this) match {
-      case Some(value) => Success(value)
+      case Some(value) =>
+        if (value.shape.length != shapeWithPlaceholders.length)
+          Failure(
+            new ShapeException(
+              s"Input $name expects values of shape ${shapeWithPlaceholders
+                  .mkString("Array(", ", ", ")")}, but got ${value.shape
+                  .mkString("Array(", ", ", ")")}"
+            )
+          )
+        else if (
+          shapeWithPlaceholders.indices.forall(idx =>
+            shapeWithPlaceholders(idx) match {
+              case Some(dimension) => value.shape(idx) == dimension
+              case _               => true
+            }
+          )
+        ) Success(value)
+        else
+          Failure(
+            new ShapeException(
+              s"Input $name expects values of shape ${shapeWithPlaceholders
+                  .mkString("Array(", ", ", ")")}, but got ${value.shape
+                  .mkString("Array(", ", ", ")")}"
+            )
+          )
       case None =>
-        Failure(new NoSuchElementException(f"Input $name is not defined"))
+        Failure(new NoSuchElementException(s"Input $name is not defined"))
     }
 
   override def getInputs: Set[Input[T]] = Set(this)
 }
 
+//TODO test
 /** Adds the results of two functions.
   *
   * @param a
@@ -161,6 +200,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 }
 
+//TODO test
 /** Matrix multiplies the results of two functions.
   *
   * @param a
