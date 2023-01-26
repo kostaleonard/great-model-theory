@@ -21,14 +21,6 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.get sameElements Array(2, 2))
   }
 
-  it should "return its output shape, filling placeholder dimensions with 1 (None x 2)" in {
-    val input = Input[Float]("X", Array(None, Some(2)))
-    val addition = Add(input, Constant(NDArray.ones[Float](Array(1))))
-    val shape = addition.getOutputShape
-    assert(shape.isSuccess)
-    assert(shape.get sameElements Array(1, 2))
-  }
-
   "A Constant" should "return its preset value when computed" in {
     val value = NDArray.ones[Int](Array(3))
     val constant = Constant(value)
@@ -48,6 +40,14 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayEquals NDArray.zeros(value.shape))
+  }
+
+  it should "return its shape" in {
+    val value = NDArray.ones[Int](Array(3))
+    val constant = Constant(value)
+    val shape = constant.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get.flatten sameElements value.shape)
   }
 
   "A Variable" should "have gradient 1 with respect to itself" in {
@@ -76,6 +76,14 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val output = modelParameter.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals value)
+  }
+
+  it should "return its output shape" in {
+    val value = NDArray.ofValue[Float](Array(2, 3), 5)
+    val modelParameter = ModelParameter[Float]("Theta", value)
+    val shape = modelParameter.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get.flatten sameElements value.shape)
   }
 
   "An Input" should "return the user-supplied value when computed" in {
@@ -116,5 +124,32 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val input = Input[Float]("X", Array(Some(2), Some(2)))
     val output = input.compute(Map.empty)
     assert(output.isFailure)
+  }
+
+  it should "returns its output shape" in {
+    val input = Input[Float]("X", Array(None, Some(2)))
+    val shape = input.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements input.shapeWithPlaceholders)
+  }
+
+  "An Add" should "return its output shape when its arguments' shapes match" in {
+    val addition = Add(Constant(NDArray.zeros[Float](Array(2, 4))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val shape = addition.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(2, 4))
+  }
+
+  it should "return its output shape when its arguments' shapes can be broadcast" in {
+    val addition = Add(Constant(NDArray.zeros[Float](Array(4))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val shape = addition.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(2, 4))
+  }
+
+  it should "fail to return an output shape when its arguments' shapes mismatch" in {
+    val addition = Add(Constant(NDArray.zeros[Float](Array(2))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val shape = addition.getOutputShape
+    assert(shape.isFailure)
   }
 }

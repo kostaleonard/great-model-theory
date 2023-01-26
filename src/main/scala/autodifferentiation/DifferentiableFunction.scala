@@ -36,29 +36,10 @@ trait DifferentiableFunction[T] {
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
-  // TODO can we implement this without filling placeholder dimensions in inputs? Should return Try[Array[Option[Int]]]
-  /** Returns the output shape of the function. */
-  def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Int]] =
-    computeOnZeroInputs match {
-      case Success(outputs) => Success(outputs.shape)
-      case Failure(failure) => Failure(failure)
-    }
-
-  private def computeOnZeroInputs(implicit
-      classTag: ClassTag[T]
-  ): Try[NDArray[T]] = {
-    val inputs = getInputs
-    val zeroInputs =
-      inputs
-        .map(input =>
-          input -> NDArray.zeros[T](input.shapeWithPlaceholders.map {
-            case Some(dimension) => dimension
-            case _               => 1
-          })
-        )
-        .toMap
-    compute(zeroInputs)
-  }
+  //TODO implement here if possible
+  //TODO I don't think we need the classtag anymore
+  /** Returns the output shape of the function with possible placeholders. */
+  def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]]
 }
 
 /** A constant (has 0 gradient).
@@ -78,6 +59,8 @@ case class Constant[T: ClassTag](value: NDArray[T])
   ): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
 
   override def getInputs: Set[Input[T]] = Set.empty
+
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
 }
 
 /** A variable (has potentially non-zero gradient).
@@ -114,6 +97,8 @@ case class ModelParameter[T](
     Success(value)
 
   override def getInputs: Set[Input[T]] = Set.empty
+
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
 }
 
 /** An input variable that users supply.
@@ -165,9 +150,11 @@ case class Input[T](
     }
 
   override def getInputs: Set[Input[T]] = Set(this)
+
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(shapeWithPlaceholders)
 }
 
-//TODO test
+//TODO test compute, gradient
 /** Adds the results of two functions.
   *
   * @param a
@@ -198,9 +185,19 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
     Add(a.gradient(withRespectToVariable), b.gradient(withRespectToVariable))
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
+
+  //TODO remember that None can get filled in with any value at runtime, so None in a must correspond with Some in b and vice versa
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(aShape) => b.getOutputShape match {
+        case Success(bShape) => ???
+        case failure => failure
+      }
+      case failure => failure
+    }
 }
 
-//TODO test
+//TODO test compute, gradient, getOutputShape
 /** Matrix multiplies the results of two functions.
   *
   * @param a
@@ -233,4 +230,6 @@ case class MatMul[T](
   ): DifferentiableFunction[T] = ???
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
+
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = ???
 }

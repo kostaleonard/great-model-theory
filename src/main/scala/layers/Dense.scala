@@ -10,6 +10,7 @@ import scala.util.{Failure, Success, Try}
 object Dense {
 
   // TODO test failure case
+  // TODO outputShape.last.get should produce Failure
   def withInitialization[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
@@ -20,7 +21,7 @@ object Dense {
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
         val weights: NDArray[T] = weightsInitialization.getOrElse(
-          NDArray.random[T](Array(outputShape.last, units))
+          NDArray.random[T](Array(outputShape.last.get, units))
         )
         val biases: NDArray[T] =
           biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
@@ -29,6 +30,7 @@ object Dense {
     }
 
   // TODO test failure case
+  // TODO outputShape.last.get should produce Failure
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
@@ -37,7 +39,7 @@ object Dense {
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
         val weights =
-          NDArray.random[T](Array(outputShape.last, units))
+          NDArray.random[T](Array(outputShape.last.get, units))
         val biases = NDArray.zeros[T](Array(units))
         Success(Dense(previousLayer, units, weights, biases, activation))
       case Failure(failure) => Failure(failure)
