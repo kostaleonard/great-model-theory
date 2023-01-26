@@ -121,15 +121,7 @@ case class Input[T](
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     inputs.get(this) match {
       case Some(value) =>
-        if (value.shape.length != shapeWithPlaceholders.length)
-          Failure(
-            new ShapeException(
-              s"Input $name expects values of shape ${shapeWithPlaceholders
-                  .mkString("Array(", ", ", ")")}, but got ${value.shape
-                  .mkString("Array(", ", ", ")")}"
-            )
-          )
-        else if (
+        if (value.shape.length == shapeWithPlaceholders.length &&
           shapeWithPlaceholders.indices.forall(idx =>
             shapeWithPlaceholders(idx) match {
               case Some(dimension) => value.shape(idx) == dimension
@@ -186,15 +178,41 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
-  //TODO remember that None can get filled in with any value at runtime, so None in a must correspond with Some in b and vice versa
   override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] =
     a.getOutputShape match {
       case Success(aShape) => b.getOutputShape match {
-        case Success(bShape) => ???
+        case Success(bShape) => getBroadcastShapeWithPlaceholders(aShape, bShape)
         case failure => failure
       }
       case failure => failure
     }
+
+  private def getBroadcastShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] = {
+    val finalNumDimensions = aShape.length max bShape.length
+    val aOnesPaddedShape = aShape.reverse.padTo(finalNumDimensions, Some(1)).reverse
+    val bOnesPaddedShape =
+      bShape.reverse.padTo(finalNumDimensions, Some(1)).reverse
+    val shapesMatch = (0 until finalNumDimensions).forall(idx =>
+      (aOnesPaddedShape(idx).nonEmpty && aOnesPaddedShape(idx) == bOnesPaddedShape(idx)) ||
+        aOnesPaddedShape(idx).contains(1) ||
+        bOnesPaddedShape(idx).contains(1)
+    )
+    if (shapesMatch)
+      Success(
+        (0 until finalNumDimensions)
+          .map(idx => (aOnesPaddedShape(idx), bOnesPaddedShape(idx)) match {
+            case (Some(aDimension), Some(bDimension)) =>
+              Some(aDimension max bDimension)
+            case _ => None
+          })
+          .toArray
+      )
+    else
+      Failure(
+        new ShapeException(s"Could not broadcast arrays of shape ${aShape
+          .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}")
+      )
+  }
 }
 
 //TODO test compute, gradient, getOutputShape
