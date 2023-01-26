@@ -1,7 +1,7 @@
 package layers
 
 import activations.{Activation, Identity}
-import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter}
+import autodifferentiation.{Add, DifferentiableFunction, DotProduct, ModelParameter}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -85,7 +85,7 @@ case class Dense[T: ClassTag] private (
 
   override def getComputationGraph: DifferentiableFunction[T] =
     Add(
-      MatMul(
+      DotProduct(
         previousLayer.getComputationGraph,
         ModelParameter("weights", weights)
       ),

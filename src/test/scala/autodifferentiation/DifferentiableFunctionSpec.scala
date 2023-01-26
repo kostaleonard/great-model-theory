@@ -229,4 +229,119 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val shape = addition.getOutputShape
     assert(shape.isFailure)
   }
+  
+  "A DotProduct with 1D arrays (vector inner product)" should "return its output shape (5, 5)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(5))), Constant(NDArray.ones[Float](Array(5))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(1)))
+  }
+
+  it should "fail to return an output shape on mismatching arguments (6, 5)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(6))), Constant(NDArray.ones[Float](Array(5))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  it should "fail to return an output shape with placeholders (None, 5)" in {
+    val input1 = Input[Float]("X", Array(None))
+    val input2 = Input[Float]("Y", Array(Some(5)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  "A DotProduct with 2D arrays (matmul)" should "return its output shape (2 x 4, 4 x 3)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 4))), Constant(NDArray.ones[Float](Array(4, 3))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), Some(3)))
+  }
+
+  it should "return its output shape with placeholder dimensions (None x 1, 1 x 5)" in {
+    val input1 = Input[Float]("X", Array(None, Some(1)))
+    val input2 = Input[Float]("Y", Array(Some(1), Some(5)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(None, Some(5)))
+  }
+
+  it should "return its output shape with placeholder dimensions (2 x 3, 3 x None)" in {
+    val input1 = Input[Float]("X", Array(Some(2), Some(3)))
+    val input2 = Input[Float]("Y", Array(Some(3), None))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), None))
+  }
+
+  it should "return its output shape with placeholder dimensions (None x 3, 3 x None)" in {
+    val input1 = Input[Float]("X", Array(None, Some(3)))
+    val input2 = Input[Float]("Y", Array(Some(3), None))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(None, None))
+  }
+  
+  it should "fail to return its output shape on mismatching arguments (2 x 3, 4 x 3)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(4, 3))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  it should "fail to return its output shape with placeholders (2 x 3, None x 3)" in {
+    val input1 = Input[Float]("X", Array(Some(2), Some(3)))
+    val input2 = Input[Float]("Y", Array(None, Some(3)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  "A DotProduct with an N-D array and 1D array (last axis inner product)" should "return its output shape (2 x 3, 3)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(3))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2)))
+  }
+
+  it should "return its output shape (3 x 5 x 2, 2)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(3, 5, 2))), Constant(NDArray.ones[Float](Array(2))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(3), Some(5)))
+  }
+
+  it should "return its output shape with placeholders (2 x None x 2, 2)" in {
+    val input1 = Input[Float]("X", Array(Some(2), None, Some(2)))
+    val input2 = Input[Float]("Y", Array(Some(2)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), None))
+  }
+
+  it should "fail to return its output shape on mismatching arguments (2 x 5 , 2)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(2))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  it should "fail to return its output shape with placeholders (2 x None, 2)" in {
+    val input1 = Input[Float]("X", Array(Some(2), None))
+    val input2 = Input[Float]("Y", Array(Some(2)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  "A DotProduct between N-D arrays (multidimensional inner product)" should "return its output shape (2 x 3 x 4, 4 x 5)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3, 4))), Constant(NDArray.ones[Float](Array(4, 5))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), Some(3), Some(5)))
+  }
+
+  //TODO remaining shape tests for multidimensional inner product
 }

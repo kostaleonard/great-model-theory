@@ -216,7 +216,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
 }
 
 //TODO test compute, gradient, getOutputShape
-/** Matrix multiplies the results of two functions.
+/** Computes the dot product of the results of two functions.
   *
   * @param a
   *   The left hand side.
@@ -227,7 +227,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class MatMul[T](
+case class DotProduct[T](
     a: DifferentiableFunction[T],
     b: DifferentiableFunction[T]
 )(implicit num: Numeric[T])
