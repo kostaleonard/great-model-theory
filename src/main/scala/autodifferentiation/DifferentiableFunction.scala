@@ -249,5 +249,29 @@ case class DotProduct[T](
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = ???
+  //TODO here and other getOutputShape functions don't test failure cases for arguments--refactor to reduce repeated code, then test
+  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(aShape) => b.getOutputShape match {
+        case Success(bShape) => getDotProductShapeWithPlaceholders(aShape, bShape)
+        case failure => failure
+      }
+    case failure => failure
+  }
+
+  private def getDotProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
+    if(aShape.length == 1 && bShape.length == 1) getVectorInnerProductShapeWithPlaceholders(aShape, bShape)
+    else if (aShape.length == 2 && bShape.length == 2) ??? //TODO matmul
+    else if (bShape.length == 1) ??? //TODO last axis inner product
+    else if (aShape.length > 1 && bShape.length > 1) ??? //TODO multidimensional inner product
+    else Failure(new ShapeException(s"dot undefined for shapes ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
+
+  /** Returns the shape of the dot product on two 1D arrays. */
+  private def getVectorInnerProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] = {
+    val aVectorLength = aShape.head
+    val bVectorLength = bShape.head
+    if (aVectorLength.isEmpty || bVectorLength.isEmpty) Failure(new ShapeException("Cannot get the vector inner product shape with placeholder dimensions"))
+    else if (aVectorLength.get != bVectorLength.get) Failure(new ShapeException(s"Arrays must have matching shape for vector inner product, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
+    else Success(Array(Some(1)))
+  }
 }
