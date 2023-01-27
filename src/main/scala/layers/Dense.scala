@@ -1,38 +1,79 @@
 package layers
 
 import activations.{Activation, Identity}
-import autodifferentiation.{Add, DifferentiableFunction, MatMul, ModelParameter}
+import autodifferentiation.{
+  Add,
+  DifferentiableFunction,
+  DotProduct,
+  ModelParameter
+}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 object Dense {
 
+  /** Returns a Dense layer with user-defined weights and biases.
+    *
+    * @param previousLayer
+    *   The input to this layer.
+    * @param units
+    *   The number of neurons in the layer.
+    * @param weightsInitialization
+    *   If supplied, the weights matrix to use. Must be of shape
+    *   (previousLayer.getOutputShape.last, units). If not supplied, the layer
+    *   is initialized with random weights.
+    * @param biasesInitialization
+    *   If supplied, the biases vector to use. Must be of shape (units). If not
+    *   supplied, the layer is initialized with random biases.
+    * @param activation
+    *   The activation function to apply after the dense transformation.
+    * @tparam T
+    *   The array element type.
+    */
   def withInitialization[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
       weightsInitialization: Option[NDArray[T]] = None,
       biasesInitialization: Option[NDArray[T]] = None,
       activation: Activation[T] = Identity[T]()
-  )(implicit num: Numeric[T]): Dense[T] = {
-    val weights: NDArray[T] = weightsInitialization.getOrElse(
-      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
-    )
-    val biases: NDArray[T] =
-      biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
-    Dense(previousLayer, units, weights, biases, activation)
-  }
+  )(implicit num: Numeric[T]): Try[Dense[T]] =
+    previousLayer.getOutputShape match {
+      case Success(outputShape) =>
+        val weights: NDArray[T] = weightsInitialization.getOrElse(
+          NDArray.random[T](Array(outputShape.last.get, units))
+        )
+        val biases: NDArray[T] =
+          biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
+        Success(Dense(previousLayer, units, weights, biases, activation))
+      case Failure(failure) => Failure(failure)
+    }
 
+  /** Returns a Dense layer with randomly-initialized weights and biases.
+    *
+    * @param previousLayer
+    *   The input to this layer.
+    * @param units
+    *   The number of neurons in the layer.
+    * @param activation
+    *   The activation function to apply after the dense transformation.
+    * @tparam T
+    *   The array element type.
+    */
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
       activation: Activation[T] = Identity[T]()
-  )(implicit num: Numeric[T]): Dense[T] = {
-    val weights =
-      NDArray.random[T](Array(previousLayer.getOutputShape.last, units))
-    val biases = NDArray.zeros[T](Array(units))
-    Dense(previousLayer, units, weights, biases, activation)
-  }
+  )(implicit num: Numeric[T]): Try[Dense[T]] =
+    previousLayer.getOutputShape match {
+      case Success(outputShape) =>
+        val weights =
+          NDArray.random[T](Array(outputShape.last.get, units))
+        val biases = NDArray.zeros[T](Array(units))
+        Success(Dense(previousLayer, units, weights, biases, activation))
+      case Failure(failure) => Failure(failure)
+    }
 }
 
 /** A densely connected neural network layer.
@@ -55,7 +96,8 @@ object Dense {
   * @param units
   *   The number of neurons in the layer.
   * @param weights
-  *   The weights matrix to use. Must be of shape (inputShape.last, units).
+  *   The weights matrix to use. Must be of shape
+  *   (previousLayer.getOutputShape.last, units).
   * @param biases
   *   The biases vector to use. Must be of shape (units).
   * @param activation
@@ -74,10 +116,10 @@ case class Dense[T: ClassTag] private (
 
   override def getComputationGraph: DifferentiableFunction[T] =
     Add(
-      MatMul(
+      DotProduct(
         previousLayer.getComputationGraph,
         ModelParameter("weights", weights)
       ),
       ModelParameter("biases", biases)
-    )(implicitNumeric)
+    )
 }
