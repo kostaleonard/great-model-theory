@@ -31,15 +31,13 @@ trait DifferentiableFunction[T] {
     */
   def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T]
 
-  // TODO implement
-  // TODO add tests for this under DifferentiableFunction ("A DifferentiableFunction should...")
+  // TODO implement here if possible and add tests under DifferentiableFunction
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
-  //TODO implement here if possible
-  //TODO I don't think we need the classtag anymore
+  //TODO implement here if possible and add tests under DifferentiableFunction
   /** Returns the output shape of the function with possible placeholders. */
-  def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]]
+  def getOutputShape: Try[Array[Option[Int]]]
 }
 
 /** A constant (has 0 gradient).
@@ -60,7 +58,7 @@ case class Constant[T: ClassTag](value: NDArray[T])
 
   override def getInputs: Set[Input[T]] = Set.empty
 
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
+  override def getOutputShape: Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
 }
 
 /** A variable (has potentially non-zero gradient).
@@ -98,7 +96,7 @@ case class ModelParameter[T](
 
   override def getInputs: Set[Input[T]] = Set.empty
 
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
+  override def getOutputShape: Try[Array[Option[Int]]] = Success(value.shape.map(Some(_)))
 }
 
 /** An input variable that users supply.
@@ -143,7 +141,7 @@ case class Input[T](
 
   override def getInputs: Set[Input[T]] = Set(this)
 
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] = Success(shapeWithPlaceholders)
+  override def getOutputShape: Try[Array[Option[Int]]] = Success(shapeWithPlaceholders)
 }
 
 //TODO test compute, gradient
@@ -178,7 +176,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] =
+  override def getOutputShape: Try[Array[Option[Int]]] =
     a.getOutputShape match {
       case Success(aShape) => b.getOutputShape match {
         case Success(bShape) => getBroadcastShapeWithPlaceholders(aShape, bShape)
@@ -250,7 +248,7 @@ case class DotProduct[T](
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
   //TODO here and other getOutputShape functions don't test failure cases for arguments--refactor to reduce repeated code, then test
-  override def getOutputShape(implicit classTag: ClassTag[T]): Try[Array[Option[Int]]] =
+  override def getOutputShape: Try[Array[Option[Int]]] =
     a.getOutputShape match {
       case Success(aShape) => b.getOutputShape match {
         case Success(bShape) => getDotProductShapeWithPlaceholders(aShape, bShape)
