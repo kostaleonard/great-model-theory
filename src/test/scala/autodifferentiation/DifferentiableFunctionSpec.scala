@@ -343,5 +343,42 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.get sameElements Array(Some(2), Some(3), Some(5)))
   }
 
-  //TODO remaining shape tests for multidimensional inner product
+  it should "return its output shape (3 x 5 x 2, 1 x 2 x 3)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(3, 5, 2))), Constant(NDArray.ones[Float](Array(1, 2, 3))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(3), Some(5), Some(3)))
+  }
+
+  it should "return its output shape with placeholders (2 x None x 4, 4 x 5)" in {
+    val input1 = Input[Float]("X", Array(Some(2), None, Some(4)))
+    val input2 = Input[Float]("Y", Array(Some(4), Some(5)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), None, Some(5)))
+  }
+
+  it should "return its output shape with placeholders (None x 1 x 4, 2 x 4 x None)" in {
+    val input1 = Input[Float]("X", Array(None, Some(1), Some(4)))
+    val input2 = Input[Float]("Y", Array(Some(2), Some(4), None))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(None, Some(1), Some(2), None))
+  }
+
+  it should "fail to return its output shape on mismatching arguments (2 x 3 x 4, 1 x 4)" in {
+    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3, 4))), Constant(NDArray.ones[Float](Array(1, 4))))
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
+
+  it should "fail to return its output shape with placeholders (2 x 3 x None, 4 x 5)" in {
+    val input1 = Input[Float]("X", Array(Some(2), Some(3), None))
+    val input2 = Input[Float]("Y", Array(Some(4), Some(5)))
+    val dotProduct = DotProduct(input1, input2)
+    val shape = dotProduct.getOutputShape
+    assert(shape.isFailure)
+  }
 }
