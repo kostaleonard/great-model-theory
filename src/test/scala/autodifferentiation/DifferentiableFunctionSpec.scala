@@ -347,7 +347,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(3, 5, 2))), Constant(NDArray.ones[Float](Array(1, 2, 3))))
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
-    assert(shape.get sameElements Array(Some(3), Some(5), Some(3)))
+    assert(shape.get sameElements Array(Some(3), Some(5), Some(1), Some(3)))
   }
 
   it should "return its output shape with placeholders (2 x None x 4, 4 x 5)" in {

@@ -215,7 +215,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   }
 }
 
-//TODO test compute, gradient, getOutputShape
+//TODO test compute, gradient
 /** Computes the dot product of the results of two functions.
   *
   * @param a
@@ -259,11 +259,12 @@ case class DotProduct[T](
     case failure => failure
   }
 
+  //TODO the functions this calls could have better error messages: which array and which index is the issue?
   private def getDotProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
     if(aShape.length == 1 && bShape.length == 1) getVectorInnerProductShapeWithPlaceholders(aShape, bShape)
     else if (aShape.length == 2 && bShape.length == 2) getMatMulShapeWithPlaceholders(aShape, bShape)
     else if (bShape.length == 1) getLastAxisInnerProductShapeWithPlaceholders(aShape, bShape)
-    else if (aShape.length > 1 && bShape.length > 1) ??? //TODO multidimensional inner product
+    else if (aShape.length > 1 && bShape.length > 1) getMultidimensionalInnerProductShapeWithPlaceholders(aShape, bShape)
     else Failure(new ShapeException(s"dot undefined for shapes ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
 
   /** Returns the shape of the dot product on two 1D arrays. */
@@ -291,4 +292,10 @@ case class DotProduct[T](
     if (aShape.last.isEmpty || bShape.head.isEmpty) Failure(new ShapeException("Cannot get last axis inner product shape with placeholder in last dimension"))
     else if(aShape.last.get != bShape.head.get) Failure(new ShapeException(s"Arrays must have matching last dimension for last axis inner product, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
     else Success(aShape.dropRight(1))
+
+  /** Returns the shape of the dot product between N-D arrays. */
+  private def getMultidimensionalInnerProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
+    if (aShape.last.isEmpty || bShape(bShape.length - 2).isEmpty) Failure(new ShapeException("Cannot get multidimensional inner product shape with placeholder in match dimension"))
+    else if(aShape.last.get != bShape(bShape.length - 2).get) Failure(new ShapeException(s"${aShape.mkString("Array(", ", ", ")")} last dimension and ${bShape.mkString("Array(", ", ", ")")} second to last dimension must match for multidimensional inner product"))
+    else Success(aShape.dropRight(1) ++ bShape.dropRight(2) :+ bShape.last)
 }
