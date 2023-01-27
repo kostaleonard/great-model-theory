@@ -261,7 +261,7 @@ case class DotProduct[T](
 
   private def getDotProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
     if(aShape.length == 1 && bShape.length == 1) getVectorInnerProductShapeWithPlaceholders(aShape, bShape)
-    else if (aShape.length == 2 && bShape.length == 2) ??? //TODO matmul
+    else if (aShape.length == 2 && bShape.length == 2) getMatMulShapeWithPlaceholders(aShape, bShape)
     else if (bShape.length == 1) ??? //TODO last axis inner product
     else if (aShape.length > 1 && bShape.length > 1) ??? //TODO multidimensional inner product
     else Failure(new ShapeException(s"dot undefined for shapes ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
@@ -273,5 +273,16 @@ case class DotProduct[T](
     if (aVectorLength.isEmpty || bVectorLength.isEmpty) Failure(new ShapeException("Cannot get the vector inner product shape with placeholder dimensions"))
     else if (aVectorLength.get != bVectorLength.get) Failure(new ShapeException(s"Arrays must have matching shape for vector inner product, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
     else Success(Array(Some(1)))
+  }
+
+  /** Returns the shape of the dot product on two 2D arrays. */
+  private def getMatMulShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] = {
+    val i = aShape.head
+    val j1 = aShape.tail.head
+    val j2 = bShape.head
+    val k = bShape.tail.head
+    if (j1.isEmpty || j2.isEmpty) Failure(new ShapeException("Cannot get matmul shape with placeholder dimensions in middle position"))
+    else if (j1.get != j2.get) Failure(new ShapeException(s"Arrays must have matching middle dimension for matmul, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
+    else Success(Array(i, k))
   }
 }

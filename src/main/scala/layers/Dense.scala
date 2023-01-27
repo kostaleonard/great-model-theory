@@ -10,7 +10,7 @@ import scala.util.{Failure, Success, Try}
 object Dense {
 
   // TODO test failure case
-  // TODO outputShape.last.get should produce Failure
+  // TODO outputShape.last.get could fail
   def withInitialization[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
@@ -30,7 +30,7 @@ object Dense {
     }
 
   // TODO test failure case
-  // TODO outputShape.last.get should produce Failure
+  // TODO outputShape.last.get could fail
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
