@@ -262,7 +262,7 @@ case class DotProduct[T](
   private def getDotProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
     if(aShape.length == 1 && bShape.length == 1) getVectorInnerProductShapeWithPlaceholders(aShape, bShape)
     else if (aShape.length == 2 && bShape.length == 2) getMatMulShapeWithPlaceholders(aShape, bShape)
-    else if (bShape.length == 1) ??? //TODO last axis inner product
+    else if (bShape.length == 1) getLastAxisInnerProductShapeWithPlaceholders(aShape, bShape)
     else if (aShape.length > 1 && bShape.length > 1) ??? //TODO multidimensional inner product
     else Failure(new ShapeException(s"dot undefined for shapes ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
 
@@ -281,8 +281,14 @@ case class DotProduct[T](
     val j1 = aShape.tail.head
     val j2 = bShape.head
     val k = bShape.tail.head
-    if (j1.isEmpty || j2.isEmpty) Failure(new ShapeException("Cannot get matmul shape with placeholder dimensions in middle position"))
+    if (j1.isEmpty || j2.isEmpty) Failure(new ShapeException("Cannot get matmul shape with placeholder in middle dimension"))
     else if (j1.get != j2.get) Failure(new ShapeException(s"Arrays must have matching middle dimension for matmul, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
     else Success(Array(i, k))
   }
+
+  /** Returns the shape of the dot product on an N-D array and 1D array. */
+  private def getLastAxisInnerProductShapeWithPlaceholders(aShape: Array[Option[Int]], bShape: Array[Option[Int]]): Try[Array[Option[Int]]] =
+    if (aShape.last.isEmpty || bShape.head.isEmpty) Failure(new ShapeException("Cannot get last axis inner product shape with placeholder in last dimension"))
+    else if(aShape.last.get != bShape.head.get) Failure(new ShapeException(s"Arrays must have matching last dimension for last axis inner product, but found ${aShape.mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"))
+    else Success(aShape.dropRight(1))
 }
