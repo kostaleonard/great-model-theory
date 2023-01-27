@@ -1,7 +1,12 @@
 package layers
 
 import activations.{Activation, Identity}
-import autodifferentiation.{Add, DifferentiableFunction, DotProduct, ModelParameter}
+import autodifferentiation.{
+  Add,
+  DifferentiableFunction,
+  DotProduct,
+  ModelParameter
+}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -9,8 +14,24 @@ import scala.util.{Failure, Success, Try}
 
 object Dense {
 
-  // TODO test failure case
-  // TODO outputShape.last.get could fail
+  /** Returns a Dense layer with user-defined weights and biases.
+    *
+    * @param previousLayer
+    *   The input to this layer.
+    * @param units
+    *   The number of neurons in the layer.
+    * @param weightsInitialization
+    *   If supplied, the weights matrix to use. Must be of shape
+    *   (previousLayer.getOutputShape.last, units). If not supplied, the layer
+    *   is initialized with random weights.
+    * @param biasesInitialization
+    *   If supplied, the biases vector to use. Must be of shape (units). If not
+    *   supplied, the layer is initialized with random biases.
+    * @param activation
+    *   The activation function to apply after the dense transformation.
+    * @tparam T
+    *   The array element type.
+    */
   def withInitialization[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
@@ -29,8 +50,17 @@ object Dense {
       case Failure(failure) => Failure(failure)
     }
 
-  // TODO test failure case
-  // TODO outputShape.last.get could fail
+  /** Returns a Dense layer with randomly-initialized weights and biases.
+    *
+    * @param previousLayer
+    *   The input to this layer.
+    * @param units
+    *   The number of neurons in the layer.
+    * @param activation
+    *   The activation function to apply after the dense transformation.
+    * @tparam T
+    *   The array element type.
+    */
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int,
@@ -66,7 +96,8 @@ object Dense {
   * @param units
   *   The number of neurons in the layer.
   * @param weights
-  *   The weights matrix to use. Must be of shape (inputShape.last, units).
+  *   The weights matrix to use. Must be of shape
+  *   (previousLayer.getOutputShape.last, units).
   * @param biases
   *   The biases vector to use. Must be of shape (units).
   * @param activation
@@ -90,5 +121,5 @@ case class Dense[T: ClassTag] private (
         ModelParameter("weights", weights)
       ),
       ModelParameter("biases", biases)
-    )(implicitNumeric)
+    )
 }

@@ -134,21 +134,30 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   "An Add" should "return its output shape when its arguments' shapes match" in {
-    val addition = Add(Constant(NDArray.zeros[Float](Array(2, 4))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val addition = Add(
+      Constant(NDArray.zeros[Float](Array(2, 4))),
+      Constant(NDArray.ones[Float](Array(2, 4)))
+    )
     val shape = addition.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(2), Some(4)))
   }
 
   it should "return its output shape when its arguments' shapes can be broadcast" in {
-    val addition = Add(Constant(NDArray.zeros[Float](Array(4))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val addition = Add(
+      Constant(NDArray.zeros[Float](Array(4))),
+      Constant(NDArray.ones[Float](Array(2, 4)))
+    )
     val shape = addition.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(2), Some(4)))
   }
 
   it should "fail to return an output shape when its arguments' shapes mismatch" in {
-    val addition = Add(Constant(NDArray.zeros[Float](Array(2))), Constant(NDArray.ones[Float](Array(2, 4))))
+    val addition = Add(
+      Constant(NDArray.zeros[Float](Array(2))),
+      Constant(NDArray.ones[Float](Array(2, 4)))
+    )
     val shape = addition.getOutputShape
     assert(shape.isFailure)
   }
@@ -229,16 +238,22 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val shape = addition.getOutputShape
     assert(shape.isFailure)
   }
-  
+
   "A DotProduct with 1D arrays (vector inner product)" should "return its output shape (5, 5)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(5))), Constant(NDArray.ones[Float](Array(5))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(5))),
+      Constant(NDArray.ones[Float](Array(5)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(1)))
   }
 
   it should "fail to return an output shape on mismatching arguments (6, 5)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(6))), Constant(NDArray.ones[Float](Array(5))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(6))),
+      Constant(NDArray.ones[Float](Array(5)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isFailure)
   }
@@ -252,7 +267,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   "A DotProduct with 2D arrays (matmul)" should "return its output shape (2 x 4, 4 x 3)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 4))), Constant(NDArray.ones[Float](Array(4, 3))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 4))),
+      Constant(NDArray.ones[Float](Array(4, 3)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(2), Some(3)))
@@ -284,9 +302,12 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(None, None))
   }
-  
+
   it should "fail to return its output shape on mismatching arguments (2 x 3, 4 x 3)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(4, 3))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 3))),
+      Constant(NDArray.ones[Float](Array(4, 3)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isFailure)
   }
@@ -300,14 +321,20 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   "A DotProduct with an N-D array and 1D array (last axis inner product)" should "return its output shape (2 x 3, 3)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(3))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 3))),
+      Constant(NDArray.ones[Float](Array(3)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(2)))
   }
 
   it should "return its output shape (3 x 5 x 2, 2)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(3, 5, 2))), Constant(NDArray.ones[Float](Array(2))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(3, 5, 2))),
+      Constant(NDArray.ones[Float](Array(2)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(3), Some(5)))
@@ -323,7 +350,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "fail to return its output shape on mismatching arguments (2 x 5 , 2)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3))), Constant(NDArray.ones[Float](Array(2))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 3))),
+      Constant(NDArray.ones[Float](Array(2)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isFailure)
   }
@@ -337,14 +367,20 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   "A DotProduct between N-D arrays (multidimensional inner product)" should "return its output shape (2 x 3 x 4, 4 x 5)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3, 4))), Constant(NDArray.ones[Float](Array(4, 5))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 3, 4))),
+      Constant(NDArray.ones[Float](Array(4, 5)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(2), Some(3), Some(5)))
   }
 
   it should "return its output shape (3 x 5 x 2, 1 x 2 x 3)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(3, 5, 2))), Constant(NDArray.ones[Float](Array(1, 2, 3))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(3, 5, 2))),
+      Constant(NDArray.ones[Float](Array(1, 2, 3)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements Array(Some(3), Some(5), Some(1), Some(3)))
@@ -369,7 +405,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "fail to return its output shape on mismatching arguments (2 x 3 x 4, 1 x 4)" in {
-    val dotProduct = DotProduct(Constant(NDArray.zeros[Float](Array(2, 3, 4))), Constant(NDArray.ones[Float](Array(1, 4))))
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(2, 3, 4))),
+      Constant(NDArray.ones[Float](Array(1, 4)))
+    )
     val shape = dotProduct.getOutputShape
     assert(shape.isFailure)
   }
