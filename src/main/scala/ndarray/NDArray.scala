@@ -491,7 +491,6 @@ class NDArray[T: ClassTag] private (
       case Failure(failure)      => Failure(failure)
     }
 
-  //TODO implement *
   /** Returns the result of element-wise multiplication of the two NDArrays.
     *
     * @param other
@@ -505,7 +504,19 @@ class NDArray[T: ClassTag] private (
     */
   def *(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] = ???
+  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
+    shape sameElements other.shape
+  ) {
+    val thisFlat = flatten()
+    val otherFlat = other.flatten()
+    val result =
+      thisFlat.indices.map(idx => num.times(thisFlat(idx), otherFlat(idx)))
+    Success(NDArray(result).reshape(shape))
+  } else
+    broadcastWith(other) match {
+      case Success((arr1, arr2)) => arr1 * arr2
+      case Failure(failure)      => Failure(failure)
+    }
 
   /** Returns the sum of all elements.
     *

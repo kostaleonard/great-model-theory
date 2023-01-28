@@ -523,6 +523,32 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert((arr1 - arr2).isFailure)
   }
 
+  it should "define * for element-wise multiplication" in {
+    val arr1 = NDArray[Int](List(2, 3, 4))
+    val arr2 = NDArray[Int](List(2, 3, 4))
+    val multiplication = arr1 * arr2
+    assert(multiplication.isSuccess)
+    assert(multiplication.get arrayEquals NDArray(List(4, 9, 16)))
+  }
+
+  it should "broadcast arrays in element-wise multiplication (3 x 1, 1 x 3)" in {
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(Array(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(Array(1, 3))
+    val multiplication = arr1 * arr2
+    assert(multiplication.isSuccess)
+    val expected =
+      NDArray[Int](List(4, 5, 6, 8, 10, 12, 12, 15, 18)).reshape(
+        Array(3, 3)
+      )
+    assert(multiplication.get arrayEquals expected)
+  }
+
+  it should "fail to perform element-wise multiplication on arrays with mismatching shape" in {
+    val arr1 = NDArray.arange[Int](Array(2, 3))
+    val arr2 = NDArray.arange[Int](Array(3, 2))
+    assert((arr1 * arr2).isFailure)
+  }
+
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)
