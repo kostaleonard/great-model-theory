@@ -771,4 +771,7 @@ class NDArray[T: ClassTag] private (
       .toArray
     NDArray[B](newElements).reshape(newShape)
   }
+
+  /** Returns the string representation of the NDArray. */
+  override def toString: String = flatten().mkString("[", ", ", "]") + shape.mkString("(", " x ", ")")
 }

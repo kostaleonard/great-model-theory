@@ -746,6 +746,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
   }
 
+  it should "represent its elements in string form" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    assert(arr.toString == "[0, 1, 2, 3, 4, 5](2 x 3)")
+  }
+
   "An NDArray.empty array" should "have no elements" in {
     val arr = NDArray.empty[Int]
     assert(arr.flatten().isEmpty)

@@ -181,12 +181,13 @@ case class Negate[T](a: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class Square[T](a: DifferentiableFunction[T])(
+case class Square[T: ClassTag](a: DifferentiableFunction[T])(
   implicit num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
-  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] =
+    Multiply(Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a), a.gradient(withRespectToVariable))
 
   override def getInputs: Set[Input[T]] = ???
 
@@ -288,6 +289,38 @@ case class Subtract[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T
   implicit num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
+
+//TODO test
+/** Element-wise multiplies the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Multiply[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
+  implicit num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue * bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
 
   override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
 
