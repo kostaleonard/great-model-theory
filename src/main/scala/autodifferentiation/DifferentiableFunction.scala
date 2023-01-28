@@ -149,6 +149,51 @@ case class Input[T](
   )
 }
 
+//TODO test compute and gradient
+/** Negates the results of a function.
+  *
+  * @param a
+  *   The function to negate.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Negate[T](a: DifferentiableFunction[T])(
+  implicit num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
+
+//TODO test compute and gradient
+/** Squares the results of a function.
+  *
+  * @param a
+  *   The function to square.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Square[T](a: DifferentiableFunction[T])(
+  implicit num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
+
+//TODO test compute and gradient
 /** Adds the results of two functions.
   *
   * @param a
@@ -227,6 +272,23 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   }
 }
 
+//TODO test compute and gradient
+/** Subtracts the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Subtract[T](override val a: DifferentiableFunction[T], override val b: DifferentiableFunction[T])(
+  implicit num: Numeric[T]
+) extends Add[T](a, Negate(b))
+
+//TODO test compute and gradient
 /** Computes the dot product of the results of two functions.
   *
   * @param a

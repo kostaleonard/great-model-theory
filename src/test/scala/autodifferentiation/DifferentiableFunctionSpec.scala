@@ -21,6 +21,41 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.get sameElements Array(Some(2), Some(2)))
   }
 
+  it should "be able to express gradient descent" in {
+    val numFeatures = 3
+    val inputX = Input[Float]("X", Array(None, Some(numFeatures)))
+    val numOutputs = 2
+    val inputY = Input[Float]("Y", Array(None, Some(numOutputs)))
+    val weights = ModelParameter[Float]("weights", NDArray.arange(Array(numFeatures, numOutputs)))
+    val biases = ModelParameter[Float]("biases", NDArray.ones(Array(numOutputs)))
+    val dense = Add(DotProduct(inputX, weights), biases)
+    val loss = Square(Subtract(dense, inputY))
+    val weightsGradient = loss.gradient(weights)
+    val biasesGradient = loss.gradient(biases)
+    // The function we are trying to model is f(x) = x0 ^ 2 - x1
+    val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(Array(3, numFeatures))
+    val batchY = NDArray[Float](List(-2, 7, 2))
+    val learningRate = 1e-3
+    val nextStepWeightsGradient = weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
+    assert(nextStepWeightsGradient.isSuccess)
+    val nextStepWeightsValue = (weights.value - learningRate * nextStepWeightsGradient.get).get
+    val nextStepWeights = ModelParameter[Float]("weights", nextStepWeightsValue)
+    val nextStepBiasesGradient = biasesGradient.compute(Map(inputX -> batchX, inputY -> batchY))
+    assert(nextStepBiasesGradient.isSuccess)
+    val nextStepBiasesValue = (biases.value - learningRate * nextStepBiasesGradient.get).get
+    val nextStepBiases = ModelParameter[Float]("biases", nextStepBiasesValue)
+    val nextStepDense = Add(DotProduct(inputX, nextStepWeights), nextStepBiases)
+    val nextStepLoss = Square(Subtract(nextStepDense, inputY))
+    // Compare losses from previous step and next step; loss should decrease.
+    val lossOnBatch = loss.compute(Map(inputX -> batchX, inputY -> batchY))
+    assert(lossOnBatch.isSuccess)
+    val nextStepLossOnBatch = nextStepLoss.compute(Map(inputX -> batchX, inputY -> batchY))
+    assert(nextStepLossOnBatch.isSuccess)
+    val lossOnBatchSum = lossOnBatch.get.sum
+    val nextStepLossOnBatchSum = nextStepLossOnBatch.get.sum
+    assert(nextStepLossOnBatchSum < lossOnBatchSum)
+  }
+
   "A Constant" should "return its preset value when computed" in {
     val value = NDArray.ones[Int](Array(3))
     val constant = Constant(value)
