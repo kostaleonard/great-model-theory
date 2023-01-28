@@ -440,7 +440,8 @@ class NDArray[T: ClassTag] private (
   /** Returns the result of element-wise addition of the two NDArrays.
     *
     * @param other
-    *   The array to add. Must be the same shape as this array.
+    *   The array to add. If not the same shape as this array, this function
+    *   attempts a broadcast.
     * @param num
     *   An implicit parameter defining a set of numeric operations which
     *   includes the `+` operator to be used in forming the sum.
@@ -466,7 +467,8 @@ class NDArray[T: ClassTag] private (
   /** Returns the result of element-wise subtraction of the two NDArrays.
     *
     * @param other
-    *   The array to subtract. Must be the same shape as this array.
+    *   The array to subtract. If not the same shape as this array, this
+    *   function attempts a broadcast.
     * @param num
     *   An implicit parameter defining a set of numeric operations which
     *   includes the `-` operator to be used in forming the sum.
@@ -488,6 +490,22 @@ class NDArray[T: ClassTag] private (
       case Success((arr1, arr2)) => arr1 - arr2
       case Failure(failure)      => Failure(failure)
     }
+
+  //TODO implement *
+  /** Returns the result of element-wise multiplication of the two NDArrays.
+    *
+    * @param other
+    *   The array to multiply. If not the same shape as this array, this
+    *   function attempts a broadcast.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations which
+    *   includes the `-` operator to be used in forming the sum.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def *(
+      other: NDArray[T]
+  )(implicit num: Numeric[T]): Try[NDArray[T]] = ???
 
   /** Returns the sum of all elements.
     *

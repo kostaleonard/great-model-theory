@@ -149,7 +149,7 @@ case class Input[T](
   )
 }
 
-//TODO test compute and gradient
+//TODO test
 /** Negates the results of a function.
   *
   * @param a
@@ -171,7 +171,7 @@ case class Negate[T](a: DifferentiableFunction[T])(
   override def getOutputShape: Try[Array[Option[Int]]] = ???
 }
 
-//TODO test compute and gradient
+//TODO test
 /** Squares the results of a function.
   *
   * @param a
@@ -272,7 +272,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   }
 }
 
-//TODO test compute and gradient
+//TODO test
 /** Subtracts the results of two functions.
   *
   * @param a
@@ -284,9 +284,17 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class Subtract[T](override val a: DifferentiableFunction[T], override val b: DifferentiableFunction[T])(
+case class Subtract[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   implicit num: Numeric[T]
-) extends Add[T](a, Negate(b))
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
 
 //TODO test compute and gradient
 /** Computes the dot product of the results of two functions.

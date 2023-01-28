@@ -35,14 +35,14 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // The function we are trying to model is f(x) = x0 ^ 2 - x1
     val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(Array(3, numFeatures))
     val batchY = NDArray[Float](List(-2, 7, 2))
-    val learningRate = 1e-3
+    val learningRate = 1e-3f
     val nextStepWeightsGradient = weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(nextStepWeightsGradient.isSuccess)
-    val nextStepWeightsValue = (weights.value - learningRate * nextStepWeightsGradient.get).get
+    val nextStepWeightsValue = (weights.value - (NDArray(List(learningRate)) * nextStepWeightsGradient.get).get).get
     val nextStepWeights = ModelParameter[Float]("weights", nextStepWeightsValue)
     val nextStepBiasesGradient = biasesGradient.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(nextStepBiasesGradient.isSuccess)
-    val nextStepBiasesValue = (biases.value - learningRate * nextStepBiasesGradient.get).get
+    val nextStepBiasesValue = (biases.value - (NDArray(List(learningRate)) * nextStepBiasesGradient.get).get).get
     val nextStepBiases = ModelParameter[Float]("biases", nextStepBiasesValue)
     val nextStepDense = Add(DotProduct(inputX, nextStepWeights), nextStepBiases)
     val nextStepLoss = Square(Subtract(nextStepDense, inputY))
@@ -272,6 +272,39 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val addition = Add(input1, input2)
     val shape = addition.getOutputShape
     assert(shape.isFailure)
+  }
+
+  it should "compute the addition of two functions" in {
+    val addition = Add(
+      Constant(NDArray(List(2, -2, -1, 1)).reshape(Array(2, 2))),
+      Constant(NDArray(List(9, 1, 0, 2)).reshape(Array(2, 2)))
+    )
+    val output = addition.compute(Map.empty)
+    assert(output.isSuccess)
+    val expected = NDArray(List(11, -1, -1, 3)).reshape(Array(2, 2))
+    assert(output.get arrayEquals expected)
+  }
+
+  it should "compute the addition of two functions, with broadcasting" in {
+    val input1 = Input[Int]("X", Array(None, Some(3)))
+    val input2 = Input[Int]("Y", Array(Some(3)))
+    val addition = Add(input1, input2)
+    val output = addition.compute(Map(
+      input1 -> NDArray(List(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)),
+      input2 -> NDArray(List(-2, 4, 3))
+    ))
+    assert(output.isSuccess)
+    val expected = NDArray(List(-1, 6, 6, 2, 9, 9)).reshape(Array(2, 3))
+    assert(output.get arrayEquals expected)
+  }
+
+  it should "fail to compute the addition of two functions with mismatching shapes" in {
+    val addition = Add[Int](
+      Constant(NDArray.ones(Array(2, 3))),
+      Constant(NDArray.ones(Array(2, 2)))
+    )
+    val output = addition.compute(Map.empty)
+    assert(output.isFailure)
   }
 
   "A DotProduct with 1D arrays (vector inner product)" should "return its output shape (5, 5)" in {
