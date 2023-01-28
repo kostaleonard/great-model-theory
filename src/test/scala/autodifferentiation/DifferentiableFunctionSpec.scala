@@ -307,6 +307,51 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(output.isFailure)
   }
 
+  it should "get the gradient of the addition of two constants" in {
+    val addition = Add[Float](
+      Constant(NDArray[Float](List(2, -2, -1, 1)).reshape(Array(2, 2))),
+      Constant(NDArray[Float](List(9, 1, 0, 2)).reshape(Array(2, 2)))
+    )
+    val gradient = addition.gradient(Input[Float]("X", Array(None)))
+    val output = gradient.compute(Map.empty)
+    assert(output.isSuccess)
+    val expected = NDArray[Float](List(0, 0, 0, 0)).reshape(Array(2, 2))
+    assert(output.get arrayApproximatelyEquals expected)
+  }
+
+  it should "get the gradient of the addition of two variables" in {
+    val inputX = Input[Float]("X", Array(None, Some(3)))
+    val inputY = Input[Float]("Y", Array(Some(1)))
+    val addition = Add(inputX, inputY)
+    val gradientX = addition.gradient(inputX)
+    val outputX = gradientX.compute(Map.empty)
+    assert(outputX.isSuccess)
+    val expectedX = NDArray.ones[Float](Array(1))
+    assert(outputX.get arrayApproximatelyEquals expectedX)
+    val gradientY = addition.gradient(inputY)
+    val outputY = gradientY.compute(Map.empty)
+    assert(outputY.isSuccess)
+    val expectedY = NDArray.ones[Float](Array(1))
+    assert(outputY.get arrayApproximatelyEquals expectedY)
+  }
+
+  it should "get the gradient of the addition of two functions" in {
+    val inputX = Input[Float]("X", Array(None, Some(3)))
+    val inputY = Input[Float]("Y", Array(Some(1)))
+    val addition = Add(Square(inputX), inputY)
+    val gradientX = addition.gradient(inputX)
+    val valueX = NDArray[Float](List(1, -2, 0, 3, 2, 1)).reshape(Array(2, 3))
+    val outputX = gradientX.compute(Map(inputX -> valueX))
+    assert(outputX.isSuccess)
+    val expectedX = (valueX * NDArray(List(2))).get
+    assert(outputX.get arrayApproximatelyEquals expectedX)
+    val gradientY = addition.gradient(inputY)
+    val outputY = gradientY.compute(Map.empty)
+    assert(outputY.isSuccess)
+    val expectedY = NDArray.ones[Float](Array(1))
+    assert(outputY.get arrayApproximatelyEquals expectedY)
+  }
+
   "A DotProduct with 1D arrays (vector inner product)" should "return its output shape (5, 5)" in {
     val dotProduct = DotProduct(
       Constant(NDArray.zeros[Float](Array(5))),
