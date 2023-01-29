@@ -4,22 +4,35 @@ import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
 
 class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
-  /** Numerically computes the gradient of the function for the inputs. */
+  /** Numerically computes the gradient of the function for the inputs.
+    *
+    * If you plan to use this function to check gradients, use Double precision.
+    */
   private def computeGradientWithFiniteDifferences[T: ClassTag](
       f: DifferentiableFunction[T],
+      withRespectToInput: Input[T],
       inputs: Map[Input[T], NDArray[T]],
       epsilon: Double = 1e-5
   )(implicit num: Fractional[T]): Try[NDArray[T]] = {
-    val epsilonArray = NDArray[T](List(epsilon.asInstanceOf[T]))
-    val inputsMinusEpsilon =
-      inputs.transform((_, value) => (value - epsilonArray).get)
-    val inputsPlusEpsilon =
-      inputs.transform((_, value) => (value + epsilonArray).get)
+    val epsilonArray = (classTag[T] match {
+      case _ if classTag[T] == classTag[Float] =>
+        NDArray[Float](List(epsilon.toFloat))
+      case _ if classTag[T] == classTag[Double] =>
+        NDArray[Double](List(epsilon))
+    }).asInstanceOf[NDArray[T]]
+    val inputsMinusEpsilon = inputs.updated(
+      withRespectToInput,
+      (inputs(withRespectToInput) - epsilonArray).get
+    )
+    val inputsPlusEpsilon = inputs.updated(
+      withRespectToInput,
+      (inputs(withRespectToInput) + epsilonArray).get
+    )
     val outputMinusEpsilon = f.compute(inputsMinusEpsilon)
     val outputPlusEpsilon = f.compute(inputsPlusEpsilon)
     if (outputMinusEpsilon.isFailure) outputMinusEpsilon
@@ -27,7 +40,17 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     else {
       val difference = outputPlusEpsilon.get - outputMinusEpsilon.get
       if (difference.isFailure) difference
-      else difference.get / NDArray[T](List((2 * epsilon).asInstanceOf[T]))
+      else
+        (classTag[T] match {
+          case _ if classTag[T] == classTag[Float] =>
+            difference.get.asInstanceOf[NDArray[Float]] / NDArray[Float](
+              List(2 * epsilon.toFloat)
+            )
+          case _ if classTag[T] == classTag[Double] =>
+            difference.get.asInstanceOf[NDArray[Double]] / NDArray[Double](
+              List(2 * epsilon)
+            )
+        }).asInstanceOf[Try[NDArray[T]]]
     }
   }
 
@@ -418,6 +441,53 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val dotProduct = DotProduct(input1, input2)
     val shape = dotProduct.getOutputShape
     assert(shape.isFailure)
+  }
+
+  it should "compute its output (5, 5)" in {
+    val dotProduct = DotProduct(
+      Constant(NDArray[Float](List(1, 2, 3, 4, 5))),
+      Constant(NDArray[Float](List(2, -1, 0, 0, 4)))
+    )
+    val output = dotProduct.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals NDArray(List(20)))
+  }
+
+  it should "fail to compute its output on mismatching arguments (6, 5)" in {
+    val dotProduct = DotProduct(
+      Constant(NDArray.zeros[Float](Array(6))),
+      Constant(NDArray.ones[Float](Array(5)))
+    )
+    val output = dotProduct.compute(Map.empty)
+    assert(output.isFailure)
+  }
+
+  it should "compute its gradient" in {
+    val inputX = Input[Double]("X", Array(Some(5)))
+    val inputY = Input[Double]("Y", Array(Some(5)))
+    val dotProduct = DotProduct(inputX, inputY)
+    val gradientX = dotProduct.gradient(inputX)
+    val gradientY = dotProduct.gradient(inputY)
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val inputs = Map(inputX -> valueX, inputY -> valueY)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+    val numericGradientYOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+    // TODO remove debugging
+    println(numericGradientXOnInputs)
+    println(numericGradientYOnInputs)
+    val gradientXOnInputs = gradientX.compute(inputs)
+    val gradientYOnInputs = gradientY.compute(inputs)
+    assert(gradientXOnInputs.isSuccess)
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+    assert(gradientYOnInputs.isSuccess)
+    assert(
+      gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
+    )
   }
 
   "A DotProduct with 2D arrays (matmul)" should "return its output shape (2 x 4, 4 x 3)" in {

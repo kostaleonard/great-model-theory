@@ -22,6 +22,7 @@ trait DifferentiableFunction[T] {
     */
   def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]]
 
+  // TODO some functions cannot be differentiated, so this is a Try
   /** Returns the gradient of the function with respect to a variable.
     *
     * @param withRespectToVariable
@@ -358,7 +359,7 @@ case class Multiply[T](
   * @tparam T
   *   The array element type.
   */
-case class DotProduct[T](
+case class DotProduct[T: ClassTag](
     a: DifferentiableFunction[T],
     b: DifferentiableFunction[T]
 )(implicit num: Numeric[T])
@@ -375,7 +376,7 @@ case class DotProduct[T](
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = ???
+  ): DifferentiableFunction[T] = Constant(NDArray.zeros[T](Array(1)))
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
