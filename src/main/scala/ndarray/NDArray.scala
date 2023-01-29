@@ -443,8 +443,7 @@ class NDArray[T: ClassTag] private (
     *   The array to add. If not the same shape as this array, this function
     *   attempts a broadcast.
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `+` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     * @return
     *   An NDArray of the same size.
     */
@@ -470,8 +469,7 @@ class NDArray[T: ClassTag] private (
     *   The array to subtract. If not the same shape as this array, this
     *   function attempts a broadcast.
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `-` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     * @return
     *   An NDArray of the same size.
     */
@@ -497,8 +495,7 @@ class NDArray[T: ClassTag] private (
     *   The array to multiply. If not the same shape as this array, this
     *   function attempts a broadcast.
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `-` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     * @return
     *   An NDArray of the same size.
     */
@@ -515,6 +512,32 @@ class NDArray[T: ClassTag] private (
   } else
     broadcastWith(other) match {
       case Success((arr1, arr2)) => arr1 * arr2
+      case Failure(failure)      => Failure(failure)
+    }
+
+  /** Returns the result of element-wise division of the two NDArrays.
+    *
+    * @param other
+    *   The array to divide. If not the same shape as this array, this function
+    *   attempts a broadcast.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def /(
+      other: NDArray[T]
+  )(implicit num: Fractional[T]): Try[NDArray[T]] = if (
+    shape sameElements other.shape
+  ) {
+    val thisFlat = flatten()
+    val otherFlat = other.flatten()
+    val result =
+      thisFlat.indices.map(idx => num.div(thisFlat(idx), otherFlat(idx)))
+    Success(NDArray(result).reshape(shape))
+  } else
+    broadcastWith(other) match {
+      case Success((arr1, arr2)) => arr1 / arr2
       case Failure(failure)      => Failure(failure)
     }
 
@@ -773,5 +796,6 @@ class NDArray[T: ClassTag] private (
   }
 
   /** Returns the string representation of the NDArray. */
-  override def toString: String = flatten().mkString("[", ", ", "]") + shape.mkString("(", " x ", ")")
+  override def toString: String =
+    flatten().mkString("[", ", ", "]") + shape.mkString("(", " x ", ")")
 }

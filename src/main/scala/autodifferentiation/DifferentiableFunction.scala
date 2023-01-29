@@ -159,12 +159,14 @@ case class Input[T](
   * @tparam T
   *   The array element type.
   */
-case class Negate[T](a: DifferentiableFunction[T])(
-  implicit num: Numeric[T]
+case class Negate[T](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
-  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): DifferentiableFunction[T] = ???
 
   override def getInputs: Set[Input[T]] = ???
 
@@ -181,13 +183,18 @@ case class Negate[T](a: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class Square[T: ClassTag](a: DifferentiableFunction[T])(
-  implicit num: Numeric[T]
+case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
-  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] =
-    Multiply(Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a), a.gradient(withRespectToVariable))
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): DifferentiableFunction[T] =
+    Multiply(
+      Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
+      a.gradient(withRespectToVariable)
+    )
 
   override def getInputs: Set[Input[T]] = ???
 
@@ -285,12 +292,17 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class Subtract[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
-  implicit num: Numeric[T]
+case class Subtract[T](
+    a: DifferentiableFunction[T],
+    b: DifferentiableFunction[T]
+)(implicit
+    num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
-  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): DifferentiableFunction[T] = ???
 
   override def getInputs: Set[Input[T]] = ???
 
@@ -309,8 +321,11 @@ case class Subtract[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T
   * @tparam T
   *   The array element type.
   */
-case class Multiply[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
-  implicit num: Numeric[T]
+case class Multiply[T](
+    a: DifferentiableFunction[T],
+    b: DifferentiableFunction[T]
+)(implicit
+    num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
@@ -322,7 +337,9 @@ case class Multiply[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T
       case failure => failure
     }
 
-  override def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T] = ???
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): DifferentiableFunction[T] = ???
 
   override def getInputs: Set[Input[T]] = ???
 
