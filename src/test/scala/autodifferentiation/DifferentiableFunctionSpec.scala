@@ -83,8 +83,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       ModelParameter[Float]("biases", NDArray.ones(Array(numOutputs)))
     val dense = Add(DotProduct(inputX, weights), biases)
     val loss = Square(Subtract(dense, inputY))
-    val weightsGradient = loss.gradient(weights)
-    val biasesGradient = loss.gradient(biases)
+    val weightsGradient = loss.gradient(weights).get
+    val biasesGradient = loss.gradient(biases).get
     // The function we are trying to model is f(x) = x0 ^ 2 - x1
     val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(
       Array(3, numFeatures)
@@ -133,7 +133,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // compute the gradient df/dx (you can't differentiate with respect to
     // nothing).
     val placeholderVariable = Input[Float]("X", Array(Some(1)))
-    val gradient = constant.gradient(placeholderVariable)
+    val gradient = constant.gradient(placeholderVariable).get
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayEquals NDArray.zeros(value.shape))
@@ -150,7 +150,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   "A Variable" should "have gradient 1 with respect to itself" in {
     val modelParameter =
       ModelParameter[Float]("Theta", NDArray.ofValue(Array(2, 3), 5))
-    val gradient = modelParameter.gradient(modelParameter)
+    val gradient = modelParameter.gradient(modelParameter).get
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals NDArray.ones(Array(2, 3)))
@@ -161,7 +161,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       ModelParameter[Float]("Theta", NDArray.ofValue(Array(2, 3), 5))
     val placeholderVariable = Input[Float]("X", Array(Some(1)))
     // Take the gradient of f() = Theta with respect to unrelated variable X.
-    val gradient = modelParameter.gradient(placeholderVariable)
+    val gradient = modelParameter.gradient(placeholderVariable).get
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals NDArray.zeros(Array(2, 3)))
@@ -376,7 +376,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       Constant(NDArray[Float](List(2, -2, -1, 1)).reshape(Array(2, 2))),
       Constant(NDArray[Float](List(9, 1, 0, 2)).reshape(Array(2, 2)))
     )
-    val gradient = addition.gradient(Input[Float]("X", Array(None)))
+    val gradient = addition.gradient(Input[Float]("X", Array(None))).get
     val output = gradient.compute(Map.empty)
     assert(output.isSuccess)
     val expected = NDArray[Float](List(0, 0, 0, 0)).reshape(Array(2, 2))
@@ -387,12 +387,12 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Float]("X", Array(None, Some(3)))
     val inputY = Input[Float]("Y", Array(Some(1)))
     val addition = Add(inputX, inputY)
-    val gradientX = addition.gradient(inputX)
+    val gradientX = addition.gradient(inputX).get
     val outputX = gradientX.compute(Map.empty)
     assert(outputX.isSuccess)
     val expectedX = NDArray.ones[Float](Array(1))
     assert(outputX.get arrayApproximatelyEquals expectedX)
-    val gradientY = addition.gradient(inputY)
+    val gradientY = addition.gradient(inputY).get
     val outputY = gradientY.compute(Map.empty)
     assert(outputY.isSuccess)
     val expectedY = NDArray.ones[Float](Array(1))
@@ -403,13 +403,13 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Float]("X", Array(None, Some(3)))
     val inputY = Input[Float]("Y", Array(Some(1)))
     val addition = Add(Square(inputX), inputY)
-    val gradientX = addition.gradient(inputX)
+    val gradientX = addition.gradient(inputX).get
     val valueX = NDArray[Float](List(1, -2, 0, 3, 2, 1)).reshape(Array(2, 3))
     val outputX = gradientX.compute(Map(inputX -> valueX))
     assert(outputX.isSuccess)
     val expectedX = (valueX * NDArray(List(2))).get
     assert(outputX.get arrayApproximatelyEquals expectedX)
-    val gradientY = addition.gradient(inputY)
+    val gradientY = addition.gradient(inputY).get
     val outputY = gradientY.compute(Map(inputX -> valueX))
     assert(outputY.isSuccess)
     val expectedY = NDArray.ones[Float](Array(1))
@@ -466,8 +466,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
     val dotProduct = DotProduct(inputX, inputY)
-    val gradientX = dotProduct.gradient(inputX)
-    val gradientY = dotProduct.gradient(inputY)
+    val gradientX = dotProduct.gradient(inputX).get
+    val gradientY = dotProduct.gradient(inputY).get
     val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
     val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
