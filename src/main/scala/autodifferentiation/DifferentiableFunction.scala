@@ -29,7 +29,9 @@ trait DifferentiableFunction[T] {
     *   DifferentiableFunction y and the variable x, this operation produces
     *   dy/dx.
     */
-  def gradient(withRespectToVariable: Variable[T]): Try[DifferentiableFunction[T]]
+  def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]]
 
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
@@ -52,7 +54,9 @@ case class Constant[T: ClassTag](value: NDArray[T])
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = Success(Constant(NDArray.zeros(value.shape)))
+  ): Try[DifferentiableFunction[T]] = Success(
+    Constant(NDArray.zeros(value.shape))
+  )
 
   override def getInputs: Set[Input[T]] = Set.empty
 
@@ -174,6 +178,34 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
 }
 
 //TODO test
+/** Sums the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(NDArray(List(value.sum)))
+      case failure        => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
+
+//TODO test
 /** Squares the results of a function.
   *
   * @param a
@@ -191,13 +223,15 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def gradient(
       withRespectToVariable: Variable[T]
   ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
-    case Success(aGradient) => Success(Multiply(
-      Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
-      aGradient
-    ))
+    case Success(aGradient) =>
+      Success(
+        Multiply(
+          Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
+          aGradient
+        )
+      )
     case failure => failure
   }
-
 
   override def getInputs: Set[Input[T]] = ???
 
@@ -235,11 +269,10 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
     case Success(aGradient) =>
       b.gradient(withRespectToVariable) match {
         case Success(bGradient) => Success(Add(aGradient, bGradient))
-        case failure => failure
+        case failure            => failure
       }
     case failure => failure
   }
-
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
@@ -388,19 +421,29 @@ case class DotProduct[T: ClassTag](
   ): Try[DifferentiableFunction[T]] = a.getOutputShape match {
     case Success(aShape) =>
       b.getOutputShape match {
-        case Success(bShape) => gradientFromShapes(aShape, bShape, withRespectToVariable)
+        case Success(bShape) =>
+          gradientFromShapes(aShape, bShape, withRespectToVariable)
         case Failure(failure) => Failure(failure)
       }
     case Failure(failure) => Failure(failure)
   }
 
-  private def gradientFromShapes(aShape: Array[Option[Int]], bShape: Array[Option[Int]], withRespectToVariable: Variable[T]): Try[DifferentiableFunction[T]] =
-    if(aShape.length == 1 && bShape.length == 1) vectorInnerProductGradient(aShape, bShape, withRespectToVariable)
+  private def gradientFromShapes(
+      aShape: Array[Option[Int]],
+      bShape: Array[Option[Int]],
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    if (aShape.length == 1 && bShape.length == 1)
+      vectorInnerProductGradient(aShape, bShape, withRespectToVariable)
     else ???
 
   /** Returns the shape of the dot product on two 1D arrays. */
-  private def vectorInnerProductGradient(aShape: Array[Option[Int]], bShape: Array[Option[Int]], withRespectToVariable: Variable[T]): Try[DifferentiableFunction[T]] = {
-    //TODO repeated code segment--make helper function
+  private def vectorInnerProductGradient(
+      aShape: Array[Option[Int]],
+      bShape: Array[Option[Int]],
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = {
+    // TODO repeated code segment--make helper function
     val aVectorLength = aShape.head
     val bVectorLength = bShape.head
     if (aVectorLength.isEmpty || bVectorLength.isEmpty)
@@ -413,10 +456,21 @@ case class DotProduct[T: ClassTag](
       Failure(
         new ShapeException(
           s"Arrays must have matching shape for vector inner product, but found ${aShape
-            .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
+              .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
         )
       )
-    else ??? //TODO Add(Multiply(a, Sum(b)
+    else
+      a.gradient(withRespectToVariable) match {
+        case Success(aGradient) =>
+          b.gradient(withRespectToVariable) match {
+            case Success(bGradient) =>
+              Success(
+                Add(Multiply(Sum(b), aGradient), Multiply(Sum(a), bGradient))
+              )
+            case failure => failure
+          }
+        case failure => failure
+      }
   }
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs

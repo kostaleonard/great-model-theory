@@ -475,9 +475,6 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
     val numericGradientYOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
-    // TODO remove debugging
-    println(numericGradientXOnInputs)
-    println(numericGradientYOnInputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
     assert(gradientXOnInputs.isSuccess)
