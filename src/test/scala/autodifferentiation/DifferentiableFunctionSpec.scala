@@ -96,9 +96,6 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val learningRate = 1e-3f
     val nextStepWeightsGradient =
       weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
-    //TODO remove debugging
-    println(weightsGradient)
-    println(nextStepWeightsGradient.get)
     assert(nextStepWeightsGradient.isSuccess)
     val nextStepWeightsValue = (weights.value - (NDArray(
       List(learningRate)
@@ -147,26 +144,28 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4)).reshape(
       Array(batchSize, numOutputs)
     )
-    val inputs = Map(inputX -> batchX, inputY -> batchY, weights -> weightsValue, biases -> biasesValue)
+    val inputs = Map(
+      inputX -> batchX,
+      inputY -> batchY,
+      weights -> weightsValue,
+      biases -> biasesValue
+    )
     val nextStepWeightsGradient = weightsGradient.compute(inputs)
     val nextStepBiasesGradient = biasesGradient.compute(inputs)
     val numericWeightsGradient =
       computeGradientWithFiniteDifferences(loss, weights, inputs).get
     val numericBiasesGradient =
       computeGradientWithFiniteDifferences(loss, biases, inputs).get
-    //TODO remove debugging
-    println(weightsGradient)
-    println(nextStepWeightsGradient.get)
-    println(numericWeightsGradient)
-    println(biasesGradient)
-    println(nextStepBiasesGradient.get)
-    println(numericBiasesGradient)
-    assert(nextStepWeightsGradient.get.shape sameElements numericWeightsGradient.shape)
+    assert(
+      nextStepWeightsGradient.get.shape sameElements numericWeightsGradient.shape
+    )
     assert(
       nextStepWeightsGradient.get arrayApproximatelyEquals numericWeightsGradient
     )
     assert(nextStepBiasesGradient.isSuccess)
-    assert(nextStepBiasesGradient.get.shape sameElements numericBiasesGradient.shape)
+    assert(
+      nextStepBiasesGradient.get.shape sameElements numericBiasesGradient.shape
+    )
     assert(
       nextStepBiasesGradient.get arrayApproximatelyEquals numericBiasesGradient
     )
@@ -531,16 +530,17 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
-    //TODO remove debugging
-    println(gradientX)
-    println(gradientXOnInputs.get)
     assert(gradientXOnInputs.isSuccess)
-    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
     assert(
       gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
     )
     assert(gradientYOnInputs.isSuccess)
-    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
+    assert(
+      gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape
+    )
     assert(
       gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
     )
@@ -549,7 +549,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   it should "compute its gradient with chain rule (2 * X dot Y)" in {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
-    val dotProduct = DotProduct[Double](Multiply(Constant(NDArray(List(2))), inputX), inputY)
+    val dotProduct =
+      DotProduct[Double](Multiply(Constant(NDArray(List(2))), inputX), inputY)
     val gradientX = dotProduct.gradient(inputX).get
     val gradientY = dotProduct.gradient(inputY).get
     val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
@@ -561,16 +562,17 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
-    //TODO remove debugging
-    println(gradientY)
-    println(gradientYOnInputs)
     assert(gradientXOnInputs.isSuccess)
-    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
     assert(
       gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
     )
     assert(gradientYOnInputs.isSuccess)
-    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
+    assert(
+      gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape
+    )
     assert(
       gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
     )
@@ -579,7 +581,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   it should "compute its gradient with chain rule (2 * X dot Y ^ 2)" in {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
-    val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
+    val dotProduct = DotProduct[Double](
+      Multiply(inputX, Constant(NDArray(List(2)))),
+      Square(inputY)
+    )
     val gradientX = dotProduct.gradient(inputX).get
     val gradientY = dotProduct.gradient(inputY).get
     val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
@@ -589,24 +594,19 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
     val numericGradientYOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
-    //TODO remove debugging
-    println(numericGradientXOnInputs)
-    println(numericGradientYOnInputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
-    //TODO remove debugging
-    println(gradientXOnInputs.get)
-    println(gradientYOnInputs.get)
-    println(dotProduct.getOutputShape.get.mkString("Array(", ", ", ")"))
-    println(dotProduct.gradient(inputX).get.getOutputShape.get.mkString("Array(", ", ", ")"))
-    println(dotProduct.gradient(inputY))
     assert(gradientXOnInputs.isSuccess)
-    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
     assert(
       gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
     )
     assert(gradientYOnInputs.isSuccess)
-    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
+    assert(
+      gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape
+    )
     assert(
       gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
     )
