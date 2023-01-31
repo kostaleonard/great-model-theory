@@ -583,6 +583,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.sum == 10)
   }
 
+  it should "return the square of all elements" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(Array(2, 3))
+    val expected = NDArray[Int](List(0, 1, 4, 9, 16, 25)).reshape(Array(2, 3))
+    assert(arr.square arrayEquals expected)
+  }
+
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
     val arr = NDArray.arange[Int](Array(2, 1, 3))
     val squeezed = arr.squeeze()

@@ -218,7 +218,11 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
 case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
 ) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.square)
+      case failure        => failure
+    }
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -235,46 +239,13 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
 
   override def getInputs: Set[Input[T]] = ???
 
-  override def getOutputShape: Try[Array[Option[Int]]] = ???
+  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
 }
 
-//TODO test compute and gradient
-/** Adds the results of two functions.
-  *
-  * @param a
-  *   The left hand side.
-  * @param b
-  *   The right hand side.
-  * @param num
-  *   The implicit numeric conversion.
-  * @tparam T
-  *   The array element type.
-  */
-case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
-    implicit num: Numeric[T]
-) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue + bValue
-          case failure         => failure
-        }
-      case failure => failure
-    }
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
-    case Success(aGradient) =>
-      b.gradient(withRespectToVariable) match {
-        case Success(bGradient) => Success(Add(aGradient, bGradient))
-        case failure            => failure
-      }
-    case failure => failure
-  }
-
-  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
+//TODO test, docstring
+trait BinaryDifferentiableFunctionWithBroadcast[T] extends DifferentiableFunction[T] {
+  val a: DifferentiableFunction[T]
+  val b: DifferentiableFunction[T]
 
   override def getOutputShape: Try[Array[Option[Int]]] =
     a.getOutputShape match {
@@ -288,9 +259,9 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
     }
 
   private def getBroadcastShapeWithPlaceholders(
-      aShape: Array[Option[Int]],
-      bShape: Array[Option[Int]]
-  ): Try[Array[Option[Int]]] = {
+                                                 aShape: Array[Option[Int]],
+                                                 bShape: Array[Option[Int]]
+                                               ): Try[Array[Option[Int]]] = {
     val finalNumDimensions = aShape.length max bShape.length
     val aOnesPaddedShape =
       aShape.reverse.padTo(finalNumDimensions, Some(1)).reverse
@@ -318,9 +289,48 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
     else
       Failure(
         new ShapeException(s"Could not broadcast arrays of shape ${aShape
-            .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}")
+          .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}")
       )
   }
+}
+
+//TODO test compute and gradient
+/** Adds the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
+    implicit num: Numeric[T]
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue + bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) =>
+      b.gradient(withRespectToVariable) match {
+        case Success(bGradient) => Success(Add(aGradient, bGradient))
+        case failure            => failure
+      }
+    case failure => failure
+  }
+
+  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 }
 
 //TODO test
@@ -340,7 +350,7 @@ case class Subtract[T](
     b: DifferentiableFunction[T]
 )(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
   override def gradient(
@@ -348,8 +358,6 @@ case class Subtract[T](
   ): Try[DifferentiableFunction[T]] = ???
 
   override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] = ???
 }
 
 //TODO test
@@ -369,7 +377,7 @@ case class Multiply[T](
     b: DifferentiableFunction[T]
 )(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
       case Success(aValue) =>
@@ -382,11 +390,20 @@ case class Multiply[T](
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
+  ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) =>
+        b.gradient(withRespectToVariable) match {
+          case Success(bGradient) =>
+            Success(
+              Add(Multiply(aGradient, b), Multiply(a, bGradient))
+            )
+          case failure => failure
+        }
+      case failure => failure
+    }
 
   override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] = ???
 }
 
 //TODO test compute and gradient
@@ -465,7 +482,7 @@ case class DotProduct[T: ClassTag](
           b.gradient(withRespectToVariable) match {
             case Success(bGradient) =>
               Success(
-                Add(Multiply(Sum(b), aGradient), Multiply(Sum(a), bGradient))
+                Add(Multiply(aGradient, Sum(b)), Multiply(Sum(a), bGradient))
               )
             case failure => failure
           }

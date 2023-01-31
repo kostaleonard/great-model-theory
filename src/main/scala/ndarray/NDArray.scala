@@ -549,6 +549,13 @@ class NDArray[T: ClassTag] private (
     */
   def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
 
+  /** Returns an NDArray with all elements squared.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def square(implicit num: Numeric[T]): NDArray[T] = map(x => num.times(x, x))
+
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 
