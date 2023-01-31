@@ -382,7 +382,14 @@ case class Subtract[T](
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) =>
+      b.gradient(withRespectToVariable) match {
+        case Success(bGradient) => Success(Subtract(aGradient, bGradient))
+        case failure            => failure
+      }
+    case failure => failure
+  }
 
   override def getInputs: Set[Input[T]] = ???
 }
