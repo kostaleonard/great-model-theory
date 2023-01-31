@@ -500,6 +500,8 @@ case class DotProduct[T: ClassTag](
   ): Try[DifferentiableFunction[T]] =
     if (aShape.length == 1 && bShape.length == 1)
       vectorInnerProductGradient(aShape, bShape, withRespectToVariable)
+    else if (aShape.length == 2 && bShape.length == 2)
+      matmulGradient(aShape, bShape, withRespectToVariable)
     else ???
 
   /** Returns the shape of the dot product on two 1D arrays. */
@@ -529,7 +531,6 @@ case class DotProduct[T: ClassTag](
         case Success(aGradient) =>
           b.gradient(withRespectToVariable) match {
             case Success(bGradient) =>
-              //TODO add conditional here to use Multiply or DotProduct as appropriate
               gradientUnbroadcastZeros(aGradient, bGradient)
             case failure => failure
           }
@@ -552,6 +553,41 @@ case class DotProduct[T: ClassTag](
     else if (omitAGradient) Success(DotProduct(a, bGradient))
     else if (omitBGradient) Success(DotProduct(aGradient, b))
     else Success(Add(DotProduct(aGradient, b), DotProduct(a, bGradient)))
+  }
+
+  //TODO if we add a MatMul DifferentiableFunction, we can just call that object's gradient and move the code there
+  /** Returns the shape of the dot product on two 2D arrays. */
+  private def matmulGradient(
+                                          aShape: Array[Option[Int]],
+                                          bShape: Array[Option[Int]],
+                                          withRespectToVariable: Variable[T]
+                                        ): Try[DifferentiableFunction[T]] = {
+    // TODO repeated code segment--make helper function
+    val j1 = aShape.tail.head
+    val j2 = bShape.head
+    if (j1.isEmpty || j2.isEmpty)
+      Failure(
+        new ShapeException(
+          "Cannot get matmul gradient with placeholder in middle dimension"
+        )
+      )
+    else if (j1.get != j2.get)
+      Failure(
+        new ShapeException(
+          s"Arrays must have matching middle dimension for matmul, but found ${aShape
+            .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
+        )
+      )
+    else
+      a.gradient(withRespectToVariable) match {
+        case Success(aGradient) =>
+          b.gradient(withRespectToVariable) match {
+            case Success(bGradient) =>
+              Success(Add(DotProduct(aGradient, b), DotProduct(a, bGradient)))
+            case failure => failure
+          }
+        case failure => failure
+      }
   }
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
