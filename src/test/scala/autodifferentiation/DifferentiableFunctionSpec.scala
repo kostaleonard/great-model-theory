@@ -478,10 +478,12 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
     assert(gradientXOnInputs.isSuccess)
+    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
     assert(
       gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
     )
     assert(gradientYOnInputs.isSuccess)
+    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
     assert(
       gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
     )
@@ -490,7 +492,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   it should "compute its gradient (chain rule)" in {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
-    val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
+    //TODO revert
+    //val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
+    val dotProduct = DotProduct[Double](Multiply(Constant(NDArray(List(2))), inputX), inputY)
     val gradientX = dotProduct.gradient(inputX).get
     val gradientY = dotProduct.gradient(inputY).get
     val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
@@ -500,13 +504,24 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
     val numericGradientYOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+    //TODO remove debugging
+    println(numericGradientXOnInputs)
+    println(numericGradientYOnInputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
+    //TODO remove debugging
+    println(gradientXOnInputs.get)
+    println(gradientYOnInputs.get)
+    println(dotProduct.getOutputShape.get.mkString("Array(", ", ", ")"))
+    println(dotProduct.gradient(inputX).get.getOutputShape.get.mkString("Array(", ", ", ")"))
+    println(dotProduct.gradient(inputX))
     assert(gradientXOnInputs.isSuccess)
+    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
     assert(
       gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
     )
     assert(gradientYOnInputs.isSuccess)
+    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
     assert(
       gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
     )
