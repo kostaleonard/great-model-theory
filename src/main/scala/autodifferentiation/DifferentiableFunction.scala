@@ -76,9 +76,29 @@ trait Variable[T] extends DifferentiableFunction[T] {
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] =
-    if (withRespectToVariable == this) Success(Constant(NDArray.ones(Array(1))))
-    else Success(Constant(NDArray.zeros(Array(1))))
+  ): Try[DifferentiableFunction[T]] = getGradientShape match {
+    case Success(shape) =>
+      if (withRespectToVariable == this) Success(Constant(NDArray.ones(shape)))
+      else Success(Constant(NDArray.zeros(shape)))
+    case Failure(failure) => Failure(failure)
+  }
+
+  //TODO private method docstrings may have information relevant for the public interfaces they support
+  /** Returns the shape of the returned gradient.
+    *
+    * Takes the variable's output shape with placeholders and fills in None with
+    * 1 to allow broadcasting. All other dimensions retain their size so that
+    * downstream gradient operations produce correctly-shaped outputs (e.g., the
+    * gradient of a 1D vector in a dot product needs to be a 1D vector of ones
+    * so that the dot operation in the derivative still works).
+    * */
+  private def getGradientShape: Try[Array[Int]] = getOutputShape match {
+    case Success(shape) => Success(shape.map {
+      case Some(dimension) => dimension
+      case None => 1
+    })
+    case Failure(failure) => Failure(failure)
+  }
 }
 
 /** A model parameter.
@@ -408,6 +428,7 @@ case class Multiply[T: ClassTag](
     }
 
   //TODO test
+  //TODO can we remove this? The problem was DotProduct I think
   private def gradientUnbroadcastZeros(aGradient: DifferentiableFunction[T], bGradient: DifferentiableFunction[T]): Try[DifferentiableFunction[T]] = {
     val omitAGradient = aGradient match {
       case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
@@ -501,13 +522,29 @@ case class DotProduct[T: ClassTag](
         case Success(aGradient) =>
           b.gradient(withRespectToVariable) match {
             case Success(bGradient) =>
-              Success(
-                Add(Multiply(aGradient, Sum(b)), Multiply(Sum(a), bGradient))
-              )
+              //TODO add conditional here to use Multiply or DotProduct as appropriate
+              gradientUnbroadcastZeros(aGradient, bGradient)
             case failure => failure
           }
         case failure => failure
       }
+  }
+
+  //TODO test
+  //TODO repeated code segment
+  private def gradientUnbroadcastZeros(aGradient: DifferentiableFunction[T], bGradient: DifferentiableFunction[T]): Try[DifferentiableFunction[T]] = {
+    val omitAGradient = aGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _ => false
+    }
+    val omitBGradient = bGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _ => false
+    }
+    if (omitAGradient && omitBGradient) Success(Constant(NDArray.zeros(Array(1))))
+    else if (omitAGradient) Success(DotProduct(a, bGradient))
+    else if (omitBGradient) Success(DotProduct(aGradient, b))
+    else Success(Add(DotProduct(aGradient, b), DotProduct(a, bGradient)))
   }
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
