@@ -487,6 +487,31 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "compute its gradient (chain rule)" in {
+    val inputX = Input[Double]("X", Array(Some(5)))
+    val inputY = Input[Double]("Y", Array(Some(5)))
+    val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
+    val gradientX = dotProduct.gradient(inputX).get
+    val gradientY = dotProduct.gradient(inputY).get
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val inputs = Map(inputX -> valueX, inputY -> valueY)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+    val numericGradientYOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    val gradientYOnInputs = gradientY.compute(inputs)
+    assert(gradientXOnInputs.isSuccess)
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+    assert(gradientYOnInputs.isSuccess)
+    assert(
+      gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
+    )
+  }
+
   "A DotProduct with 2D arrays (matmul)" should "return its output shape (2 x 4, 4 x 3)" in {
     val dotProduct = DotProduct(
       Constant(NDArray.zeros[Float](Array(2, 4))),
