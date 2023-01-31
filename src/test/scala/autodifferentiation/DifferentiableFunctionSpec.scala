@@ -85,14 +85,20 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val loss = Square(Subtract(dense, inputY))
     val weightsGradient = loss.gradient(weights).get
     val biasesGradient = loss.gradient(biases).get
-    // The function we are trying to model is f(x) = x0 ^ 2 - x1
+    // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
+    val batchSize = 3
     val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(
-      Array(3, numFeatures)
+      Array(batchSize, numFeatures)
     )
-    val batchY = NDArray[Float](List(-2, 7, 2))
+    val batchY = NDArray[Float](List(-2, 4, 7, 2, 2, 4)).reshape(
+      Array(batchSize, numOutputs)
+    )
     val learningRate = 1e-3f
     val nextStepWeightsGradient =
       weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
+    //TODO remove debugging
+    println(weightsGradient)
+    println(nextStepWeightsGradient.get)
     assert(nextStepWeightsGradient.isSuccess)
     val nextStepWeightsValue = (weights.value - (NDArray(
       List(learningRate)
@@ -116,6 +122,54 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val lossOnBatchSum = lossOnBatch.get.sum
     val nextStepLossOnBatchSum = nextStepLossOnBatch.get.sum
     assert(nextStepLossOnBatchSum < lossOnBatchSum)
+  }
+
+  it should "have numerically accurate gradients in gradient descent" in {
+    val numFeatures = 3
+    val inputX = Input[Double]("X", Array(None, Some(numFeatures)))
+    val numOutputs = 2
+    val inputY = Input[Double]("Y", Array(None, Some(numOutputs)))
+    // We make weights and biases Inputs rather than ModelParameters here so
+    // that we can perturb them to get the numerical gradient.
+    val weightsValue = NDArray.arange[Double](Array(numFeatures, numOutputs))
+    val weights = Input[Double]("weights", weightsValue.shape.map(Some(_)))
+    val biasesValue = NDArray.ones[Double](Array(numOutputs))
+    val biases = Input[Double]("biases", biasesValue.shape.map(Some(_)))
+    val dense = Add(DotProduct(inputX, weights), biases)
+    val loss = Square(Subtract(dense, inputY))
+    val weightsGradient = loss.gradient(weights).get
+    val biasesGradient = loss.gradient(biases).get
+    // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
+    val batchSize = 3
+    val batchX = NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(
+      Array(batchSize, numFeatures)
+    )
+    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4)).reshape(
+      Array(batchSize, numOutputs)
+    )
+    val inputs = Map(inputX -> batchX, inputY -> batchY, weights -> weightsValue, biases -> biasesValue)
+    val nextStepWeightsGradient = weightsGradient.compute(inputs)
+    val nextStepBiasesGradient = biasesGradient.compute(inputs)
+    val numericWeightsGradient =
+      computeGradientWithFiniteDifferences(loss, weights, inputs).get
+    val numericBiasesGradient =
+      computeGradientWithFiniteDifferences(loss, biases, inputs).get
+    //TODO remove debugging
+    println(weightsGradient)
+    println(nextStepWeightsGradient.get)
+    println(numericWeightsGradient)
+    println(biasesGradient)
+    println(nextStepBiasesGradient.get)
+    println(numericBiasesGradient)
+    assert(nextStepWeightsGradient.get.shape sameElements numericWeightsGradient.shape)
+    assert(
+      nextStepWeightsGradient.get arrayApproximatelyEquals numericWeightsGradient
+    )
+    assert(nextStepBiasesGradient.isSuccess)
+    assert(nextStepBiasesGradient.get.shape sameElements numericBiasesGradient.shape)
+    assert(
+      nextStepBiasesGradient.get arrayApproximatelyEquals numericBiasesGradient
+    )
   }
 
   "A Constant" should "return its preset value when computed" in {

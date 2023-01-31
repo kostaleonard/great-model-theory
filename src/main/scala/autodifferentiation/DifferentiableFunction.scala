@@ -378,7 +378,15 @@ case class Subtract[T](
 )(implicit
     num: Numeric[T]
 ) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue - bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
 
   override def gradient(
       withRespectToVariable: Variable[T]
