@@ -489,12 +489,37 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     )
   }
 
-  it should "compute its gradient (chain rule)" in {
+  it should "compute its gradient with chain rule (2 * X dot Y)" in {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
-    //TODO revert
-    //val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
     val dotProduct = DotProduct[Double](Multiply(Constant(NDArray(List(2))), inputX), inputY)
+    val gradientX = dotProduct.gradient(inputX).get
+    val gradientY = dotProduct.gradient(inputY).get
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val inputs = Map(inputX -> valueX, inputY -> valueY)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+    val numericGradientYOnInputs =
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    val gradientYOnInputs = gradientY.compute(inputs)
+    assert(gradientXOnInputs.isSuccess)
+    assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+    assert(gradientYOnInputs.isSuccess)
+    assert(gradientYOnInputs.get.shape sameElements numericGradientYOnInputs.shape)
+    assert(
+      gradientYOnInputs.get arrayApproximatelyEquals numericGradientYOnInputs
+    )
+  }
+
+  it should "compute its gradient with chain rule (2 * X dot Y ^ 2)" in {
+    val inputX = Input[Double]("X", Array(Some(5)))
+    val inputY = Input[Double]("Y", Array(Some(5)))
+    val dotProduct = DotProduct[Double](Multiply(inputX, Constant(NDArray(List(2)))), Square(inputY))
     val gradientX = dotProduct.gradient(inputX).get
     val gradientY = dotProduct.gradient(inputY).get
     val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
@@ -514,7 +539,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     println(gradientYOnInputs.get)
     println(dotProduct.getOutputShape.get.mkString("Array(", ", ", ")"))
     println(dotProduct.gradient(inputX).get.getOutputShape.get.mkString("Array(", ", ", ")"))
-    println(dotProduct.gradient(inputX))
+    println(dotProduct.gradient(inputY))
     assert(gradientXOnInputs.isSuccess)
     assert(gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape)
     assert(

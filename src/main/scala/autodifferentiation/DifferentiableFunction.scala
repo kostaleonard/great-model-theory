@@ -230,14 +230,18 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def gradient(
       withRespectToVariable: Variable[T]
   ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
-    case Success(aGradient) =>
-      Success(
-        Multiply(
-          Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
-          aGradient
-        )
-      )
+    case Success(aGradient) => gradientUnbroadcastZeros(aGradient)
     case failure => failure
+  }
+
+  //TODO test
+  private def gradientUnbroadcastZeros(aGradient: DifferentiableFunction[T]): Try[DifferentiableFunction[T]] = {
+    val omitAGradient = aGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _ => false
+    }
+    if (omitAGradient) Success(Constant(NDArray.zeros(Array(1))))
+    else Success(Multiply(Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a), aGradient))
   }
 
   override def getInputs: Set[Input[T]] = ???
@@ -416,9 +420,7 @@ case class Multiply[T: ClassTag](
     if (omitAGradient && omitBGradient) Success(Constant(NDArray.zeros(Array(1))))
     else if (omitAGradient) Success(Multiply(a, bGradient))
     else if (omitBGradient) Success(Multiply(aGradient, b))
-    else Success(
-      Add(Multiply(aGradient, b), Multiply(a, bGradient))
-    )
+    else Success(Add(Multiply(aGradient, b), Multiply(a, bGradient)))
   }
 
   override def getInputs: Set[Input[T]] = ???
