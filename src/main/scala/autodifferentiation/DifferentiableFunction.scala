@@ -29,7 +29,9 @@ trait DifferentiableFunction[T] {
     *   DifferentiableFunction y and the variable x, this operation produces
     *   dy/dx.
     */
-  def gradient(withRespectToVariable: Variable[T]): DifferentiableFunction[T]
+  def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]]
 
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
@@ -52,7 +54,9 @@ case class Constant[T: ClassTag](value: NDArray[T])
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
+  ): Try[DifferentiableFunction[T]] = Success(
+    Constant(NDArray.zeros(value.shape))
+  )
 
   override def getInputs: Set[Input[T]] = Set.empty
 
@@ -70,11 +74,37 @@ trait Variable[T] extends DifferentiableFunction[T] {
   val name: String
   implicit val classTag: ClassTag[T]
 
+  /** Returns the gradient of the function with respect to a variable.
+    *
+    * Takes the variable's output shape with placeholders and fills in None with
+    * 1 to allow broadcasting. All other dimensions retain their size so that
+    * downstream gradient operations produce correctly-shaped outputs (e.g., the
+    * gradient of a 1D vector in a dot product needs to be a 1D vector of ones
+    * so that the dot operation in the derivative still works).
+    *
+    * @param withRespectToVariable
+    *   The variable with which to compute the gradient. If we call this
+    *   DifferentiableFunction y and the variable x, this operation produces
+    *   dy/dx.
+    */
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    if (withRespectToVariable == this) Constant(NDArray.ones(Array(1)))
-    else Constant(NDArray.zeros(Array(1)))
+  ): Try[DifferentiableFunction[T]] = getGradientShape match {
+    case Success(shape) =>
+      if (withRespectToVariable == this) Success(Constant(NDArray.ones(shape)))
+      else Success(Constant(NDArray.zeros(shape)))
+    case Failure(failure) => Failure(failure)
+  }
+
+  /** Returns the shape of the returned gradient. */
+  private def getGradientShape: Try[Array[Int]] = getOutputShape match {
+    case Success(shape) =>
+      Success(shape.map {
+        case Some(dimension) => dimension
+        case None            => 1
+      })
+    case Failure(failure) => Failure(failure)
+  }
 }
 
 /** A model parameter.
@@ -149,36 +179,120 @@ case class Input[T](
   )
 }
 
-/** Adds the results of two functions.
+/** Negates the results of a function.
   *
   * @param a
-  *   The left hand side.
-  * @param b
-  *   The right hand side.
+  *   The function to negate.
   * @param num
   *   The implicit numeric conversion.
   * @tparam T
   *   The array element type.
   */
-case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
-    implicit num: Numeric[T]
+case class Negate[T](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = ???
+}
+
+/** Sums the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
 ) extends DifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
-      case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue + bValue
-          case failure         => failure
-        }
-      case failure => failure
+      case Success(value) => Success(NDArray(List(value.sum)))
+      case failure        => failure
     }
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Add(a.gradient(withRespectToVariable), b.gradient(withRespectToVariable))
+  ): Try[DifferentiableFunction[T]] = ???
 
-  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(_) => Success(Array(Some(1)))
+      case failure    => failure
+    }
+}
+
+/** Squares the results of a function.
+  *
+  * @param a
+  *   The function to square.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.square)
+      case failure        => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) => gradientUnbroadcastZeros(aGradient)
+    case failure            => failure
+  }
+
+  private def gradientUnbroadcastZeros(
+      aGradient: DifferentiableFunction[T]
+  ): Try[DifferentiableFunction[T]] = {
+    val omitAGradient = aGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _                                                            => false
+    }
+    if (omitAGradient) Success(Constant(NDArray.zeros(Array(1))))
+    else
+      Success(
+        Multiply(
+          Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
+          aGradient
+        )
+      )
+  }
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+}
+
+/** A differentiable function with two arguments that broadcasts its operations.
+  *
+  * This function broadcasts the results of its operations together based on the
+  * NDArray broadcasting rules. Its output shape is the result of this
+  * broadcast.
+  *
+  * @tparam T
+  *   The array element type.
+  */
+trait BinaryDifferentiableFunctionWithBroadcast[T]
+    extends DifferentiableFunction[T] {
+  val a: DifferentiableFunction[T]
+  val b: DifferentiableFunction[T]
 
   override def getOutputShape: Try[Array[Option[Int]]] =
     a.getOutputShape match {
@@ -227,6 +341,128 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   }
 }
 
+/** Adds the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
+    implicit num: Numeric[T]
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue + bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) =>
+      b.gradient(withRespectToVariable) match {
+        case Success(bGradient) => Success(Add(aGradient, bGradient))
+        case failure            => failure
+      }
+    case failure => failure
+  }
+
+  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
+}
+
+/** Subtracts the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Subtract[T](
+    a: DifferentiableFunction[T],
+    b: DifferentiableFunction[T]
+)(implicit
+    num: Numeric[T]
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue - bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) =>
+      b.gradient(withRespectToVariable) match {
+        case Success(bGradient) => Success(Subtract(aGradient, bGradient))
+        case failure            => failure
+      }
+    case failure => failure
+  }
+
+  override def getInputs: Set[Input[T]] = ???
+}
+
+/** Element-wise multiplies the results of two functions.
+  *
+  * @param a
+  *   The left hand side.
+  * @param b
+  *   The right hand side.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Multiply[T: ClassTag](
+    a: DifferentiableFunction[T],
+    b: DifferentiableFunction[T]
+)(implicit
+    num: Numeric[T]
+) extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(aValue) =>
+        b.compute(inputs) match {
+          case Success(bValue) => aValue * bValue
+          case failure         => failure
+        }
+      case failure => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) =>
+        b.gradient(withRespectToVariable) match {
+          case Success(bGradient) =>
+            Success(Add(Multiply(aGradient, b), Multiply(a, bGradient)))
+          case failure => failure
+        }
+      case failure => failure
+    }
+
+  override def getInputs: Set[Input[T]] = ???
+}
+
 /** Computes the dot product of the results of two functions.
   *
   * @param a
@@ -238,7 +474,7 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   * @tparam T
   *   The array element type.
   */
-case class DotProduct[T](
+case class DotProduct[T: ClassTag](
     a: DifferentiableFunction[T],
     b: DifferentiableFunction[T]
 )(implicit num: Numeric[T])
@@ -255,7 +491,111 @@ case class DotProduct[T](
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = ???
+  ): Try[DifferentiableFunction[T]] = a.getOutputShape match {
+    case Success(aShape) =>
+      b.getOutputShape match {
+        case Success(bShape) =>
+          gradientFromShapes(aShape, bShape, withRespectToVariable)
+        case Failure(failure) => Failure(failure)
+      }
+    case Failure(failure) => Failure(failure)
+  }
+
+  private def gradientFromShapes(
+      aShape: Array[Option[Int]],
+      bShape: Array[Option[Int]],
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    if (aShape.length == 1 && bShape.length == 1)
+      vectorInnerProductGradient(aShape, bShape, withRespectToVariable)
+    else if (aShape.length == 2 && bShape.length == 2)
+      matmulGradient(aShape, bShape, withRespectToVariable)
+    else ???
+
+  /** Returns the shape of the dot product on two 1D arrays. */
+  private def vectorInnerProductGradient(
+      aShape: Array[Option[Int]],
+      bShape: Array[Option[Int]],
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = {
+    val aVectorLength = aShape.head
+    val bVectorLength = bShape.head
+    if (aVectorLength.isEmpty || bVectorLength.isEmpty)
+      Failure(
+        new ShapeException(
+          "Cannot get the vector inner product gradient with placeholder dimensions"
+        )
+      )
+    else if (aVectorLength.get != bVectorLength.get)
+      Failure(
+        new ShapeException(
+          s"Arrays must have matching shape for vector inner product, but found ${aShape
+              .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
+        )
+      )
+    else
+      a.gradient(withRespectToVariable) match {
+        case Success(aGradient) =>
+          b.gradient(withRespectToVariable) match {
+            case Success(bGradient) =>
+              gradientUnbroadcastZeros(aGradient, bGradient)
+            case failure => failure
+          }
+        case failure => failure
+      }
+  }
+
+  private def gradientUnbroadcastZeros(
+      aGradient: DifferentiableFunction[T],
+      bGradient: DifferentiableFunction[T]
+  ): Try[DifferentiableFunction[T]] = {
+    val omitAGradient = aGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _                                                            => false
+    }
+    val omitBGradient = bGradient match {
+      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
+      case _                                                            => false
+    }
+    if (omitAGradient && omitBGradient)
+      Success(Constant(NDArray.zeros(Array(1))))
+    else if (omitAGradient) Success(DotProduct(a, bGradient))
+    else if (omitBGradient) Success(DotProduct(aGradient, b))
+    else Success(Add(DotProduct(aGradient, b), DotProduct(a, bGradient)))
+  }
+
+  /** Returns the shape of the dot product on two 2D arrays. */
+  private def matmulGradient(
+      aShape: Array[Option[Int]],
+      bShape: Array[Option[Int]],
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = {
+    val j1 = aShape.tail.head
+    val j2 = bShape.head
+    if (j1.isEmpty || j2.isEmpty)
+      Failure(
+        new ShapeException(
+          "Cannot get matmul gradient with placeholder in middle dimension"
+        )
+      )
+    else if (j1.get != j2.get)
+      Failure(
+        new ShapeException(
+          s"Arrays must have matching middle dimension for matmul, but found ${aShape
+              .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
+        )
+      )
+    else
+      a.gradient(withRespectToVariable) match {
+        case Success(aGradient) =>
+          b.gradient(withRespectToVariable) match {
+            case Success(bGradient) =>
+              Success(Add(DotProduct(aGradient, b), DotProduct(a, bGradient)))
+            case failure => failure
+          }
+        case failure => failure
+      }
+  }
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 

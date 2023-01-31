@@ -523,9 +523,70 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert((arr1 - arr2).isFailure)
   }
 
+  it should "define * for element-wise multiplication" in {
+    val arr1 = NDArray[Int](List(2, 3, 4))
+    val arr2 = NDArray[Int](List(2, 3, 4))
+    val multiplication = arr1 * arr2
+    assert(multiplication.isSuccess)
+    assert(multiplication.get arrayEquals NDArray(List(4, 9, 16)))
+  }
+
+  it should "broadcast arrays in element-wise multiplication (3 x 1, 1 x 3)" in {
+    val arr1 = NDArray[Int](List(1, 2, 3)).reshape(Array(3, 1))
+    val arr2 = NDArray[Int](List(4, 5, 6)).reshape(Array(1, 3))
+    val multiplication = arr1 * arr2
+    assert(multiplication.isSuccess)
+    val expected =
+      NDArray[Int](List(4, 5, 6, 8, 10, 12, 12, 15, 18)).reshape(
+        Array(3, 3)
+      )
+    assert(multiplication.get arrayEquals expected)
+  }
+
+  it should "fail to perform element-wise multiplication on arrays with mismatching shape" in {
+    val arr1 = NDArray.arange[Int](Array(2, 3))
+    val arr2 = NDArray.arange[Int](Array(3, 2))
+    assert((arr1 * arr2).isFailure)
+  }
+
+  it should "define / for element-wise division" in {
+    val arr1 = NDArray[Float](List(3, 6, 7))
+    val arr2 = NDArray[Float](List(2, 3, 4))
+    val division = arr1 / arr2
+    assert(division.isSuccess)
+    assert(
+      division.get arrayApproximatelyEquals NDArray[Float](List(1.5f, 2, 1.75f))
+    )
+  }
+
+  it should "broadcast arrays in element-wise division (3 x 1, 1 x 3)" in {
+    val arr1 = NDArray[Float](List(1, 2, 3)).reshape(Array(3, 1))
+    val arr2 = NDArray[Float](List(1, 2, 3)).reshape(Array(1, 3))
+    val division = arr1 / arr2
+    assert(division.isSuccess)
+    val expected =
+      NDArray[Float](List(1, 0.5f, 0.33333f, 2, 1, 0.66667f, 3, 1.5f, 1))
+        .reshape(
+          Array(3, 3)
+        )
+    assert(division.get arrayApproximatelyEquals expected)
+  }
+
+  it should "fail to perform element-wise division on arrays with mismatching shape" in {
+    val arr1 = NDArray.arange[Float](Array(2, 3))
+    val arr2 = NDArray.arange[Float](Array(3, 2))
+    assert((arr1 / arr2).isFailure)
+  }
+
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)
+  }
+
+  it should "return the square of all elements" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(Array(2, 3))
+    val expected = NDArray[Int](List(0, 1, 4, 9, 16, 25)).reshape(Array(2, 3))
+    assert(arr.square arrayEquals expected)
   }
 
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
@@ -718,6 +779,11 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val reduced = arr.reduce(slice => slice.flatten().head, 0)
     assert(reduced.shape sameElements Array(3))
     assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
+  }
+
+  it should "represent its elements in string form" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    assert(arr.toString == "[0, 1, 2, 3, 4, 5](2 x 3)")
   }
 
   "An NDArray.empty array" should "have no elements" in {
