@@ -327,11 +327,19 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
 case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
                                                                  num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.exp)
+      case failure        => failure
+    }
 
   override def gradient(
                          withRespectToVariable: Variable[T]
-                       ): Try[DifferentiableFunction[T]] = ???
+                       ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) => Success(Multiply(this, aGradient))
+      case failure            => failure
+    }
 
   override def getInputs: Set[Input[T]] = ???
 }

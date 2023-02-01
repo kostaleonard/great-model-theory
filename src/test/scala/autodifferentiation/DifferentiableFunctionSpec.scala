@@ -373,6 +373,79 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  "An Exp" should "return its output shape" in {
+    val exp = Exp(
+      Constant(NDArray.arange[Float](Array(2, 4)))
+    )
+    val shape = exp.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), Some(4)))
+  }
+
+  it should "compute the exponentiation of all elements" in {
+    val exp = Exp(
+      Constant(NDArray[Double](List(0, 1, 2, -3, 4)))
+    )
+    val output = exp.compute(Map.empty)
+    val expected = NDArray[Double](List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0)))
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals expected)
+  }
+
+  it should "compute its gradient" in {
+    val inputX = Input[Double]("X", Array(Some(2), Some(4)))
+    val exp = Exp(inputX)
+    val gradientX = exp.gradient(inputX).get
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val inputs = Map(inputX -> valueX)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+    // For exp(X), we can also check that the gradient is the same as computed.
+    val computed = exp.compute(inputs)
+    assert(computed.get arrayApproximatelyEquals gradientXOnInputs.get)
+  }
+
+  it should "compute its gradient with placeholders and chain rule (exp(1 / X))" in {
+    val inputX = Input[Double]("X", Array(None, Some(4)))
+    val exp = Exp(Reciprocal(inputX))
+    val gradientX = exp.gradient(inputX).get
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val inputs = Map(inputX -> valueX)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+  }
+
+  it should "compute its gradient with placeholders and chain rule (sigmoid: 1 / (1 + exp(-X)))" in {
+    val inputX = Input[Double]("X", Array(None, Some(4)))
+    val exp = Reciprocal(Add(Constant(NDArray.ones(Array(1))), Exp(Negate(inputX))))
+    val gradientX = exp.gradient(inputX).get
+    val valueX = NDArray[Double](List(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
+    val inputs = Map(inputX -> valueX)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
+  }
+
   "An Add" should "return its output shape when its arguments' shapes match" in {
     val addition = Add(
       Constant(NDArray.zeros[Float](Array(2, 4))),
