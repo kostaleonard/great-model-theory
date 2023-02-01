@@ -17,7 +17,7 @@ import scala.reflect.ClassTag
   * @tparam T
   *   The array element type.
   */
-case class Sigmoid[T: ClassTag] private(previousLayer: Layer[T])(implicit implicitNumeric: Numeric[T])
+case class Sigmoid[T: ClassTag] private(previousLayer: Layer[T])(implicit implicitNumeric: Fractional[T])
   extends Layer[T] {
 
   override def getComputationGraph: DifferentiableFunction[T] =

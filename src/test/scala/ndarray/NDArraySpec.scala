@@ -601,6 +601,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.reciprocal arrayEquals expected)
   }
 
+  it should "return the negation of all elements" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4))
+    val expected = NDArray[Int](List(0, -1, -2, -3, -4))
+    assert(arr.negate arrayEquals expected)
+  }
+
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
     val arr = NDArray.arange[Int](Array(2, 1, 3))
     val squeezed = arr.squeeze()

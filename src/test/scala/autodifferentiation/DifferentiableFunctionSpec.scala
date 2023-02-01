@@ -283,6 +283,25 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.get sameElements input.shapeWithPlaceholders)
   }
 
+  "A Negate" should "return its output shape" in {
+    val negation = Negate(
+      Constant(NDArray.arange[Float](Array(2, 4)))
+    )
+    val shape = negation.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), Some(4)))
+  }
+
+  it should "compute the negation of all elements" in {
+    val negation = Negate(
+      Constant(NDArray[Int](List(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)))
+    )
+    val output = negation.compute(Map.empty)
+    val expected = NDArray[Int](List(-1, -2, -3, -4, -5, -6)).reshape(Array(2, 3))
+    assert(output.isSuccess)
+    assert(output.get arrayEquals expected)
+  }
+
   "A Reciprocal" should "return its output shape" in {
     val reciprocal = Reciprocal(
       Constant(NDArray.arange[Float](Array(2, 4)))
@@ -302,11 +321,34 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the reciprocal of all elements" in {
     val reciprocal = Reciprocal(
-      Constant(NDArray.arange[Double](Array(2, 4)))
+      Constant(NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4)))
     )
     val output = reciprocal.compute(Map.empty)
+    val expected = NDArray[Double](List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666, 0.14285714285714285, 0.125)).reshape(Array(2, 4))
     assert(output.isSuccess)
-    assert(output.get arrayApproximatelyEquals NDArray[Double](List(0, 1, 0.5, 0.3333333, 0.25, 0.2, 0.1666666, 0.14285714285714285)).reshape(Array(2, 4)))
+    assert(output.get arrayApproximatelyEquals expected)
+  }
+
+  it should "compute its gradient" in {
+    val inputX = Input[Double]("X", Array(Some(2), Some(4)))
+    val reciprocal = Reciprocal(inputX)
+    val gradientX = reciprocal.gradient(inputX).get
+    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val inputs = Map(inputX -> valueX)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(reciprocal, inputX, inputs).get
+    val gradientXOnInputs = gradientX.compute(inputs)
+    //TODO remove debugging
+    println(gradientX)
+    println(numericGradientXOnInputs)
+    println(gradientXOnInputs.get)
+    assert(gradientXOnInputs.isSuccess)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
   }
 
   "An Add" should "return its output shape when its arguments' shapes match" in {

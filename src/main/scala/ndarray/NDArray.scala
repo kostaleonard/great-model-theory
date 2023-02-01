@@ -564,6 +564,13 @@ class NDArray[T: ClassTag] private (
     */
   def reciprocal(implicit num: Fractional[T]): NDArray[T] = map(x => num.div(num.fromInt(1), x))
 
+  /** Returns an NDArray with all elements negated.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def negate(implicit num: Numeric[T]): NDArray[T] = map(num.negate)
+
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 

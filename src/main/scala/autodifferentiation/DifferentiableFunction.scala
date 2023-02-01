@@ -205,7 +205,11 @@ trait UnaryElementWiseDifferentiableFunction[T]
 case class Negate[T](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.negate)
+      case failure        => failure
+    }
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -291,6 +295,7 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
 }
 
 //TODO how do we ensure numerical stability here?
+//TODO test gradient with chain rule
 /** Returns the reciprocal of the results of a function.
   *
   * @param a
@@ -300,14 +305,22 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Reciprocal[T](a: DifferentiableFunction[T])(implicit
-                                                   num: Numeric[T]
+case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
+                                                   num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.reciprocal)
+      case failure        => failure
+    }
 
   override def gradient(
                          withRespectToVariable: Variable[T]
-                       ): Try[DifferentiableFunction[T]] = ???
+                       ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) => Success(Multiply(Reciprocal(Negate(Square(a))), aGradient))
+      case failure            => failure
+    }
 
   override def getInputs: Set[Input[T]] = ???
 }
