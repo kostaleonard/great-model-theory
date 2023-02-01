@@ -179,6 +179,20 @@ case class Input[T](
   )
 }
 
+/** A differentiable function with one arguments that operates on all elements.
+  *
+  * This function's output shape is the same shape as its input.
+  *
+  * @tparam T
+  *   The array element type.
+  */
+trait UnaryElementWiseDifferentiableFunction[T]
+    extends DifferentiableFunction[T] {
+  val a: DifferentiableFunction[T]
+
+  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+}
+
 /** Negates the results of a function.
   *
   * @param a
@@ -190,16 +204,21 @@ case class Input[T](
   */
 case class Negate[T](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+) extends UnaryElementWiseDifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.negate)
+      case failure        => failure
+    }
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) => Success(Negate(aGradient))
+    case failure            => failure
+  }
 
   override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] = ???
 }
 
 /** Sums the results of a function.
@@ -244,7 +263,7 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
   */
 case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
+) extends UnaryElementWiseDifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
       case Success(value) => Success(value.square)
@@ -254,30 +273,76 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def gradient(
       withRespectToVariable: Variable[T]
   ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
-    case Success(aGradient) => gradientUnbroadcastZeros(aGradient)
-    case failure            => failure
-  }
-
-  private def gradientUnbroadcastZeros(
-      aGradient: DifferentiableFunction[T]
-  ): Try[DifferentiableFunction[T]] = {
-    val omitAGradient = aGradient match {
-      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
-      case _                                                            => false
-    }
-    if (omitAGradient) Success(Constant(NDArray.zeros(Array(1))))
-    else
+    case Success(aGradient) =>
       Success(
         Multiply(
           Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
           aGradient
         )
       )
+    case failure => failure
   }
 
   override def getInputs: Set[Input[T]] = ???
+}
 
-  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+/** Returns the reciprocal of the results of a function.
+  *
+  * @param a
+  *   The function to invert.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Fractional[T]
+) extends UnaryElementWiseDifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.reciprocal)
+      case failure        => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) =>
+        Success(Multiply(Reciprocal(Negate(Square(a))), aGradient))
+      case failure => failure
+    }
+
+  override def getInputs: Set[Input[T]] = ???
+}
+
+/** Returns the exponentiation of the results of a function (f(x) = pow(e, x)).
+  *
+  * @param a
+  *   The function to exponentiate.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
+    num: Fractional[T]
+) extends UnaryElementWiseDifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(value.exp)
+      case failure        => failure
+    }
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) => Success(Multiply(this, aGradient))
+      case failure            => failure
+    }
+
+  override def getInputs: Set[Input[T]] = ???
 }
 
 /** A differentiable function with two arguments that broadcasts its operations.

@@ -1,6 +1,5 @@
 package layers
 
-import activations.{Activation, Identity}
 import autodifferentiation.{
   Add,
   DifferentiableFunction,
@@ -27,8 +26,6 @@ object Dense {
     * @param biasesInitialization
     *   If supplied, the biases vector to use. Must be of shape (units). If not
     *   supplied, the layer is initialized with random biases.
-    * @param activation
-    *   The activation function to apply after the dense transformation.
     * @tparam T
     *   The array element type.
     */
@@ -36,8 +33,7 @@ object Dense {
       previousLayer: Layer[T],
       units: Int,
       weightsInitialization: Option[NDArray[T]] = None,
-      biasesInitialization: Option[NDArray[T]] = None,
-      activation: Activation[T] = Identity[T]()
+      biasesInitialization: Option[NDArray[T]] = None
   )(implicit num: Numeric[T]): Try[Dense[T]] =
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
@@ -46,7 +42,7 @@ object Dense {
         )
         val biases: NDArray[T] =
           biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
-        Success(Dense(previousLayer, units, weights, biases, activation))
+        Success(Dense(previousLayer, units, weights, biases))
       case Failure(failure) => Failure(failure)
     }
 
@@ -56,32 +52,29 @@ object Dense {
     *   The input to this layer.
     * @param units
     *   The number of neurons in the layer.
-    * @param activation
-    *   The activation function to apply after the dense transformation.
     * @tparam T
     *   The array element type.
     */
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
-      units: Int,
-      activation: Activation[T] = Identity[T]()
+      units: Int
   )(implicit num: Numeric[T]): Try[Dense[T]] =
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
         val weights =
           NDArray.random[T](Array(outputShape.last.get, units))
         val biases = NDArray.zeros[T](Array(units))
-        Success(Dense(previousLayer, units, weights, biases, activation))
+        Success(Dense(previousLayer, units, weights, biases))
       case Failure(failure) => Failure(failure)
     }
 }
 
 /** A densely connected neural network layer.
   *
-  * Implements the operation outputs = activation(dot(inputs, kernel) + bias)
-  * where activation is the element-wise activation function, kernel is a
-  * weights matrix created by the layer, and bias is a bias vector created by
-  * the layer.
+  * Implements the operation outputs = dot(inputs, kernel) + bias where kernel
+  * is a weights matrix created by the layer, and bias is a bias vector created
+  * by the layer. It is typical to follow this layer with an activation function
+  * layer like Sigmoid to introduce nonlinearity.
   *
   * If the input to the layer has a rank greater than 2, then this layer
   * computes the dot product between the inputs and the kernel along the last
@@ -100,8 +93,6 @@ object Dense {
   *   (previousLayer.getOutputShape.last, units).
   * @param biases
   *   The biases vector to use. Must be of shape (units).
-  * @param activation
-  *   The activation function to apply after the dense transformation.
   * @tparam T
   *   The array element type.
   */
@@ -109,8 +100,7 @@ case class Dense[T: ClassTag] private (
     previousLayer: Layer[T],
     units: Int,
     weights: NDArray[T],
-    biases: NDArray[T],
-    activation: Activation[T]
+    biases: NDArray[T]
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
 

@@ -556,6 +556,33 @@ class NDArray[T: ClassTag] private (
     */
   def square(implicit num: Numeric[T]): NDArray[T] = map(x => num.times(x, x))
 
+  /** Returns an NDArray with all elements inverted.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def reciprocal(implicit num: Fractional[T]): NDArray[T] =
+    map(x => num.div(num.fromInt(1), x))
+
+  /** Returns an NDArray with all elements negated.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def negate(implicit num: Numeric[T]): NDArray[T] = map(num.negate)
+
+  /** Returns an NDArray with all elements exponentiated (f(x) = pow(e, x)).
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def exp(implicit num: Fractional[T]): NDArray[T] = (classTag[T] match {
+    case _ if classTag[T] == classTag[Float] =>
+      map(x => Math.exp(num.toDouble(x)))
+    case _ if classTag[T] == classTag[Double] =>
+      map(x => Math.exp(num.toDouble(x)))
+  }).asInstanceOf[NDArray[T]]
+
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 

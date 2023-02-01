@@ -589,6 +589,35 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.square arrayEquals expected)
   }
 
+  it should "return the reciprocal of all elements" in {
+    val arr = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val expected = NDArray[Double](
+      List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
+        0.14285714285714285, 0.125)
+    ).reshape(Array(2, 4))
+    assert(arr.reciprocal arrayApproximatelyEquals expected)
+  }
+
+  it should "return infinity for the reciprocal of 0" in {
+    val arr = NDArray[Double](List(0, 1))
+    val expected = NDArray[Double](List(Double.PositiveInfinity, 1))
+    assert(arr.reciprocal arrayEquals expected)
+  }
+
+  it should "return the negation of all elements" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4))
+    val expected = NDArray[Int](List(0, -1, -2, -3, -4))
+    assert(arr.negate arrayEquals expected)
+  }
+
+  it should "return the exponentiation of all elements" in {
+    val arr = NDArray[Double](List(0, 1, 2, -3, 4))
+    val expected = NDArray[Double](
+      List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
+    )
+    assert(arr.exp arrayApproximatelyEquals expected)
+  }
+
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
     val arr = NDArray.arange[Int](Array(2, 1, 3))
     val squeezed = arr.squeeze()
