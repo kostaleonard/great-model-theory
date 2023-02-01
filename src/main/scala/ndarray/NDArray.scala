@@ -223,6 +223,7 @@ class NDArray[T: ClassTag] private (
         case Failure(failure) => Failure(failure)
       }
 
+  //TODO this fails if the arrays both contain {Float, Double}.{PositiveInfinity, NegativeInfinity}
   /** Returns true if the arrays have the same shape and elements within error.
     *
     * @param other
@@ -555,6 +556,13 @@ class NDArray[T: ClassTag] private (
     *   An implicit parameter defining a set of numeric operations.
     */
   def square(implicit num: Numeric[T]): NDArray[T] = map(x => num.times(x, x))
+
+  /** Returns an NDArray with all elements inverted.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def reciprocal(implicit num: Fractional[T]): NDArray[T] = map(x => num.div(num.fromInt(1), x))
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))

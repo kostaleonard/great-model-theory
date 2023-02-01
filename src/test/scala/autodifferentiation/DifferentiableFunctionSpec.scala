@@ -283,6 +283,32 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.get sameElements input.shapeWithPlaceholders)
   }
 
+  "A Reciprocal" should "return its output shape" in {
+    val reciprocal = Reciprocal(
+      Constant(NDArray.arange[Float](Array(2, 4)))
+    )
+    val shape = reciprocal.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(2), Some(4)))
+  }
+
+  it should "return its output shape with placeholder dimensions" in {
+    val input = Input[Float]("X", Array(None, Some(2), None, Some(4)))
+    val reciprocal = Reciprocal(input)
+    val shape = reciprocal.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(None, Some(2), None, Some(4)))
+  }
+
+  it should "compute the reciprocal of all elements" in {
+    val reciprocal = Reciprocal(
+      Constant(NDArray.arange[Double](Array(2, 4)))
+    )
+    val output = reciprocal.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals NDArray[Double](List(0, 1, 0.5, 0.3333333, 0.25, 0.2, 0.1666666, 0.14285714285714285)).reshape(Array(2, 4)))
+  }
+
   "An Add" should "return its output shape when its arguments' shapes match" in {
     val addition = Add(
       Constant(NDArray.zeros[Float](Array(2, 4))),

@@ -179,6 +179,20 @@ case class Input[T](
   )
 }
 
+/** A differentiable function with one arguments that operates on all elements.
+  *
+  * This function's output shape is the same shape as its input.
+  *
+  * @tparam T
+  *   The array element type.
+  */
+trait UnaryElementWiseDifferentiableFunction[T]
+  extends DifferentiableFunction[T] {
+  val a: DifferentiableFunction[T]
+
+  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+}
+
 /** Negates the results of a function.
   *
   * @param a
@@ -190,7 +204,7 @@ case class Input[T](
   */
 case class Negate[T](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
+) extends UnaryElementWiseDifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
 
   override def gradient(
@@ -198,8 +212,6 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
   ): Try[DifferentiableFunction[T]] = ???
 
   override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] = ???
 }
 
 /** Sums the results of a function.
@@ -244,7 +256,7 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
   */
 case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
-) extends DifferentiableFunction[T] {
+) extends UnaryElementWiseDifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
       case Success(value) => Success(value.square)
@@ -276,8 +288,28 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   }
 
   override def getInputs: Set[Input[T]] = ???
+}
 
-  override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+//TODO how do we ensure numerical stability here?
+/** Returns the reciprocal of the results of a function.
+  *
+  * @param a
+  *   The function to invert.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Reciprocal[T](a: DifferentiableFunction[T])(implicit
+                                                   num: Numeric[T]
+) extends UnaryElementWiseDifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(
+                         withRespectToVariable: Variable[T]
+                       ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
 }
 
 /** A differentiable function with two arguments that broadcasts its operations.

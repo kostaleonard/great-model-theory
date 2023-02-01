@@ -71,10 +71,10 @@ object Dense {
 
 /** A densely connected neural network layer.
   *
-  * Implements the operation outputs = activation(dot(inputs, kernel) + bias)
-  * where activation is the element-wise activation function, kernel is a
-  * weights matrix created by the layer, and bias is a bias vector created by
-  * the layer.
+  * Implements the operation outputs = dot(inputs, kernel) + bias where kernel
+  * is a weights matrix created by the layer, and bias is a bias vector created
+  * by the layer. It is typical to follow this layer with an activation function
+  * layer like Sigmoid to introduce nonlinearity.
   *
   * If the input to the layer has a rank greater than 2, then this layer
   * computes the dot product between the inputs and the kernel along the last
