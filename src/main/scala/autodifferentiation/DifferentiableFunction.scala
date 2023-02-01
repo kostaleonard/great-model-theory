@@ -213,7 +213,10 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
 
   override def gradient(
       withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
+  ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
+    case Success(aGradient) => Success(Negate(aGradient))
+    case failure            => failure
+  }
 
   override def getInputs: Set[Input[T]] = ???
 }
@@ -274,6 +277,7 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
     case failure            => failure
   }
 
+  //TODO remove? tests pass without
   private def gradientUnbroadcastZeros(
       aGradient: DifferentiableFunction[T]
   ): Try[DifferentiableFunction[T]] = {
@@ -294,7 +298,7 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def getInputs: Set[Input[T]] = ???
 }
 
-//TODO how do we ensure numerical stability here?
+//TODO how do we ensure numerical stability here? Or is that something users have to add themselves? How does TF do it?
 //TODO test gradient with chain rule
 /** Returns the reciprocal of the results of a function.
   *
