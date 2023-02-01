@@ -1,6 +1,6 @@
 package layers
 
-import autodifferentiation.{Add, Constant, DifferentiableFunction, Negate, Reciprocal}
+import autodifferentiation.{Add, Constant, DifferentiableFunction, Exp, Negate, Reciprocal}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -21,5 +21,5 @@ case class Sigmoid[T: ClassTag] private(previousLayer: Layer[T])(implicit implic
   extends Layer[T] {
 
   override def getComputationGraph: DifferentiableFunction[T] =
-    Reciprocal(Add(Constant(NDArray.ones[T](Array(1))), Negate(previousLayer.getComputationGraph)))
+    Reciprocal(Add(Constant(NDArray.ones[T](Array(1))), Exp(Negate(previousLayer.getComputationGraph))))
 }

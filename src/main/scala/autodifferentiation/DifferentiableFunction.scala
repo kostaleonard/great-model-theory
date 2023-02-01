@@ -286,7 +286,6 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
 }
 
 //TODO how do we ensure numerical stability here? Or is that something users have to add themselves? How does TF do it?
-//TODO test gradient with chain rule
 /** Returns the reciprocal of the results of a function.
   *
   * @param a
@@ -312,6 +311,27 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
       case Success(aGradient) => Success(Multiply(Reciprocal(Negate(Square(a))), aGradient))
       case failure            => failure
     }
+
+  override def getInputs: Set[Input[T]] = ???
+}
+
+/** Returns the exponentiation of the results of a function (f(x) = pow(e, x)).
+  *
+  * @param a
+  *   The function to exponentiate.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
+                                                                 num: Fractional[T]
+) extends UnaryElementWiseDifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = ???
+
+  override def gradient(
+                         withRespectToVariable: Variable[T]
+                       ): Try[DifferentiableFunction[T]] = ???
 
   override def getInputs: Set[Input[T]] = ???
 }

@@ -607,6 +607,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.negate arrayEquals expected)
   }
 
+  it should "return the exponentiation of all elements" in {
+    val arr = NDArray[Double](List(0, 1, 2, -3, 4))
+    val expected = NDArray[Double](List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0)))
+    assert(arr.exp arrayApproximatelyEquals expected)
+  }
+
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
     val arr = NDArray.arange[Int](Array(2, 1, 3))
     val squeezed = arr.squeeze()

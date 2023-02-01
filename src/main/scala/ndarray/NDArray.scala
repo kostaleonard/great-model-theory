@@ -571,6 +571,18 @@ class NDArray[T: ClassTag] private (
     */
   def negate(implicit num: Numeric[T]): NDArray[T] = map(num.negate)
 
+  /** Returns an NDArray with all elements exponentiated (f(x) = pow(e, x)).
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def exp(implicit num: Fractional[T]): NDArray[T] = (classTag[T] match {
+      case _ if classTag[T] == classTag[Float] =>
+        map(x => Math.exp(num.toDouble(x)))
+      case _ if classTag[T] == classTag[Double] =>
+        map(x => Math.exp(num.toDouble(x)))
+    }).asInstanceOf[NDArray[T]]
+
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 
