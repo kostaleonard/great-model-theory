@@ -21,6 +21,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.flatten() sameElements Array(0, 1, 2, 3, 4, 5))
   }
 
+  it should "return that it is empty" in {
+    val arr = NDArray.empty[Int]
+    assert(arr.isEmpty)
+    assert(!arr.nonEmpty)
+  }
+
+  it should "return that it is empty when created with empty shape" in {
+    val arr = NDArray.arange[Int](Array(2, 0))
+    assert(arr.isEmpty)
+    assert(!arr.nonEmpty)
+  }
+
+  it should "return that it is not empty" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    assert(!arr.isEmpty)
+    assert(arr.nonEmpty)
+  }
+
   it should "return the element at the given indices" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     assert(arr1(Array(0, 0)) == 0)
@@ -581,6 +599,16 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)
+  }
+
+  it should "return the mean of all elements" in {
+    val arr = NDArray[Float](List(0, 1, 2, 3, 4))
+    assert(arr.mean == 2)
+  }
+
+  it should "return 0 for the mean of an empty array" in {
+    val arr = NDArray.empty[Float]
+    assert(arr.mean == 0)
   }
 
   it should "return the square of all elements" in {

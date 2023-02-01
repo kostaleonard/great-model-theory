@@ -179,6 +179,68 @@ case class Input[T](
   )
 }
 
+/** Sums the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
+                                                          num: Numeric[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(NDArray(List(value.sum)))
+      case failure        => failure
+    }
+
+  override def gradient(
+                         withRespectToVariable: Variable[T]
+                       ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(_) => Success(Array(Some(1)))
+      case failure    => failure
+    }
+}
+
+/** Computes the mean of the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Mean[T: ClassTag](a: DifferentiableFunction[T])(implicit
+                                                          num: Fractional[T]
+) extends DifferentiableFunction[T] {
+  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+    a.compute(inputs) match {
+      case Success(value) => Success(NDArray(List(value.mean)))
+      case failure        => failure
+    }
+
+  override def gradient(
+                         withRespectToVariable: Variable[T]
+                       ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(_) => Success(Array(Some(1)))
+      case failure    => failure
+    }
+}
+
 /** A differentiable function with one arguments that operates on all elements.
   *
   * This function's output shape is the same shape as its input.
@@ -219,37 +281,6 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
   }
 
   override def getInputs: Set[Input[T]] = ???
-}
-
-/** Sums the results of a function.
-  *
-  * @param a
-  *   The function to sum.
-  * @param num
-  *   The implicit numeric conversion.
-  * @tparam T
-  *   The array element type.
-  */
-case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
-    num: Numeric[T]
-) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(NDArray(List(value.sum)))
-      case failure        => failure
-    }
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
-
-  override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] =
-    a.getOutputShape match {
-      case Success(_) => Success(Array(Some(1)))
-      case failure    => failure
-    }
 }
 
 /** Squares the results of a function.
@@ -380,9 +411,7 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
     val bOnesPaddedShape =
       bShape.reverse.padTo(finalNumDimensions, Some(1)).reverse
     val shapesMatch = (0 until finalNumDimensions).forall(idx =>
-      (aOnesPaddedShape(idx).nonEmpty && aOnesPaddedShape(
-        idx
-      ) == bOnesPaddedShape(idx)) ||
+      (aOnesPaddedShape(idx) == bOnesPaddedShape(idx)) ||
         aOnesPaddedShape(idx).contains(1) ||
         bOnesPaddedShape(idx).contains(1)
     )

@@ -162,6 +162,12 @@ class NDArray[T: ClassTag] private (
     */
   def flatten(): Array[T] = elements
 
+  /** Returns true if this array has no elements. */
+  def isEmpty: Boolean = elements.isEmpty
+
+  /** Returns true if this array has elements. */
+  def nonEmpty: Boolean = !isEmpty
+
   /** Returns an element from the array.
     *
     * @param indices
@@ -544,10 +550,16 @@ class NDArray[T: ClassTag] private (
   /** Returns the sum of all elements.
     *
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `+` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     */
   def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
+
+  /** Returns the mean of all elements.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def mean(implicit num: Fractional[T]): T = if(isEmpty) num.zero else num.div(sum, num.fromInt(flatten().length))
 
   /** Returns an NDArray with all elements squared.
     *

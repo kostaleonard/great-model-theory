@@ -85,18 +85,24 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val loss = Square(Subtract(dense, inputY))
     val weightsGradient = loss.gradient(weights).get
     val biasesGradient = loss.gradient(biases).get
+    //TODO remove debugging
+    println(weightsGradient.getOutputShape.get.mkString("Array(", ", ", ")"))
+    println(biasesGradient.getOutputShape.get.mkString("Array(", ", ", ")"))
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
-    val batchSize = 3
-    val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(
+    val batchSize = 4
+    val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
       Array(batchSize, numFeatures)
     )
-    val batchY = NDArray[Float](List(-2, 4, 7, 2, 2, 4)).reshape(
+    val batchY = NDArray[Float](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
     val learningRate = 1e-3f
     val nextStepWeightsGradient =
       weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(nextStepWeightsGradient.isSuccess)
+    //TODO remove debugging
+    println(nextStepWeightsGradient.get)
+    //TODO this fails because gradient shape is (batchSize x numOutputs), not (1)--need to reduce by mean
     val nextStepWeightsValue = (weights.value - (NDArray(
       List(learningRate)
     ) * nextStepWeightsGradient.get).get).get
@@ -137,11 +143,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val weightsGradient = loss.gradient(weights).get
     val biasesGradient = loss.gradient(biases).get
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
-    val batchSize = 3
-    val batchX = NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2)).reshape(
+    val batchSize = 4
+    val batchX = NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
       Array(batchSize, numFeatures)
     )
-    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4)).reshape(
+    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
     val inputs = Map(
@@ -281,6 +287,24 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val shape = input.getOutputShape
     assert(shape.isSuccess)
     assert(shape.get sameElements input.shapeWithPlaceholders)
+  }
+
+  "A Mean" should "return its output shape" in {
+    val mean = Mean(
+      Constant(NDArray.arange[Float](Array(2, 4)))
+    )
+    val shape = mean.getOutputShape
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(Some(1)))
+  }
+
+  it should "compute the mean of all elements" in {
+    val mean = Mean(
+      Constant(NDArray.arange[Float](Array(2, 4)))
+    )
+    val output = mean.compute(Map.empty)
+    assert(output.isSuccess)
+    assert(output.get arrayApproximatelyEquals NDArray(List(3.5f)))
   }
 
   "A Negate" should "return its output shape" in {
@@ -564,12 +588,13 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(shape.isFailure)
   }
 
-  it should "fail to return an output shape with invalid placeholder dimensions (None x 3, None x 3)" in {
+  it should "return its output shape with matching placeholder dimensions (None x 3, None x 3)" in {
     val input1 = Input[Float]("X", Array(None, Some(3)))
     val input2 = Input[Float]("Y", Array(None, Some(3)))
     val addition = Add(input1, input2)
     val shape = addition.getOutputShape
-    assert(shape.isFailure)
+    assert(shape.isSuccess)
+    assert(shape.get sameElements Array(None, Some(3)))
   }
 
   it should "compute the addition of two functions" in {
