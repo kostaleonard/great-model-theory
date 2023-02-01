@@ -187,7 +187,7 @@ case class Input[T](
   *   The array element type.
   */
 trait UnaryElementWiseDifferentiableFunction[T]
-  extends DifferentiableFunction[T] {
+    extends DifferentiableFunction[T] {
   val a: DifferentiableFunction[T]
 
   override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
@@ -273,19 +273,19 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def gradient(
       withRespectToVariable: Variable[T]
   ): Try[DifferentiableFunction[T]] = a.gradient(withRespectToVariable) match {
-    case Success(aGradient) => Success(
-      Multiply(
-        Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
-        aGradient
+    case Success(aGradient) =>
+      Success(
+        Multiply(
+          Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
+          aGradient
+        )
       )
-    )
-    case failure            => failure
+    case failure => failure
   }
 
   override def getInputs: Set[Input[T]] = ???
 }
 
-//TODO how do we ensure numerical stability here? Or is that something users have to add themselves? How does TF do it?
 /** Returns the reciprocal of the results of a function.
   *
   * @param a
@@ -296,7 +296,7 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   *   The array element type.
   */
 case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
-                                                   num: Fractional[T]
+    num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
@@ -305,11 +305,12 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
     }
 
   override def gradient(
-                         withRespectToVariable: Variable[T]
-                       ): Try[DifferentiableFunction[T]] =
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
     a.gradient(withRespectToVariable) match {
-      case Success(aGradient) => Success(Multiply(Reciprocal(Negate(Square(a))), aGradient))
-      case failure            => failure
+      case Success(aGradient) =>
+        Success(Multiply(Reciprocal(Negate(Square(a))), aGradient))
+      case failure => failure
     }
 
   override def getInputs: Set[Input[T]] = ???
@@ -325,7 +326,7 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
   *   The array element type.
   */
 case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
-                                                                 num: Fractional[T]
+    num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
   override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     a.compute(inputs) match {
@@ -334,8 +335,8 @@ case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
     }
 
   override def gradient(
-                         withRespectToVariable: Variable[T]
-                       ): Try[DifferentiableFunction[T]] =
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
     a.gradient(withRespectToVariable) match {
       case Success(aGradient) => Success(Multiply(this, aGradient))
       case failure            => failure

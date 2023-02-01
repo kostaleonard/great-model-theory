@@ -591,7 +591,10 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return the reciprocal of all elements" in {
     val arr = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
-    val expected = NDArray[Double](List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666, 0.14285714285714285, 0.125)).reshape(Array(2, 4))
+    val expected = NDArray[Double](
+      List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
+        0.14285714285714285, 0.125)
+    ).reshape(Array(2, 4))
     assert(arr.reciprocal arrayApproximatelyEquals expected)
   }
 
@@ -609,7 +612,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return the exponentiation of all elements" in {
     val arr = NDArray[Double](List(0, 1, 2, -3, 4))
-    val expected = NDArray[Double](List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0)))
+    val expected = NDArray[Double](
+      List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
+    )
     assert(arr.exp arrayApproximatelyEquals expected)
   }
 

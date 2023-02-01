@@ -297,7 +297,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       Constant(NDArray[Int](List(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)))
     )
     val output = negation.compute(Map.empty)
-    val expected = NDArray[Int](List(-1, -2, -3, -4, -5, -6)).reshape(Array(2, 3))
+    val expected =
+      NDArray[Int](List(-1, -2, -3, -4, -5, -6)).reshape(Array(2, 3))
     assert(output.isSuccess)
     assert(output.get arrayEquals expected)
   }
@@ -307,9 +308,15 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val negation = Negate(inputX)
     val gradientX = negation.gradient(inputX)
     assert(gradientX.isSuccess)
-    assert(gradientX.get.getOutputShape.get sameElements Array(Some(2), Some(4)))
+    assert(
+      gradientX.get.getOutputShape.get sameElements Array(Some(2), Some(4))
+    )
     val valueX = NDArray.arange[Int](Array(2, 4))
-    assert(gradientX.get.compute(Map(inputX -> valueX)).get arrayEquals NDArray.ones[Int](Array(2, 4)).negate)
+    assert(
+      gradientX.get.compute(Map(inputX -> valueX)).get arrayEquals NDArray
+        .ones[Int](Array(2, 4))
+        .negate
+    )
   }
 
   "A Reciprocal" should "return its output shape" in {
@@ -331,10 +338,15 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the reciprocal of all elements" in {
     val reciprocal = Reciprocal(
-      Constant(NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4)))
+      Constant(
+        NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+      )
     )
     val output = reciprocal.compute(Map.empty)
-    val expected = NDArray[Double](List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666, 0.14285714285714285, 0.125)).reshape(Array(2, 4))
+    val expected = NDArray[Double](
+      List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
+        0.14285714285714285, 0.125)
+    ).reshape(Array(2, 4))
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals expected)
   }
@@ -343,7 +355,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(2), Some(4)))
     val reciprocal = Reciprocal(inputX)
     val gradientX = reciprocal.gradient(inputX).get
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val valueX =
+      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(reciprocal, inputX, inputs).get
@@ -360,7 +373,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(2), Some(4)))
     val reciprocal = Reciprocal(Negate(Square(inputX)))
     val gradientX = reciprocal.gradient(inputX).get
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val valueX =
+      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(reciprocal, inputX, inputs).get
@@ -387,7 +401,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       Constant(NDArray[Double](List(0, 1, 2, -3, 4)))
     )
     val output = exp.compute(Map.empty)
-    val expected = NDArray[Double](List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0)))
+    val expected = NDArray[Double](
+      List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
+    )
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals expected)
   }
@@ -396,7 +412,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(2), Some(4)))
     val exp = Exp(inputX)
     val gradientX = exp.gradient(inputX).get
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val valueX =
+      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs).get
@@ -416,7 +433,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(None, Some(4)))
     val exp = Exp(Reciprocal(inputX))
     val gradientX = exp.gradient(inputX).get
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val valueX =
+      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs).get
@@ -431,9 +449,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute its gradient with placeholders and chain rule (sigmoid: 1 / (1 + exp(-X)))" in {
     val inputX = Input[Double]("X", Array(None, Some(4)))
-    val exp = Reciprocal(Add(Constant(NDArray.ones(Array(1))), Exp(Negate(inputX))))
+    val exp =
+      Reciprocal(Add(Constant(NDArray.ones(Array(1))), Exp(Negate(inputX))))
     val gradientX = exp.gradient(inputX).get
-    val valueX = NDArray[Double](List(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
+    val valueX =
+      NDArray[Double](List(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs).get
