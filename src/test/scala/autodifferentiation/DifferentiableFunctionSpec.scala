@@ -82,12 +82,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val biases =
       ModelParameter[Float]("biases", NDArray.ones(Array(numOutputs)))
     val dense = Add(DotProduct(inputX, weights), biases)
-    val loss = Square(Subtract(dense, inputY))
+    val loss = Mean(Square(Subtract(dense, inputY)))
     val weightsGradient = loss.gradient(weights).get
     val biasesGradient = loss.gradient(biases).get
-    //TODO remove debugging
-    println(weightsGradient.getOutputShape.get.mkString("Array(", ", ", ")"))
-    println(biasesGradient.getOutputShape.get.mkString("Array(", ", ", ")"))
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
     val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
@@ -102,7 +99,6 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     assert(nextStepWeightsGradient.isSuccess)
     //TODO remove debugging
     println(nextStepWeightsGradient.get)
-    //TODO this fails because gradient shape is (batchSize x numOutputs), not (1)--need to reduce by mean
     val nextStepWeightsValue = (weights.value - (NDArray(
       List(learningRate)
     ) * nextStepWeightsGradient.get).get).get
@@ -119,6 +115,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // Compare losses from previous step and next step; loss should decrease.
     val lossOnBatch = loss.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(lossOnBatch.isSuccess)
+    //TODO remove debugging
+    println(lossOnBatch.get)
     val nextStepLossOnBatch =
       nextStepLoss.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(nextStepLossOnBatch.isSuccess)
@@ -139,7 +137,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val biasesValue = NDArray.ones[Double](Array(numOutputs))
     val biases = Input[Double]("biases", biasesValue.shape.map(Some(_)))
     val dense = Add(DotProduct(inputX, weights), biases)
-    val loss = Square(Subtract(dense, inputY))
+    val loss = Mean(Square(Subtract(dense, inputY)))
     val weightsGradient = loss.gradient(weights).get
     val biasesGradient = loss.gradient(biases).get
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
@@ -305,6 +303,27 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val output = mean.compute(Map.empty)
     assert(output.isSuccess)
     assert(output.get arrayApproximatelyEquals NDArray(List(3.5f)))
+  }
+
+  it should "compute its gradient" in {
+    val inputX = Input[Double]("X", Array(Some(2), Some(4)))
+    val mean = Mean(inputX)
+    val gradientX = mean.gradient(inputX)
+    assert(gradientX.isSuccess)
+    assert(
+      gradientX.get.getOutputShape.get sameElements Array(Some(1))
+    )
+    val valueX = NDArray.arange[Double](Array(2, 4))
+    val inputs = Map(inputX -> valueX)
+    val numericGradientXOnInputs =
+      computeGradientWithFiniteDifferences(mean, inputX, inputs).get
+    val gradientXOnInputs = gradientX.get.compute(inputs)
+    assert(
+      gradientXOnInputs.get.shape sameElements numericGradientXOnInputs.shape
+    )
+    assert(
+      gradientXOnInputs.get arrayApproximatelyEquals numericGradientXOnInputs
+    )
   }
 
   "A Negate" should "return its output shape" in {

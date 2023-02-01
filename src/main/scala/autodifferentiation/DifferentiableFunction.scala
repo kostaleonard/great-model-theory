@@ -230,7 +230,11 @@ case class Mean[T: ClassTag](a: DifferentiableFunction[T])(implicit
 
   override def gradient(
                          withRespectToVariable: Variable[T]
-                       ): Try[DifferentiableFunction[T]] = ???
+                       ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) => Success(Mean(aGradient))
+      case failure            => failure
+    }
 
   override def getInputs: Set[Input[T]] = ???
 
