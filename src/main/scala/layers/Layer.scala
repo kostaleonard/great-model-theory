@@ -1,6 +1,6 @@
 package layers
 
-import autodifferentiation.{DifferentiableFunction, Input}
+import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -35,4 +35,8 @@ abstract class Layer[T: ClassTag] {
   /** Returns the layer's output shape with possible placeholder dimensions. */
   def getOutputShape: Try[Array[Option[Int]]] =
     getComputationGraph.getOutputShape
+
+  //TODO docstring
+  //TODO recursively update previous layers
+  def withUpdatedParameters(parameters: Set[ModelParameter[T]]): Layer[T]
 }

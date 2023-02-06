@@ -31,3 +31,13 @@ val outputs = model(inputs)
 
 The full Scala docs are available
 [on GitHub Pages](https://kostaleonard.github.io/great-model-theory/).
+
+## Design goals
+
+* Purely functional data structures: data structures do not maintain mutable
+state and operations on them do not create side effects.[^1]
+* Familiar interfaces: API is similar to widely-used deep learning libraries,
+like TensorFlow.
+
+[^1]: In rare cases, we allow side effects that the user sanctions, such as
+printing training progress and saving trained models to files.
