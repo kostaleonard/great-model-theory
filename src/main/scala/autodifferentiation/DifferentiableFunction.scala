@@ -20,8 +20,48 @@ trait DifferentiableFunction[T] {
     * @param inputs
     *   A Map of `Input` objects to tensors of arbitrary shape.
     */
-  def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]]
+  def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = computeAll(inputs) match {
+    case Success(execution) => Success(execution.outputs(this))
+    case Failure(failure) => Failure(failure)
+  }
 
+  /** Returns the output of every component function for the given input values.
+    *
+    * For example, if this function is Mean(Square(Input(X))), then the result
+    * will contain entries for the output of Mean, Square, and Input(X). The
+    * value associated with Input(X) will be the same as that supplied by the
+    * user.
+    *
+    * @param inputs
+    *   A Map of `Input` objects to tensors of arbitrary shape.
+    */
+  def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]]
+
+  /** Returns the gradient for a given argument based on the output gradient.
+    *
+    * This method is the analogue of defvjp() in the autograd Python library. It
+    * defines the Vector-Jacobian Products that pass gradient information from
+    * the function output to each of its inputs.
+    *
+    * @param outputGradient
+    *   The gradient of the final output function (often the loss function) with
+    *   respect to this function. If this function is the final output function,
+    *   then the gradient should be 1.
+    * @param computeResult
+    *   The result of this function's computation on its inputs.
+    * @param withRespectToArg
+    *   The index of the argument with respect to which to compute the input
+    *   gradient, starting at 0. For example, if this function is
+    *   Subtract(a, b), supplying 0 would result in outputGradient and 1 would
+    *   result in -outputGradient.
+    */
+  def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]]
+
+  //TODO docstring
+  //TODO returns a map of all component functions to their gradients. We can then just filter all the ModelParameters and update them.
+  def backpropagateAll(execution: DifferentiableFunctionExecution[T]): Map[DifferentiableFunction[T], NDArray[T]] = ???
+
+  //TODO define gradient in terms of backpropagation--not super important because we only need first derivative for neural nets. But nice feature for release 2.
   /** Returns the gradient of the function with respect to a variable.
     *
     * @param withRespectToVariable
@@ -39,6 +79,19 @@ trait DifferentiableFunction[T] {
   /** Returns the output shape of the function with possible placeholders. */
   def getOutputShape: Try[Array[Option[Int]]]
 }
+
+/** Contains the results of function execution on particular inputs.
+  *
+  * Used during backpropagation.
+  *
+  * @param inputs
+  *   A Map of `Input` objects to tensors of arbitrary shape.
+  * @param outputs
+  *   The output of every component function for the given input values.
+  * @tparam T
+  *   The array element type.
+  */
+case class DifferentiableFunctionExecution[T](inputs: Map[Input[T], NDArray[T]], outputs: Map[DifferentiableFunction[T], NDArray[T]])
 
 /** A constant (has 0 gradient).
   *

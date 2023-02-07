@@ -13,39 +13,6 @@ import scala.util.{Failure, Success, Try}
 
 object Dense {
 
-  /** Returns a Dense layer with user-defined weights and biases.
-    *
-    * @param previousLayer
-    *   The input to this layer.
-    * @param units
-    *   The number of neurons in the layer.
-    * @param weightsInitialization
-    *   If supplied, the weights matrix to use. Must be of shape
-    *   (previousLayer.getOutputShape.last, units). If not supplied, the layer
-    *   is initialized with random weights.
-    * @param biasesInitialization
-    *   If supplied, the biases vector to use. Must be of shape (units). If not
-    *   supplied, the layer is initialized with random biases.
-    * @tparam T
-    *   The array element type.
-    */
-  def withInitialization[T: ClassTag](
-      previousLayer: Layer[T],
-      units: Int,
-      weightsInitialization: Option[NDArray[T]] = None,
-      biasesInitialization: Option[NDArray[T]] = None
-  )(implicit num: Numeric[T]): Try[Dense[T]] =
-    previousLayer.getOutputShape match {
-      case Success(outputShape) =>
-        val weights: NDArray[T] = weightsInitialization.getOrElse(
-          NDArray.random[T](Array(outputShape.last.get, units))
-        )
-        val biases: NDArray[T] =
-          biasesInitialization.getOrElse(NDArray.zeros[T](Array(units)))
-        Success(Dense(previousLayer, units, weights, biases))
-      case Failure(failure) => Failure(failure)
-    }
-
   /** Returns a Dense layer with randomly-initialized weights and biases.
     *
     * @param previousLayer
@@ -64,11 +31,12 @@ object Dense {
         val weights =
           NDArray.random[T](Array(outputShape.last.get, units))
         val biases = NDArray.zeros[T](Array(units))
-        Success(Dense(previousLayer, units, weights, biases))
+        Success(Dense(previousLayer, units, ModelParameter(s"weights@Dense($previousLayer)", weights), ModelParameter(s"biases@Dense($previousLayer)", biases)))
       case Failure(failure) => Failure(failure)
     }
 }
 
+//TODO change constructor so that weights and biases are type ModelParameter
 /** A densely connected neural network layer.
   *
   * Implements the operation outputs = dot(inputs, kernel) + bias where kernel
@@ -96,11 +64,11 @@ object Dense {
   * @tparam T
   *   The array element type.
   */
-case class Dense[T: ClassTag] private (
+case class Dense[T: ClassTag](
     previousLayer: Layer[T],
     units: Int,
-    weights: NDArray[T],
-    biases: NDArray[T]
+    weights: ModelParameter[T],
+    biases: ModelParameter[T]
 )(implicit implicitNumeric: Numeric[T])
     extends Layer[T] {
 
@@ -108,8 +76,12 @@ case class Dense[T: ClassTag] private (
     Add(
       DotProduct(
         previousLayer.getComputationGraph,
-        ModelParameter("weights", weights)
+        weights
       ),
-      ModelParameter("biases", biases)
+      biases
     )
+
+  //TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming
+  override def withUpdatedParameters(parameters: Map[ModelParameter[T], ModelParameter[T]]): Layer[T] =
+    Dense(previousLayer.withUpdatedParameters(parameters), units, parameters.getOrElse(weights, weights), parameters.getOrElse(biases, biases))
 }
