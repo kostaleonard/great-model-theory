@@ -13,6 +13,39 @@ import scala.util.{Failure, Success, Try}
 
 object Dense {
 
+  /** Returns a Dense layer with user-defined weights and biases.
+    *
+    * @param previousLayer
+    *   The input to this layer.
+    * @param units
+    *   The number of neurons in the layer.
+    * @param weightsInitialization
+    *   If supplied, the weights matrix to use. Must be of shape
+    *   (previousLayer.getOutputShape.last, units). If not supplied, the layer
+    *   is initialized with random weights.
+    * @param biasesInitialization
+    *   If supplied, the biases vector to use. Must be of shape (units). If not
+    *   supplied, the layer is initialized with random biases.
+    * @tparam T
+    *   The array element type.
+    */
+  def withInitialization[T: ClassTag](
+                                       previousLayer: Layer[T],
+                                       units: Int,
+                                       weightsInitialization: Option[ModelParameter[T]] = None,
+                                       biasesInitialization: Option[ModelParameter[T]] = None
+                                     )(implicit num: Numeric[T]): Try[Dense[T]] =
+    previousLayer.getOutputShape match {
+      case Success(outputShape) =>
+        val weights = weightsInitialization.getOrElse(
+          ModelParameter(s"weights@Dense($previousLayer)", NDArray.random[T](Array(outputShape.last.get, units)))
+        )
+        val biases =
+          biasesInitialization.getOrElse(ModelParameter(s"biases@Dense($previousLayer)", NDArray.zeros[T](Array(units))))
+        Success(Dense(previousLayer, units, weights, biases))
+      case Failure(failure) => Failure(failure)
+    }
+
   /** Returns a Dense layer with randomly-initialized weights and biases.
     *
     * @param previousLayer
@@ -36,7 +69,6 @@ object Dense {
     }
 }
 
-//TODO change constructor so that weights and biases are type ModelParameter
 /** A densely connected neural network layer.
   *
   * Implements the operation outputs = dot(inputs, kernel) + bias where kernel
@@ -81,7 +113,7 @@ case class Dense[T: ClassTag](
       biases
     )
 
-  //TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming
+  //TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming but not resolved
   override def withUpdatedParameters(parameters: Map[ModelParameter[T], ModelParameter[T]]): Layer[T] =
     Dense(previousLayer.withUpdatedParameters(parameters), units, parameters.getOrElse(weights, weights), parameters.getOrElse(biases, biases))
 }
