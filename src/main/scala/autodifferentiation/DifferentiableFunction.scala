@@ -247,7 +247,7 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
   override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
     a.computeAll(inputs) match {
       case Success(value) => Success(value.copy(outputs = value.outputs + (this -> NDArray(List(value.outputs(a).sum)))))
-      case Failure(failure)        => Failure(failure)
+      case failure => failure
     }
 
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -277,14 +277,11 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
 case class Mean[T: ClassTag](a: DifferentiableFunction[T])(implicit
                                                           num: Fractional[T]
 ) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(NDArray(List(value.mean)))
-      case failure        => failure
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) => Success(value.copy(outputs = value.outputs + (this -> NDArray(List(value.outputs(a).mean)))))
+      case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -329,17 +326,14 @@ trait UnaryElementWiseDifferentiableFunction[T]
   * @tparam T
   *   The array element type.
   */
-case class Negate[T](a: DifferentiableFunction[T])(implicit
+case class Negate[T](override val a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.negate)
-      case failure        => failure
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) => Success(value.copy(outputs = value.outputs + (this -> value.outputs(a).negate)))
+      case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -363,17 +357,14 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
+case class Square[T: ClassTag](override val a: DifferentiableFunction[T])(implicit
     num: Numeric[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.square)
-      case failure        => failure
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) => Success(value.copy(outputs = value.outputs + (this -> value.outputs(a).square)))
+      case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -403,17 +394,14 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
+case class Reciprocal[T: ClassTag](override val a: DifferentiableFunction[T])(implicit
     num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.reciprocal)
-      case failure        => failure
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) => Success(value.copy(outputs = value.outputs + (this -> value.outputs(a).reciprocal)))
+      case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -439,17 +427,14 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
+case class Exp[T: ClassTag](override val a: DifferentiableFunction[T])(implicit
     num: Fractional[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.exp)
-      case failure        => failure
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) => Success(value.copy(outputs = value.outputs + (this -> value.outputs(a).exp)))
+      case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -535,21 +520,21 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
   * @tparam T
   *   The array element type.
   */
-case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
+case class Add[T](override val a: DifferentiableFunction[T], override val b: DifferentiableFunction[T])(
     implicit num: Numeric[T]
 ) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue + bValue
+        b.computeAll(inputs) match {
+          case Success(bValue) => aValue.outputs(a) + bValue.outputs(b) match {
+            case Success(result) => Success(DifferentiableFunctionExecution(inputs, aValue.outputs ++ bValue.outputs + (this -> result)))
+            case Failure(failure) => Failure(failure)
+          }
           case failure         => failure
         }
       case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -580,23 +565,23 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   *   The array element type.
   */
 case class Subtract[T](
-    a: DifferentiableFunction[T],
-    b: DifferentiableFunction[T]
+    override val a: DifferentiableFunction[T],
+    override val b: DifferentiableFunction[T]
 )(implicit
     num: Numeric[T]
 ) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue - bValue
+        b.computeAll(inputs) match {
+          case Success(bValue) => aValue.outputs(a) - bValue.outputs(b) match {
+            case Success(result) => Success(DifferentiableFunctionExecution(inputs, aValue.outputs ++ bValue.outputs + (this -> result)))
+            case Failure(failure) => Failure(failure)
+          }
           case failure         => failure
         }
       case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -627,23 +612,23 @@ case class Subtract[T](
   *   The array element type.
   */
 case class Multiply[T: ClassTag](
-    a: DifferentiableFunction[T],
-    b: DifferentiableFunction[T]
+    override val a: DifferentiableFunction[T],
+    override val b: DifferentiableFunction[T]
 )(implicit
     num: Numeric[T]
 ) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue * bValue
+        b.computeAll(inputs) match {
+          case Success(bValue) => aValue.outputs(a) * bValue.outputs(b) match {
+            case Success(result) => Success(DifferentiableFunctionExecution(inputs, aValue.outputs ++ bValue.outputs + (this -> result)))
+            case Failure(failure) => Failure(failure)
+          }
           case failure         => failure
         }
       case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
@@ -680,18 +665,18 @@ case class DotProduct[T: ClassTag](
     b: DifferentiableFunction[T]
 )(implicit num: Numeric[T])
     extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue dot bValue
+        b.computeAll(inputs) match {
+          case Success(bValue) => aValue.outputs(a) dot bValue.outputs(b) match {
+            case Success(result) => Success(DifferentiableFunctionExecution(inputs, aValue.outputs ++ bValue.outputs + (this -> result)))
+            case Failure(failure) => Failure(failure)
+          }
           case failure         => failure
         }
       case failure => failure
     }
-
-  //TODO
-  override def computeAll(inputs: Map[Input[T], NDArray[T]]): Try[DifferentiableFunctionExecution[T]] = ???
 
   //TODO
   override def backpropagate(outputGradient: NDArray[T], computeResult: NDArray[T], withRespectToArg: Int): Try[NDArray[T]] = ???
