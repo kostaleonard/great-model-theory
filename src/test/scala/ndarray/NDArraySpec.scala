@@ -646,6 +646,23 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.exp arrayApproximatelyEquals expected)
   }
 
+  it should "return the same 1D array when transposed" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4))
+    assert(arr.transpose arrayEquals arr)
+  }
+
+  it should "return the transposed array (2D)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(Array(2, 3))
+    val expected = NDArray[Int](List(0, 3, 1, 4, 2, 5)).reshape(Array(3, 2))
+    assert(arr.transpose arrayEquals expected)
+  }
+
+  it should "return the transposed array (3D)" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val expected = NDArray[Int](List(0, 6, 2, 8, 4, 10, 1, 7, 3, 9, 5, 11)).reshape(Array(2, 3, 2))
+    assert(arr.transpose arrayEquals expected)
+  }
+
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
     val arr = NDArray.arange[Int](Array(2, 1, 3))
     val squeezed = arr.squeeze()

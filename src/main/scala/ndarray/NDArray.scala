@@ -595,6 +595,12 @@ class NDArray[T: ClassTag] private (
       map(x => Math.exp(num.toDouble(x)))
   }).asInstanceOf[NDArray[T]]
 
+  def transpose: NDArray[T] = {
+    val indices = listCartesianProductIncrementLeft(shape.map(x => (0 until x).toList).toList)
+    val transposeElements = indices.map(x => apply(x.toArray))
+    NDArray(transposeElements).reshape(shape.reverse)
+  }
+
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
 
@@ -785,6 +791,31 @@ class NDArray[T: ClassTag] private (
       oneDimIndices.flatMap(dimIndex =>
         if (accum.isEmpty) List(List(dimIndex))
         else accum.map(dimIndex +: _)
+      )
+    )
+  }
+
+  /** Returns the list of all combinations of the lists, incrementing from left.
+    *
+    * For example, the list List(List(0, 1), List(0, 1, 2)) would return
+    * List(List(0, 0), List(1, 0), List(0, 1), List(1, 1), List(0, 2), List(1,
+    * 2)).
+    *
+    * @param lists
+    *   A list of lists. The elements of each list will be combined with the
+    *   elements of all other lists in cartesian product fashion.
+    * @return
+    *   The list of all combinations of the given lists by index. If the input
+    *   lists are of lengths n1, n2, n3, ..., then the output will be of shape
+    *   (n1, n2, n3, ...).
+    */
+  private def listCartesianProductIncrementLeft(
+                                    lists: List[List[Int]]
+                                  ): List[List[Int]] = {
+    lists.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
+      if (accum.isEmpty) oneDimIndices.map(x => List(x))
+      else accum.flatMap(accumIndices =>
+        oneDimIndices.map(_ +: accumIndices)
       )
     )
   }
