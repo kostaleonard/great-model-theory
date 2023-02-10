@@ -1,6 +1,14 @@
 package layers
 
-import autodifferentiation.{Add, Constant, DifferentiableFunction, Exp, ModelParameter, Negate, Reciprocal}
+import autodifferentiation.{
+  Add,
+  Constant,
+  DifferentiableFunction,
+  Exp,
+  ModelParameter,
+  Negate,
+  Reciprocal
+}
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -30,5 +38,7 @@ case class Sigmoid[T: ClassTag](previousLayer: Layer[T])(implicit
     )
 
   // This layer has no parameters.
-  override def withUpdatedParameters(parameters: Map[ModelParameter[T], ModelParameter[T]]): Layer[T] = this
+  override def withUpdatedParameters(
+      parameters: Map[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = this
 }

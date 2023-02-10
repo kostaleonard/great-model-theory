@@ -659,7 +659,8 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return the transposed array (3D)" in {
     val arr = NDArray.arange[Int](Array(2, 3, 2))
-    val expected = NDArray[Int](List(0, 6, 2, 8, 4, 10, 1, 7, 3, 9, 5, 11)).reshape(Array(2, 3, 2))
+    val expected = NDArray[Int](List(0, 6, 2, 8, 4, 10, 1, 7, 3, 9, 5, 11))
+      .reshape(Array(2, 3, 2))
     assert(arr.transpose arrayEquals expected)
   }
 

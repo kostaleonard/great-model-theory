@@ -42,8 +42,12 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       .withInitialization(
         inputLayer,
         units,
-        weightsInitialization =
-          Some(ModelParameter("weights", NDArray.arange[Float](Array(numFeatures, units)))),
+        weightsInitialization = Some(
+          ModelParameter(
+            "weights",
+            NDArray.arange[Float](Array(numFeatures, units))
+          )
+        ),
         biasesInitialization = None
       )
       .get
@@ -73,8 +77,12 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       .withInitialization(
         inputLayer,
         units,
-        weightsInitialization =
-          Some(ModelParameter("weights", NDArray.arange[Float](Array(numFeaturesCols, units)))),
+        weightsInitialization = Some(
+          ModelParameter(
+            "weights",
+            NDArray.arange[Float](Array(numFeaturesCols, units))
+          )
+        ),
         biasesInitialization = None
       )
       .get
@@ -110,9 +118,14 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       .withInitialization(
         inputLayer,
         units,
-        weightsInitialization =
-          Some(ModelParameter("weights", NDArray.arange[Float](Array(numFeatures, units)))),
-        biasesInitialization = Some(ModelParameter("biases", NDArray.ones[Float](Array(units))))
+        weightsInitialization = Some(
+          ModelParameter(
+            "weights",
+            NDArray.arange[Float](Array(numFeatures, units))
+          )
+        ),
+        biasesInitialization =
+          Some(ModelParameter("biases", NDArray.ones[Float](Array(units))))
       )
       .get
     val sampleBatchSize = 2

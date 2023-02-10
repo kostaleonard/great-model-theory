@@ -30,18 +30,26 @@ object Dense {
     *   The array element type.
     */
   def withInitialization[T: ClassTag](
-                                       previousLayer: Layer[T],
-                                       units: Int,
-                                       weightsInitialization: Option[ModelParameter[T]] = None,
-                                       biasesInitialization: Option[ModelParameter[T]] = None
-                                     )(implicit num: Numeric[T]): Try[Dense[T]] =
+      previousLayer: Layer[T],
+      units: Int,
+      weightsInitialization: Option[ModelParameter[T]] = None,
+      biasesInitialization: Option[ModelParameter[T]] = None
+  )(implicit num: Numeric[T]): Try[Dense[T]] =
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
         val weights = weightsInitialization.getOrElse(
-          ModelParameter(s"weights@Dense($previousLayer)", NDArray.random[T](Array(outputShape.last.get, units)))
+          ModelParameter(
+            s"weights@Dense($previousLayer)",
+            NDArray.random[T](Array(outputShape.last.get, units))
+          )
         )
         val biases =
-          biasesInitialization.getOrElse(ModelParameter(s"biases@Dense($previousLayer)", NDArray.zeros[T](Array(units))))
+          biasesInitialization.getOrElse(
+            ModelParameter(
+              s"biases@Dense($previousLayer)",
+              NDArray.zeros[T](Array(units))
+            )
+          )
         Success(Dense(previousLayer, units, weights, biases))
       case Failure(failure) => Failure(failure)
     }
@@ -64,7 +72,14 @@ object Dense {
         val weights =
           NDArray.random[T](Array(outputShape.last.get, units))
         val biases = NDArray.zeros[T](Array(units))
-        Success(Dense(previousLayer, units, ModelParameter(s"weights@Dense($previousLayer)", weights), ModelParameter(s"biases@Dense($previousLayer)", biases)))
+        Success(
+          Dense(
+            previousLayer,
+            units,
+            ModelParameter(s"weights@Dense($previousLayer)", weights),
+            ModelParameter(s"biases@Dense($previousLayer)", biases)
+          )
+        )
       case Failure(failure) => Failure(failure)
     }
 }
@@ -113,7 +128,14 @@ case class Dense[T: ClassTag](
       biases
     )
 
-  //TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming but not resolved
-  override def withUpdatedParameters(parameters: Map[ModelParameter[T], ModelParameter[T]]): Layer[T] =
-    Dense(previousLayer.withUpdatedParameters(parameters), units, parameters.getOrElse(weights, weights), parameters.getOrElse(biases, biases))
+  // TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming but not resolved
+  override def withUpdatedParameters(
+      parameters: Map[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] =
+    Dense(
+      previousLayer.withUpdatedParameters(parameters),
+      units,
+      parameters.getOrElse(weights, weights),
+      parameters.getOrElse(biases, biases)
+    )
 }

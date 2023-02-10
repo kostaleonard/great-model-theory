@@ -87,9 +87,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val biasesGradient = loss.gradient(biases).get
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
-    val batchX = NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
-      Array(batchSize, numFeatures)
-    )
+    val batchX =
+      NDArray[Float](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+        Array(batchSize, numFeatures)
+      )
     val batchY = NDArray[Float](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
@@ -97,7 +98,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val nextStepWeightsGradient =
       weightsGradient.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(nextStepWeightsGradient.isSuccess)
-    //TODO remove debugging
+    // TODO remove debugging
     println(nextStepWeightsGradient.get)
     val nextStepWeightsValue = (weights.value - (NDArray(
       List(learningRate)
@@ -115,7 +116,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // Compare losses from previous step and next step; loss should decrease.
     val lossOnBatch = loss.compute(Map(inputX -> batchX, inputY -> batchY))
     assert(lossOnBatch.isSuccess)
-    //TODO remove debugging
+    // TODO remove debugging
     println(lossOnBatch.get)
     val nextStepLossOnBatch =
       nextStepLoss.compute(Map(inputX -> batchX, inputY -> batchY))
@@ -142,9 +143,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val biasesGradient = loss.gradient(biases).get
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
-    val batchX = NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
-      Array(batchSize, numFeatures)
-    )
+    val batchX =
+      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+        Array(batchSize, numFeatures)
+      )
     val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )

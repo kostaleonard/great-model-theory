@@ -559,7 +559,8 @@ class NDArray[T: ClassTag] private (
     * @param num
     *   An implicit parameter defining a set of numeric operations.
     */
-  def mean(implicit num: Fractional[T]): T = if(isEmpty) num.zero else num.div(sum, num.fromInt(flatten().length))
+  def mean(implicit num: Fractional[T]): T =
+    if (isEmpty) num.zero else num.div(sum, num.fromInt(flatten().length))
 
   /** Returns an NDArray with all elements squared.
     *
@@ -596,7 +597,9 @@ class NDArray[T: ClassTag] private (
   }).asInstanceOf[NDArray[T]]
 
   def transpose: NDArray[T] = {
-    val indices = listCartesianProductIncrementLeft(shape.map(x => (0 until x).toList).toList)
+    val indices = listCartesianProductIncrementLeft(
+      shape.map(x => (0 until x).toList).toList
+    )
     val transposeElements = indices.map(x => apply(x.toArray))
     NDArray(transposeElements).reshape(shape.reverse)
   }
@@ -810,13 +813,11 @@ class NDArray[T: ClassTag] private (
     *   (n1, n2, n3, ...).
     */
   private def listCartesianProductIncrementLeft(
-                                    lists: List[List[Int]]
-                                  ): List[List[Int]] = {
+      lists: List[List[Int]]
+  ): List[List[Int]] = {
     lists.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
       if (accum.isEmpty) oneDimIndices.map(x => List(x))
-      else accum.flatMap(accumIndices =>
-        oneDimIndices.map(_ +: accumIndices)
-      )
+      else accum.flatMap(accumIndices => oneDimIndices.map(_ +: accumIndices))
     )
   }
 

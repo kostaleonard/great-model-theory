@@ -16,5 +16,7 @@ case class InputLayer[T: ClassTag](input: Input[T]) extends Layer[T] {
   override def getComputationGraph: DifferentiableFunction[T] = input
 
   // This layer has no parameters.
-  override def withUpdatedParameters(parameters: Map[ModelParameter[T], ModelParameter[T]]): Layer[T] = this
+  override def withUpdatedParameters(
+      parameters: Map[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = this
 }
