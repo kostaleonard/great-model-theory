@@ -83,8 +83,6 @@ trait DifferentiableFunction[T] {
       execution: DifferentiableFunctionExecution[T],
       outputGradient: NDArray[T]
   ): Try[Map[DifferentiableFunction[T], NDArray[T]]] = {
-    println(s"Current node: $this")
-    println(s"Gradient: $outputGradient")
     val parents = getParents
     val parentGradients = parents.indices.map(idx =>
       backpropagate(execution, outputGradient, idx).get
