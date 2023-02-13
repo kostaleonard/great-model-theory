@@ -94,6 +94,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     )
   }
 
+  it should "return an array with one element updated" in {
+    val arr1 = NDArray.zeros[Int](Array(2, 3, 2))
+    val arr2 = arr1.updated(Array(0, 1, 0), 1)
+    assert(arr2.flatten().count(_ == 0) == arr2.shape.product - 1)
+    assert(arr2(Array(0, 1, 0)) == 1)
+  }
+
   it should "be equal in comparison with an array of the same shape and elements" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     val arr2 = NDArray.arange[Int](Array(2, 3))

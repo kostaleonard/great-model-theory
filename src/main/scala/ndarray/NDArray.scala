@@ -167,19 +167,19 @@ class NDArray[T: ClassTag] private (
   /** Returns true if this array has elements. */
   def nonEmpty: Boolean = !isEmpty
 
+  private def getFlattenedIndex(indices: Array[Int]): Int =
+    indices.indices.foldRight(0)((idx, accumulator) =>
+      indices(idx) * strides(idx) + accumulator
+    )
+
   /** Returns an element from the array.
     *
     * @param indices
     *   The indices to an element in the array. Must be of length shape.length.
     */
-  def apply(indices: Array[Int]): T = elements(
-    indices.indices.foldRight(0)((idx, accumulator) =>
-      indices(idx) * strides(idx) + accumulator
-    )
-  )
+  def apply(indices: Array[Int]): T = elements(getFlattenedIndex(indices))
 
-  /** Returns an NDArray with the same elements as the input, but with the given
-    * shape.
+  /** Returns an NDArray with the same elements, but with the new shape.
     *
     * @param targetShape
     *   The shape of the output array. The product must equal elements.length.
@@ -198,6 +198,19 @@ class NDArray[T: ClassTag] private (
     val dimensionIndices = shape.map(List.range(0, _)).toList
     val elementIndices = listCartesianProduct(dimensionIndices)
     elementIndices.map(_.toArray).toArray
+  }
+
+  /** Returns an NDArray with the value at the indices updated.
+    *
+    * @param indices
+    *   The indices to an element in the array. Must be of length shape.length.
+    * @param element
+    *   The value to fill in the new array at the given indices.
+    * @return
+    */
+  def updated(indices: Array[Int], element: T): NDArray[T] = {
+    val newElements = elements.updated(getFlattenedIndex(indices), element)
+    new NDArray[T](shape, newElements)
   }
 
   /** Returns true if the arrays have the same shape and elements.
