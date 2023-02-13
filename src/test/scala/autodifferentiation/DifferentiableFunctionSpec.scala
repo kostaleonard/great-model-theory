@@ -235,8 +235,6 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       val nextStepDense =
         Add(DotProduct(inputX, nextStepWeights), nextStepBiases)
       nextStepLoss = Mean(Square(Subtract(nextStepDense, inputY)))
-      val nextStepLossOnBatch =
-        nextStepLoss.compute(Map(inputX -> batchX, inputY -> batchY))
     }
     val finalLoss =
       nextStepLoss.compute(Map(inputX -> batchX, inputY -> batchY))

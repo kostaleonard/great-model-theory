@@ -158,8 +158,7 @@ class NDArray[T: ClassTag] private (
     strides(idx) = shape(idx + 1) * strides(idx + 1)
   }
 
-  /** Returns a flattened array of the elements in this NDArray.
-    */
+  /** Returns a flattened array of the elements in this NDArray. */
   def flatten(): Array[T] = elements
 
   /** Returns true if this array has no elements. */
@@ -187,6 +186,19 @@ class NDArray[T: ClassTag] private (
     */
   def reshape(targetShape: Array[Int]): NDArray[T] =
     new NDArray[T](targetShape, elements)
+
+  /** Returns an array of all element indices, in order.
+    *
+    * Each element in the returned array is an array that can be applied to
+    * extract a single element. The order of these indices is last dimension
+    * first. For example, if this array was of shape 4 x 3 x 2, the indices
+    * would be (0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1), etc.
+    */
+  def indices: Array[Array[Int]] = {
+    val dimensionIndices = shape.map(List.range(0, _)).toList
+    val elementIndices = listCartesianProduct(dimensionIndices)
+    elementIndices.map(_.toArray).toArray
+  }
 
   /** Returns true if the arrays have the same shape and elements.
     *

@@ -70,6 +70,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr2.flatten().forall(_.isInstanceOf[Hello]))
   }
 
+  it should "return an array of all indices in order" in {
+    val arr = NDArray.zeros[Int](Array(2, 3, 2))
+    val indices = arr.indices
+    val expected = Array(
+      Array(0, 0, 0),
+      Array(0, 0, 1),
+      Array(0, 1, 0),
+      Array(0, 1, 1),
+      Array(0, 2, 0),
+      Array(0, 2, 1),
+      Array(1, 0, 0),
+      Array(1, 0, 1),
+      Array(1, 1, 0),
+      Array(1, 1, 1),
+      Array(1, 2, 0),
+      Array(1, 2, 1)
+    )
+    assert(
+      indices.indices.forall(elementIdx =>
+        indices(elementIdx) sameElements expected(elementIdx)
+      )
+    )
+  }
+
   it should "be equal in comparison with an array of the same shape and elements" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     val arr2 = NDArray.arange[Int](Array(2, 3))
