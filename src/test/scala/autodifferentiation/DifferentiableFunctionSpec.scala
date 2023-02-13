@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.reflect.{ClassTag, classTag}
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
@@ -66,9 +66,30 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       inputs: Map[Input[T], NDArray[T]],
       epsilon: Double = 1e-5
   )(implicit num: Fractional[T]): Try[NDArray[T]] = {
-    val inputShape = inputs(withRespectToInput).shape
-    // TODO finite differences computation
-    ???
+    val epsilonAsT = (classTag[T] match {
+      case _ if classTag[T] == classTag[Float]  => epsilon.toFloat
+      case _ if classTag[T] == classTag[Double] => epsilon
+    }).asInstanceOf[T]
+    val inputArray = inputs(withRespectToInput)
+    var differences = NDArray.zeros[T](inputArray.shape)
+    inputArray.indices.foreach { idx =>
+      val inputsMinusEpsilonAtIndex = inputs.updated(
+        withRespectToInput,
+        inputArray.updated(idx, num.minus(inputArray(idx), epsilonAsT))
+      )
+      val inputsPlusEpsilonAtIndex = inputs.updated(
+        withRespectToInput,
+        inputArray.updated(idx, num.plus(inputArray(idx), epsilonAsT))
+      )
+      val outputMinusEpsilonAtIndex =
+        f.compute(inputsMinusEpsilonAtIndex).get.sum
+      val outputPlusEpsilonAtIndex = f.compute(inputsPlusEpsilonAtIndex).get.sum
+      val difference =
+        num.minus(outputPlusEpsilonAtIndex, outputMinusEpsilonAtIndex)
+      val slope = num.div(difference, num.times(num.fromInt(2), epsilonAsT))
+      differences = differences.updated(idx, slope)
+    }
+    Success(differences)
   }
 
   "A DifferentiableFunction" should "return its output shape (1)" in {
@@ -165,25 +186,25 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       weights -> weightsValue,
       biases -> biasesValue
     )
-    val nextStepWeightsGradient = weightsGradient.compute(inputs)
-    val nextStepBiasesGradient = biasesGradient.compute(inputs)
-    val numericWeightsGradient =
-      computeGradientWithFiniteDifferences(loss, weights, inputs).get
-    val numericBiasesGradient =
-      computeGradientWithFiniteDifferences(loss, biases, inputs).get
-    assert(
-      nextStepWeightsGradient.get.shape sameElements numericWeightsGradient.shape
+    val execution = loss.computeAll(inputs)
+    val gradients = loss.backpropagateAll(execution.get).get
+    val numericGradientsWeights = computeGradientWithFiniteDifferencesAllElements(
+      loss,
+      weights,
+      inputs
     )
-    assert(
-      nextStepWeightsGradient.get arrayApproximatelyEquals numericWeightsGradient
+    val numericGradientsBiases = computeGradientWithFiniteDifferencesAllElements(
+      loss,
+      biases,
+      inputs
     )
-    assert(nextStepBiasesGradient.isSuccess)
-    assert(
-      nextStepBiasesGradient.get.shape sameElements numericBiasesGradient.shape
-    )
-    assert(
-      nextStepBiasesGradient.get arrayApproximatelyEquals numericBiasesGradient
-    )
+    println(gradients(weights))
+    println(numericGradientsWeights.get)
+    //TODO need to unbroadcast in binary operations backpropagation
+    println(gradients(biases))
+    println(numericGradientsBiases.get)
+    assert(gradients(weights) arrayApproximatelyEquals numericGradientsWeights.get)
+    assert(gradients(biases) arrayApproximatelyEquals numericGradientsBiases.get)
   }
 
   // We ignore this test because it is slow.
