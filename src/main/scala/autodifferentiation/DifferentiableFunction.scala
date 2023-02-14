@@ -738,7 +738,14 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
     * @return
     *   outputGradient unbroadcasted to targetShape.
     */
-  protected def unbroadcast(targetShape: Array[Int], outputGradient: NDArray[T]): NDArray[T] = ???
+  protected def unbroadcast(targetShape: Array[Int], outputGradient: NDArray[T])(implicit num: Numeric[T]): NDArray[T] = {
+    var unbroadcastGradient = outputGradient
+    while(unbroadcastGradient.shape.length > targetShape.length) {
+      unbroadcastGradient = unbroadcastGradient.sumAxis(0)
+    }
+    //TODO see autodidact
+    ???
+  }
 }
 
 /** Adds the results of two functions.

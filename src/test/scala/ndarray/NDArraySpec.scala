@@ -645,6 +645,19 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(sumAxis2 arrayEquals expectedSumAxis2)
   }
 
+  it should "return the sum along an axis, preserving dimensions" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val sumAxis0 = arr.sumAxis(0, keepDims = true)
+    val expectedSumAxis0 = NDArray(List(6, 8, 10, 12, 14, 16)).reshape(Array(1, 3, 2))
+    assert(sumAxis0 arrayEquals expectedSumAxis0)
+    val sumAxis1 = arr.sumAxis(1, keepDims = true)
+    val expectedSumAxis1 = NDArray(List(6, 9, 24, 27)).reshape(Array(2, 1, 2))
+    assert(sumAxis1 arrayEquals expectedSumAxis1)
+    val sumAxis2 = arr.sumAxis(2, keepDims = true)
+    val expectedSumAxis2 = NDArray(List(1, 5, 9, 13, 17, 21)).reshape(Array(2, 3, 1))
+    assert(sumAxis2 arrayEquals expectedSumAxis2)
+  }
+
   it should "return the mean of all elements" in {
     val arr = NDArray[Float](List(0, 1, 2, 3, 4))
     assert(arr.mean == 2)
@@ -898,6 +911,13 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val reduced = arr.reduce(slice => slice.flatten().head, 0)
     assert(reduced.shape sameElements Array(3))
     assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
+  }
+
+  it should "preserve dimensions in reduction if specified" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    val reduced = arr.reduce(_.sum, 0, keepDims = true)
+    assert(reduced.shape sameElements Array(1, 3))
+    assert(reduced arrayEquals NDArray[Int](List(3, 5, 7)).reshape(Array(1, 3)))
   }
 
   it should "represent its elements in string form" in {
