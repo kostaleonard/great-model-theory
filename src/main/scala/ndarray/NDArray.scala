@@ -588,7 +588,9 @@ class NDArray[T: ClassTag] private (
     * @param num
     *   An implicit parameter defining a set of numeric operations.
     */
-  def sumAxis(axis: Int, keepDims: Boolean = false)(implicit num: Numeric[T]): NDArray[T] = reduce(_.sum, axis, keepDims = keepDims)
+  def sumAxis(axis: Int, keepDims: Boolean = false)(implicit
+      num: Numeric[T]
+  ): NDArray[T] = reduce(_.sum, axis, keepDims = keepDims)
 
   /** Returns the mean of all elements.
     *
@@ -867,6 +869,7 @@ class NDArray[T: ClassTag] private (
   def map[B: ClassTag](f: T => B): NDArray[B] =
     NDArray(flatten().toList.map(f)).reshape(shape)
 
+  // TODO if there is only one axis, I think reduce will have empty shape
   /** Returns a new NDArray by reducing slices on the given axis.
     *
     * @param f
@@ -884,7 +887,11 @@ class NDArray[T: ClassTag] private (
     *   reduction. Reducing with a summation function would collapse the
     *   dimension by summing all elements in each slice.
     */
-  def reduce[B: ClassTag](f: NDArray[T] => B, axis: Int, keepDims: Boolean = false): NDArray[B] = {
+  def reduce[B: ClassTag](
+      f: NDArray[T] => B,
+      axis: Int,
+      keepDims: Boolean = false
+  ): NDArray[B] = {
     val dimensionsIndices = shape.indices
       .map(idx =>
         if (idx == axis) List(-1)

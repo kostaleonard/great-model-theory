@@ -738,13 +738,19 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
     * @return
     *   outputGradient unbroadcasted to targetShape.
     */
-  protected def unbroadcast(targetShape: Array[Int], outputGradient: NDArray[T])(implicit num: Numeric[T]): NDArray[T] = {
+  protected def unbroadcast(
+      targetShape: Array[Int],
+      outputGradient: NDArray[T]
+  )(implicit num: Numeric[T]): NDArray[T] = {
     var unbroadcastGradient = outputGradient
-    while(unbroadcastGradient.shape.length > targetShape.length) {
+    while (unbroadcastGradient.shape.length > targetShape.length) {
       unbroadcastGradient = unbroadcastGradient.sumAxis(0)
     }
-    //TODO see autodidact
-    ???
+    targetShape.indices.foreach(idx =>
+      if (targetShape(idx) == 1)
+        unbroadcastGradient = unbroadcastGradient.sumAxis(idx, keepDims = true)
+    )
+    unbroadcastGradient
   }
 }
 
@@ -791,7 +797,10 @@ case class Add[T](
       outputGradient: NDArray[T],
       withRespectToArg: Int
   ): Try[NDArray[T]] =
-    if (withRespectToArg == 0 || withRespectToArg == 1) Success(outputGradient)
+    if (withRespectToArg == 0)
+      Success(unbroadcast(execution.outputs(a).shape, outputGradient))
+    else if (withRespectToArg == 1)
+      Success(unbroadcast(execution.outputs(b).shape, outputGradient))
     else
       Failure(
         new IllegalArgumentException(
@@ -856,8 +865,10 @@ case class Subtract[T](
       outputGradient: NDArray[T],
       withRespectToArg: Int
   ): Try[NDArray[T]] =
-    if (withRespectToArg == 0) Success(outputGradient)
-    else if (withRespectToArg == 1) Success(outputGradient.negate)
+    if (withRespectToArg == 0)
+      Success(unbroadcast(execution.outputs(a).shape, outputGradient))
+    else if (withRespectToArg == 1)
+      Success(unbroadcast(execution.outputs(b).shape, outputGradient.negate))
     else
       Failure(
         new IllegalArgumentException(
@@ -924,10 +935,20 @@ case class Multiply[T](
   ): Try[NDArray[T]] =
     if (withRespectToArg == 0) {
       val bExecution = execution.outputs(b)
-      outputGradient * bExecution
+      Success(
+        unbroadcast(
+          execution.outputs(a).shape,
+          (outputGradient * bExecution).get
+        )
+      )
     } else if (withRespectToArg == 1) {
       val aExecution = execution.outputs(a)
-      outputGradient * aExecution
+      Success(
+        unbroadcast(
+          execution.outputs(b).shape,
+          (outputGradient * aExecution).get
+        )
+      )
     } else
       Failure(
         new IllegalArgumentException(

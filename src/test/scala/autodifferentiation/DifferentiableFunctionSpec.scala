@@ -188,23 +188,24 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     )
     val execution = loss.computeAll(inputs)
     val gradients = loss.backpropagateAll(execution.get).get
-    val numericGradientsWeights = computeGradientWithFiniteDifferencesAllElements(
-      loss,
-      weights,
-      inputs
+    val numericGradientsWeights =
+      computeGradientWithFiniteDifferencesAllElements(
+        loss,
+        weights,
+        inputs
+      )
+    val numericGradientsBiases =
+      computeGradientWithFiniteDifferencesAllElements(
+        loss,
+        biases,
+        inputs
+      )
+    assert(
+      gradients(weights) arrayApproximatelyEquals numericGradientsWeights.get
     )
-    val numericGradientsBiases = computeGradientWithFiniteDifferencesAllElements(
-      loss,
-      biases,
-      inputs
+    assert(
+      gradients(biases) arrayApproximatelyEquals numericGradientsBiases.get
     )
-    println(gradients(weights))
-    println(numericGradientsWeights.get)
-    //TODO need to unbroadcast in binary operations backpropagation
-    println(gradients(biases))
-    println(numericGradientsBiases.get)
-    assert(gradients(weights) arrayApproximatelyEquals numericGradientsWeights.get)
-    assert(gradients(biases) arrayApproximatelyEquals numericGradientsBiases.get)
   }
 
   // We ignore this test because it is slow.
