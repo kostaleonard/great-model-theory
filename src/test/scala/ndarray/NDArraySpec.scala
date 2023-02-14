@@ -632,6 +632,19 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.sum == 10)
   }
 
+  it should "return the sum along an axis" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val sumAxis0 = arr.sumAxis(0)
+    val expectedSumAxis0 = NDArray(List(6, 8, 10, 12, 14, 16)).reshape(Array(3, 2))
+    assert(sumAxis0 arrayEquals expectedSumAxis0)
+    val sumAxis1 = arr.sumAxis(1)
+    val expectedSumAxis1 = NDArray(List(6, 9, 24, 27)).reshape(Array(2, 2))
+    assert(sumAxis1 arrayEquals expectedSumAxis1)
+    val sumAxis2 = arr.sumAxis(2)
+    val expectedSumAxis2 = NDArray(List(1, 5, 9, 13, 17, 21)).reshape(Array(2, 3))
+    assert(sumAxis2 arrayEquals expectedSumAxis2)
+  }
+
   it should "return the mean of all elements" in {
     val arr = NDArray[Float](List(0, 1, 2, 3, 4))
     assert(arr.mean == 2)

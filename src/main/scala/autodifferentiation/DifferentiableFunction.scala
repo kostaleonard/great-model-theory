@@ -725,6 +725,20 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
   }
 
   override def getParents: List[DifferentiableFunction[T]] = List(a, b)
+
+  /** Removes broadcasted dimensions by summing along them.
+    *
+    * @param targetShape
+    *   The shape to which to transform the gradient through unbroadcasting.
+    * @param outputGradient
+    *   The gradient of the final output function (often the loss function) with
+    *   respect to this function. The shape of this array is the shape of the
+    *   output of this DifferentiableFunction, which may have required
+    *   broadcasting of inputs.
+    * @return
+    *   outputGradient unbroadcasted to targetShape.
+    */
+  protected def unbroadcast(targetShape: Array[Int], outputGradient: NDArray[T]): NDArray[T] = ???
 }
 
 /** Adds the results of two functions.

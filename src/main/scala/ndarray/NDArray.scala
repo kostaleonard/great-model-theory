@@ -579,6 +579,15 @@ class NDArray[T: ClassTag] private (
     */
   def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
 
+  /** Returns an NDArray with elements summed along an axis.
+    *
+    * @param axis
+    *   The axis along which to sum. This axis is eliminated in the result.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def sumAxis(axis: Int)(implicit num: Numeric[T]): NDArray[T] = reduce(_.sum, axis)
+
   /** Returns the mean of all elements.
     *
     * @param num
