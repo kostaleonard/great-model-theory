@@ -869,7 +869,6 @@ class NDArray[T: ClassTag] private (
   def map[B: ClassTag](f: T => B): NDArray[B] =
     NDArray(flatten().toList.map(f)).reshape(shape)
 
-  // TODO if there is only one axis, I think reduce will have empty shape
   /** Returns a new NDArray by reducing slices on the given axis.
     *
     * @param f
@@ -911,7 +910,7 @@ class NDArray[T: ClassTag] private (
     val newElements = slices.map(f)
     val newShape = shape.indices
       .flatMap(idx =>
-        if (idx == axis && keepDims) Some(1)
+        if (idx == axis && (keepDims || shape.length == 1)) Some(1)
         else if (idx == axis) None
         else Some(shape(idx))
       )

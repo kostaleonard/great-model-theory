@@ -924,6 +924,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(reduced arrayEquals NDArray[Int](List(3, 5, 7)).reshape(Array(1, 3)))
   }
 
+  it should "preserve dimensions in reduction if the array has only 1 dimension" in {
+    val arr = NDArray.ones[Int](Array(3))
+    val reduced = arr.reduce(_.sum, 0)
+    assert(reduced arrayEquals NDArray[Int](List(3)))
+  }
+
   it should "represent its elements in string form" in {
     val arr = NDArray.arange[Int](Array(2, 3))
     assert(arr.toString == "[0, 1, 2, 3, 4, 5](2 x 3)")
