@@ -21,6 +21,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.flatten() sameElements Array(0, 1, 2, 3, 4, 5))
   }
 
+  it should "return that it is empty" in {
+    val arr = NDArray.empty[Int]
+    assert(arr.isEmpty)
+    assert(!arr.nonEmpty)
+  }
+
+  it should "return that it is empty when created with empty shape" in {
+    val arr = NDArray.arange[Int](Array(2, 0))
+    assert(arr.isEmpty)
+    assert(!arr.nonEmpty)
+  }
+
+  it should "return that it is not empty" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    assert(!arr.isEmpty)
+    assert(arr.nonEmpty)
+  }
+
   it should "return the element at the given indices" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     assert(arr1(Array(0, 0)) == 0)
@@ -50,6 +68,37 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     case class Hello(x: Int)
     val arr2 = NDArray[Hello](List(Hello(0), Hello(1)))
     assert(arr2.flatten().forall(_.isInstanceOf[Hello]))
+  }
+
+  it should "return an array of all indices in order" in {
+    val arr = NDArray.zeros[Int](Array(2, 3, 2))
+    val indices = arr.indices
+    val expected = Array(
+      Array(0, 0, 0),
+      Array(0, 0, 1),
+      Array(0, 1, 0),
+      Array(0, 1, 1),
+      Array(0, 2, 0),
+      Array(0, 2, 1),
+      Array(1, 0, 0),
+      Array(1, 0, 1),
+      Array(1, 1, 0),
+      Array(1, 1, 1),
+      Array(1, 2, 0),
+      Array(1, 2, 1)
+    )
+    assert(
+      indices.indices.forall(elementIdx =>
+        indices(elementIdx) sameElements expected(elementIdx)
+      )
+    )
+  }
+
+  it should "return an array with one element updated" in {
+    val arr1 = NDArray.zeros[Int](Array(2, 3, 2))
+    val arr2 = arr1.updated(Array(0, 1, 0), 1)
+    assert(arr2.flatten().count(_ == 0) == arr2.shape.product - 1)
+    assert(arr2(Array(0, 1, 0)) == 1)
   }
 
   it should "be equal in comparison with an array of the same shape and elements" in {
@@ -583,6 +632,46 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assert(arr.sum == 10)
   }
 
+  it should "return the sum along an axis" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val sumAxis0 = arr.sumAxis(0)
+    val expectedSumAxis0 =
+      NDArray(List(6, 8, 10, 12, 14, 16)).reshape(Array(3, 2))
+    assert(sumAxis0 arrayEquals expectedSumAxis0)
+    val sumAxis1 = arr.sumAxis(1)
+    val expectedSumAxis1 = NDArray(List(6, 9, 24, 27)).reshape(Array(2, 2))
+    assert(sumAxis1 arrayEquals expectedSumAxis1)
+    val sumAxis2 = arr.sumAxis(2)
+    val expectedSumAxis2 =
+      NDArray(List(1, 5, 9, 13, 17, 21)).reshape(Array(2, 3))
+    assert(sumAxis2 arrayEquals expectedSumAxis2)
+  }
+
+  it should "return the sum along an axis, preserving dimensions" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val sumAxis0 = arr.sumAxis(0, keepDims = true)
+    val expectedSumAxis0 =
+      NDArray(List(6, 8, 10, 12, 14, 16)).reshape(Array(1, 3, 2))
+    assert(sumAxis0 arrayEquals expectedSumAxis0)
+    val sumAxis1 = arr.sumAxis(1, keepDims = true)
+    val expectedSumAxis1 = NDArray(List(6, 9, 24, 27)).reshape(Array(2, 1, 2))
+    assert(sumAxis1 arrayEquals expectedSumAxis1)
+    val sumAxis2 = arr.sumAxis(2, keepDims = true)
+    val expectedSumAxis2 =
+      NDArray(List(1, 5, 9, 13, 17, 21)).reshape(Array(2, 3, 1))
+    assert(sumAxis2 arrayEquals expectedSumAxis2)
+  }
+
+  it should "return the mean of all elements" in {
+    val arr = NDArray[Float](List(0, 1, 2, 3, 4))
+    assert(arr.mean == 2)
+  }
+
+  it should "return 0 for the mean of an empty array" in {
+    val arr = NDArray.empty[Float]
+    assert(arr.mean == 0)
+  }
+
   it should "return the square of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(Array(2, 3))
     val expected = NDArray[Int](List(0, 1, 4, 9, 16, 25)).reshape(Array(2, 3))
@@ -616,6 +705,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
       List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
     )
     assert(arr.exp arrayApproximatelyEquals expected)
+  }
+
+  it should "return the same 1D array when transposed" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4))
+    assert(arr.transpose arrayEquals arr)
+  }
+
+  it should "return the transposed array (2D)" in {
+    val arr = NDArray[Int](List(0, 1, 2, 3, 4, 5)).reshape(Array(2, 3))
+    val expected = NDArray[Int](List(0, 3, 1, 4, 2, 5)).reshape(Array(3, 2))
+    assert(arr.transpose arrayEquals expected)
+  }
+
+  it should "return the transposed array (3D)" in {
+    val arr = NDArray.arange[Int](Array(2, 3, 2))
+    val expected = NDArray[Int](List(0, 6, 2, 8, 4, 10, 1, 7, 3, 9, 5, 11))
+      .reshape(Array(2, 3, 2))
+    assert(arr.transpose arrayEquals expected)
   }
 
   it should "remove length 1 dimensions when squeezed (rank 3)" in {
@@ -808,6 +915,19 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     val reduced = arr.reduce(slice => slice.flatten().head, 0)
     assert(reduced.shape sameElements Array(3))
     assert(reduced arrayEquals NDArray[Int](List(0, 1, 2)))
+  }
+
+  it should "preserve dimensions in reduction if specified" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    val reduced = arr.reduce(_.sum, 0, keepDims = true)
+    assert(reduced.shape sameElements Array(1, 3))
+    assert(reduced arrayEquals NDArray[Int](List(3, 5, 7)).reshape(Array(1, 3)))
+  }
+
+  it should "preserve dimensions in reduction if the array has only 1 dimension" in {
+    val arr = NDArray.ones[Int](Array(3))
+    val reduced = arr.reduce(_.sum, 0)
+    assert(reduced arrayEquals NDArray[Int](List(3)))
   }
 
   it should "represent its elements in string form" in {

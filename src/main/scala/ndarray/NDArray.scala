@@ -158,29 +158,60 @@ class NDArray[T: ClassTag] private (
     strides(idx) = shape(idx + 1) * strides(idx + 1)
   }
 
-  /** Returns a flattened array of the elements in this NDArray.
-    */
+  /** Returns a flattened array of the elements in this NDArray. */
   def flatten(): Array[T] = elements
+
+  /** Returns true if this array has no elements. */
+  def isEmpty: Boolean = elements.isEmpty
+
+  /** Returns true if this array has elements. */
+  def nonEmpty: Boolean = !isEmpty
+
+  private def getFlattenedIndex(indices: Array[Int]): Int =
+    indices.indices.foldRight(0)((idx, accumulator) =>
+      indices(idx) * strides(idx) + accumulator
+    )
 
   /** Returns an element from the array.
     *
     * @param indices
     *   The indices to an element in the array. Must be of length shape.length.
     */
-  def apply(indices: Array[Int]): T = elements(
-    indices.indices.foldRight(0)((idx, accumulator) =>
-      indices(idx) * strides(idx) + accumulator
-    )
-  )
+  def apply(indices: Array[Int]): T = elements(getFlattenedIndex(indices))
 
-  /** Returns an NDArray with the same elements as the input, but with the given
-    * shape.
+  /** Returns an NDArray with the same elements, but with the new shape.
     *
     * @param targetShape
     *   The shape of the output array. The product must equal elements.length.
     */
   def reshape(targetShape: Array[Int]): NDArray[T] =
     new NDArray[T](targetShape, elements)
+
+  /** Returns an array of all element indices, in order.
+    *
+    * Each element in the returned array is an array that can be applied to
+    * extract a single element. The order of these indices is last dimension
+    * first. For example, if this array was of shape 4 x 3 x 2, the indices
+    * would be (0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1), etc.
+    */
+  def indices: Array[Array[Int]] = {
+    val dimensionIndices = shape.map(List.range(0, _)).toList
+    val elementIndices = listCartesianProduct(dimensionIndices)
+    elementIndices.map(_.toArray).toArray
+  }
+
+  /** Returns an NDArray with the value at the indices updated.
+    *
+    * @param indices
+    *   The indices to an element in the array. Must be of length shape.length.
+    * @param element
+    *   The value to fill in the new array at the given indices.
+    * @return
+    */
+  def updated(indices: Array[Int], element: T): NDArray[T] = {
+    val newElements = elements.updated(getFlattenedIndex(indices), element)
+    new NDArray[T](shape, newElements)
+  }
 
   /** Returns true if the arrays have the same shape and elements.
     *
@@ -544,10 +575,30 @@ class NDArray[T: ClassTag] private (
   /** Returns the sum of all elements.
     *
     * @param num
-    *   An implicit parameter defining a set of numeric operations which
-    *   includes the `+` operator to be used in forming the sum.
+    *   An implicit parameter defining a set of numeric operations.
     */
   def sum(implicit num: Numeric[T]): T = flatten().reduce(num.plus)
+
+  /** Returns an NDArray with elements summed along an axis.
+    *
+    * @param axis
+    *   The axis along which to sum. This axis is eliminated in the result.
+    * @param keepDims
+    *   If true, do not eliminate the reduced axis; keep it with size 1.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def sumAxis(axis: Int, keepDims: Boolean = false)(implicit
+      num: Numeric[T]
+  ): NDArray[T] = reduce(_.sum, axis, keepDims = keepDims)
+
+  /** Returns the mean of all elements.
+    *
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    */
+  def mean(implicit num: Fractional[T]): T =
+    if (isEmpty) num.zero else num.div(sum, num.fromInt(flatten().length))
 
   /** Returns an NDArray with all elements squared.
     *
@@ -582,6 +633,14 @@ class NDArray[T: ClassTag] private (
     case _ if classTag[T] == classTag[Double] =>
       map(x => Math.exp(num.toDouble(x)))
   }).asInstanceOf[NDArray[T]]
+
+  def transpose: NDArray[T] = {
+    val indices = listCartesianProductIncrementLeft(
+      shape.map(x => (0 until x).toList).toList
+    )
+    val transposeElements = indices.map(x => apply(x.toArray))
+    NDArray(transposeElements).reshape(shape.reverse)
+  }
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
   def squeeze(): NDArray[T] = reshape(shape.filter(_ > 1))
@@ -777,6 +836,29 @@ class NDArray[T: ClassTag] private (
     )
   }
 
+  /** Returns the list of all combinations of the lists, incrementing from left.
+    *
+    * For example, the list List(List(0, 1), List(0, 1, 2)) would return
+    * List(List(0, 0), List(1, 0), List(0, 1), List(1, 1), List(0, 2), List(1,
+    * 2)).
+    *
+    * @param lists
+    *   A list of lists. The elements of each list will be combined with the
+    *   elements of all other lists in cartesian product fashion.
+    * @return
+    *   The list of all combinations of the given lists by index. If the input
+    *   lists are of lengths n1, n2, n3, ..., then the output will be of shape
+    *   (n1, n2, n3, ...).
+    */
+  private def listCartesianProductIncrementLeft(
+      lists: List[List[Int]]
+  ): List[List[Int]] = {
+    lists.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
+      if (accum.isEmpty) oneDimIndices.map(x => List(x))
+      else accum.flatMap(accumIndices => oneDimIndices.map(_ +: accumIndices))
+    )
+  }
+
   /** Maps a function to every element in the NDArray, preserving the shape.
     *
     * @param f
@@ -795,6 +877,8 @@ class NDArray[T: ClassTag] private (
     *   The axis along which to take slices of the array. These slices are
     *   passed to the reduction function f. If axis is 0, the reduction function
     *   is applied on slices (None, i, j, ...) for all dimensions i, j, ...
+    * @param keepDims
+    *   If true, do not eliminate the reduced axis; keep it with size 1.
     * @tparam B
     *   The return type of the reduce function.
     * @return
@@ -802,7 +886,11 @@ class NDArray[T: ClassTag] private (
     *   reduction. Reducing with a summation function would collapse the
     *   dimension by summing all elements in each slice.
     */
-  def reduce[B: ClassTag](f: NDArray[T] => B, axis: Int): NDArray[B] = {
+  def reduce[B: ClassTag](
+      f: NDArray[T] => B,
+      axis: Int,
+      keepDims: Boolean = false
+  ): NDArray[B] = {
     val dimensionsIndices = shape.indices
       .map(idx =>
         if (idx == axis) List(-1)
@@ -822,7 +910,8 @@ class NDArray[T: ClassTag] private (
     val newElements = slices.map(f)
     val newShape = shape.indices
       .flatMap(idx =>
-        if (idx == axis) None
+        if (idx == axis && (keepDims || shape.length == 1)) Some(1)
+        else if (idx == axis) None
         else Some(shape(idx))
       )
       .toArray

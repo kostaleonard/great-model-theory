@@ -3,7 +3,7 @@ package autodifferentiation
 import exceptions.ShapeException
 import ndarray.NDArray
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 import scala.util.{Failure, Success, Try}
 
 /** A function that is differentiable with respect to its variables.
@@ -14,14 +14,88 @@ import scala.util.{Failure, Success, Try}
   *   The array element type.
   */
 trait DifferentiableFunction[T] {
+  implicit val classTag: ClassTag[T]
 
   /** Returns the output of the function for the given input values.
     *
     * @param inputs
     *   A Map of `Input` objects to tensors of arbitrary shape.
     */
-  def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]]
+  def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = computeAll(
+    inputs
+  ) match {
+    case Success(execution) => Success(execution.outputs(this))
+    case Failure(failure)   => Failure(failure)
+  }
 
+  /** Returns the output of every component function for the given input values.
+    *
+    * For example, if this function is Mean(Square(Input(X))), then the result
+    * will contain entries for the output of Mean, Square, and Input(X). The
+    * value associated with Input(X) will be the same as that supplied by the
+    * user.
+    *
+    * @param inputs
+    *   A Map of `Input` objects to tensors of arbitrary shape.
+    */
+  def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]]
+
+  /** Returns the gradient for a given argument based on the output gradient.
+    *
+    * This method is the analogue of defvjp() in the autograd Python library. It
+    * defines the Vector-Jacobian Products that pass gradient information from
+    * the function output to each of its inputs.
+    *
+    * @param execution
+    *   The results of function execution on particular inputs. Used to retrieve
+    *   the inputs and outputs of DifferentiableFunctions throughout
+    *   backpropagation.
+    * @param outputGradient
+    *   The gradient of the final output function (often the loss function) with
+    *   respect to this function. If this function is the final output function,
+    *   then the gradient should be 1.
+    * @param withRespectToArg
+    *   The index of the argument with respect to which to compute the input
+    *   gradient, starting at 0. For example, if this function is Subtract(a,
+    *   b), supplying 0 would result in outputGradient and 1 would result in
+    * -outputGradient.
+    */
+  def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]]
+
+  // TODO docstring
+  // TODO returns a map of all component functions to their gradients. We can then just filter all the ModelParameters and update them.
+  def backpropagateAll(
+      execution: DifferentiableFunctionExecution[T]
+  )(implicit
+      num: Numeric[T]
+  ): Try[Map[DifferentiableFunction[T], NDArray[T]]] = {
+    val lastStepGradient = NDArray.ones[T](execution.outputs(this).shape)
+    backpropagateAllRecursive(execution, lastStepGradient)
+  }
+
+  private def backpropagateAllRecursive(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T]
+  ): Try[Map[DifferentiableFunction[T], NDArray[T]]] = {
+    val parents = getParents
+    val parentGradients = parents.indices.map(idx =>
+      backpropagate(execution, outputGradient, idx).get
+    )
+    val parentBackpropagationResults = parents.indices.map(idx =>
+      parents(idx)
+        .backpropagateAllRecursive(execution, parentGradients(idx))
+        .get
+    )
+    Success(Map(this -> outputGradient) ++ parentBackpropagationResults.flatten)
+  }
+
+  // TODO define gradient in terms of backpropagation--not super important because we only need first derivative for neural nets. But nice feature for release 2.
   /** Returns the gradient of the function with respect to a variable.
     *
     * @param withRespectToVariable
@@ -38,7 +112,27 @@ trait DifferentiableFunction[T] {
 
   /** Returns the output shape of the function with possible placeholders. */
   def getOutputShape: Try[Array[Option[Int]]]
+
+  // TODO remove this function
+  /** Returns the DifferentiableFunctions on which this function depends. */
+  def getParents: List[DifferentiableFunction[T]]
 }
+
+/** Contains the results of function execution on particular inputs.
+  *
+  * Used during backpropagation.
+  *
+  * @param inputs
+  *   A Map of `Input` objects to tensors of arbitrary shape.
+  * @param outputs
+  *   The output of every component function for the given input values.
+  * @tparam T
+  *   The array element type.
+  */
+case class DifferentiableFunctionExecution[T](
+    inputs: Map[Input[T], NDArray[T]],
+    outputs: Map[DifferentiableFunction[T], NDArray[T]]
+)
 
 /** A constant (has 0 gradient).
   *
@@ -47,10 +141,26 @@ trait DifferentiableFunction[T] {
   * @tparam T
   *   The array element type.
   */
-case class Constant[T: ClassTag](value: NDArray[T])
-    extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    Success(value)
+case class Constant[T](value: NDArray[T])(
+    override implicit val classTag: ClassTag[T]
+) extends DifferentiableFunction[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    Success(DifferentiableFunctionExecution(inputs, Map(this -> value)))
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) Success(NDArray.zeros(value.shape))
+    else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -63,6 +173,8 @@ case class Constant[T: ClassTag](value: NDArray[T])
   override def getOutputShape: Try[Array[Option[Int]]] = Success(
     value.shape.map(Some(_))
   )
+
+  override def getParents: List[DifferentiableFunction[T]] = List.empty
 }
 
 /** A variable (has potentially non-zero gradient).
@@ -74,19 +186,22 @@ trait Variable[T] extends DifferentiableFunction[T] {
   val name: String
   implicit val classTag: ClassTag[T]
 
-  /** Returns the gradient of the function with respect to a variable.
-    *
-    * Takes the variable's output shape with placeholders and fills in None with
-    * 1 to allow broadcasting. All other dimensions retain their size so that
-    * downstream gradient operations produce correctly-shaped outputs (e.g., the
-    * gradient of a 1D vector in a dot product needs to be a 1D vector of ones
-    * so that the dot operation in the derivative still works).
-    *
-    * @param withRespectToVariable
-    *   The variable with which to compute the gradient. If we call this
-    *   DifferentiableFunction y and the variable x, this operation produces
-    *   dy/dx.
-    */
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] = {
+    if (withRespectToArg == 0) {
+      val varExecution = execution.outputs(this)
+      Success(NDArray.ones(varExecution.shape))
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
+  }
+
   override def gradient(
       withRespectToVariable: Variable[T]
   ): Try[DifferentiableFunction[T]] = getGradientShape match {
@@ -121,14 +236,18 @@ case class ModelParameter[T](
     value: NDArray[T]
 )(override implicit val classTag: ClassTag[T])
     extends Variable[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    Success(value)
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    Success(DifferentiableFunctionExecution(inputs, Map(this -> value)))
 
   override def getInputs: Set[Input[T]] = Set.empty
 
   override def getOutputShape: Try[Array[Option[Int]]] = Success(
     value.shape.map(Some(_))
   )
+
+  override def getParents: List[DifferentiableFunction[T]] = List.empty
 }
 
 /** An input variable that users supply.
@@ -148,7 +267,9 @@ case class Input[T](
     shapeWithPlaceholders: Array[Option[Int]]
 )(override implicit val classTag: ClassTag[T])
     extends Variable[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
     inputs.get(this) match {
       case Some(value) =>
         if (
@@ -159,7 +280,7 @@ case class Input[T](
               case _               => true
             }
           )
-        ) Success(value)
+        ) Success(DifferentiableFunctionExecution(inputs, Map(this -> value)))
         else
           Failure(
             new ShapeException(
@@ -177,6 +298,145 @@ case class Input[T](
   override def getOutputShape: Try[Array[Option[Int]]] = Success(
     shapeWithPlaceholders
   )
+
+  override def getParents: List[DifferentiableFunction[T]] = List.empty
+}
+
+/** Sums the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Sum[T](a: DifferentiableFunction[T])(
+    implicit num: Numeric[T],
+    override implicit val classTag: ClassTag[T]
+) extends DifferentiableFunction[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs =
+            value.outputs + (this -> NDArray(List(value.outputs(a).sum)))
+          )
+        )
+      case failure => failure
+    }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (!outputGradient.shape.sameElements(Array(1)))
+      Failure(
+        new ShapeException(
+          s"Expected output gradient to have shape 1, but found ${outputGradient.shape
+              .mkString("Array(", ", ", ")")}"
+        )
+      )
+    else if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      val outputGradientOnlyElement = outputGradient.flatten().head
+      Success(NDArray.ofValue(aExecution.shape, outputGradientOnlyElement))
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] = ???
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(_) => Success(Array(Some(1)))
+      case failure    => failure
+    }
+
+  override def getParents: List[DifferentiableFunction[T]] = List(a)
+}
+
+/** Computes the mean of the results of a function.
+  *
+  * @param a
+  *   The function to sum.
+  * @param num
+  *   The implicit numeric conversion.
+  * @tparam T
+  *   The array element type.
+  */
+case class Mean[T](a: DifferentiableFunction[T])(
+    implicit num: Fractional[T],
+    override implicit val classTag: ClassTag[T]
+) extends DifferentiableFunction[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs =
+            value.outputs + (this -> NDArray(List(value.outputs(a).mean)))
+          )
+        )
+      case failure => failure
+    }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (!outputGradient.shape.sameElements(Array(1)))
+      Failure(
+        new ShapeException(
+          s"Expected output gradient to have shape 1, but found ${outputGradient.shape
+              .mkString("Array(", ", ", ")")}"
+        )
+      )
+    else if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      val numRepetitions = aExecution.shape.product
+      val outputGradientOnlyElement = outputGradient.flatten().head
+      val scaledOutputGradientOnlyElement =
+        num.div(outputGradientOnlyElement, num.fromInt(numRepetitions))
+      Success(
+        NDArray.ofValue(aExecution.shape, scaledOutputGradientOnlyElement)
+      )
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
+
+  override def gradient(
+      withRespectToVariable: Variable[T]
+  ): Try[DifferentiableFunction[T]] =
+    a.gradient(withRespectToVariable) match {
+      case Success(aGradient) => Success(Mean(aGradient))
+      case failure            => failure
+    }
+
+  override def getInputs: Set[Input[T]] = ???
+
+  override def getOutputShape: Try[Array[Option[Int]]] =
+    a.getOutputShape match {
+      case Success(_) => Success(Array(Some(1)))
+      case failure    => failure
+    }
+
+  override def getParents: List[DifferentiableFunction[T]] = List(a)
 }
 
 /** A differentiable function with one arguments that operates on all elements.
@@ -191,6 +451,8 @@ trait UnaryElementWiseDifferentiableFunction[T]
   val a: DifferentiableFunction[T]
 
   override def getOutputShape: Try[Array[Option[Int]]] = a.getOutputShape
+
+  override def getParents: List[DifferentiableFunction[T]] = List(a)
 }
 
 /** Negates the results of a function.
@@ -202,14 +464,35 @@ trait UnaryElementWiseDifferentiableFunction[T]
   * @tparam T
   *   The array element type.
   */
-case class Negate[T](a: DifferentiableFunction[T])(implicit
-    num: Numeric[T]
+case class Negate[T](override val a: DifferentiableFunction[T])(
+    implicit num: Numeric[T],
+    override implicit val classTag: ClassTag[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.negate)
-      case failure        => failure
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs =
+            value.outputs + (this -> value.outputs(a).negate)
+          )
+        )
+      case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) Success(outputGradient.negate)
+    else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -221,37 +504,6 @@ case class Negate[T](a: DifferentiableFunction[T])(implicit
   override def getInputs: Set[Input[T]] = ???
 }
 
-/** Sums the results of a function.
-  *
-  * @param a
-  *   The function to sum.
-  * @param num
-  *   The implicit numeric conversion.
-  * @tparam T
-  *   The array element type.
-  */
-case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
-    num: Numeric[T]
-) extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(NDArray(List(value.sum)))
-      case failure        => failure
-    }
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): Try[DifferentiableFunction[T]] = ???
-
-  override def getInputs: Set[Input[T]] = ???
-
-  override def getOutputShape: Try[Array[Option[Int]]] =
-    a.getOutputShape match {
-      case Success(_) => Success(Array(Some(1)))
-      case failure    => failure
-    }
-}
-
 /** Squares the results of a function.
   *
   * @param a
@@ -261,14 +513,38 @@ case class Sum[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
-    num: Numeric[T]
+case class Square[T](override val a: DifferentiableFunction[T])(
+    implicit num: Numeric[T],
+    override implicit val classTag: ClassTag[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.square)
-      case failure        => failure
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs =
+            value.outputs + (this -> value.outputs(a).square)
+          )
+        )
+      case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      val aExecutionDouble = (aExecution * NDArray(List(num.fromInt(2)))).get
+      aExecutionDouble * outputGradient
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -295,14 +571,38 @@ case class Square[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
-    num: Fractional[T]
+case class Reciprocal[T](override val a: DifferentiableFunction[T])(
+    implicit num: Fractional[T],
+    override implicit val classTag: ClassTag[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.reciprocal)
-      case failure        => failure
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs =
+            value.outputs + (this -> value.outputs(a).reciprocal)
+          )
+        )
+      case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      val aExecutionSquared = aExecution.square
+      outputGradient.negate / aExecutionSquared
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -325,14 +625,35 @@ case class Reciprocal[T: ClassTag](a: DifferentiableFunction[T])(implicit
   * @tparam T
   *   The array element type.
   */
-case class Exp[T: ClassTag](a: DifferentiableFunction[T])(implicit
-    num: Fractional[T]
+case class Exp[T](override val a: DifferentiableFunction[T])(
+    implicit num: Fractional[T],
+    override implicit val classTag: ClassTag[T]
 ) extends UnaryElementWiseDifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
-      case Success(value) => Success(value.exp)
-      case failure        => failure
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
+      case Success(value) =>
+        Success(
+          value.copy(outputs = value.outputs + (this -> value.outputs(a).exp))
+        )
+      case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      aExecution * outputGradient
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -380,9 +701,7 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
     val bOnesPaddedShape =
       bShape.reverse.padTo(finalNumDimensions, Some(1)).reverse
     val shapesMatch = (0 until finalNumDimensions).forall(idx =>
-      (aOnesPaddedShape(idx).nonEmpty && aOnesPaddedShape(
-        idx
-      ) == bOnesPaddedShape(idx)) ||
+      (aOnesPaddedShape(idx) == bOnesPaddedShape(idx)) ||
         aOnesPaddedShape(idx).contains(1) ||
         bOnesPaddedShape(idx).contains(1)
     )
@@ -404,6 +723,35 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
             .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}")
       )
   }
+
+  override def getParents: List[DifferentiableFunction[T]] = List(a, b)
+
+  /** Removes broadcasted dimensions by summing along them.
+    *
+    * @param targetShape
+    *   The shape to which to transform the gradient through unbroadcasting.
+    * @param outputGradient
+    *   The gradient of the final output function (often the loss function) with
+    *   respect to this function. The shape of this array is the shape of the
+    *   output of this DifferentiableFunction, which may have required
+    *   broadcasting of inputs.
+    * @return
+    *   outputGradient unbroadcasted to targetShape.
+    */
+  protected def unbroadcast(
+      targetShape: Array[Int],
+      outputGradient: NDArray[T]
+  )(implicit num: Numeric[T]): NDArray[T] = {
+    var unbroadcastGradient = outputGradient
+    while (unbroadcastGradient.shape.length > targetShape.length) {
+      unbroadcastGradient = unbroadcastGradient.sumAxis(0)
+    }
+    targetShape.indices.foreach(idx =>
+      if (targetShape(idx) == 1)
+        unbroadcastGradient = unbroadcastGradient.sumAxis(idx, keepDims = true)
+    )
+    unbroadcastGradient
+  }
 }
 
 /** Adds the results of two functions.
@@ -417,18 +765,48 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
   * @tparam T
   *   The array element type.
   */
-case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
-    implicit num: Numeric[T]
-) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+case class Add[T](
+    override val a: DifferentiableFunction[T],
+    override val b: DifferentiableFunction[T]
+)(implicit num: Numeric[T], override implicit val classTag: ClassTag[T])
+    extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue + bValue
-          case failure         => failure
+        b.computeAll(inputs) match {
+          case Success(bValue) =>
+            aValue.outputs(a) + bValue.outputs(b) match {
+              case Success(result) =>
+                Success(
+                  DifferentiableFunctionExecution(
+                    inputs,
+                    aValue.outputs ++ bValue.outputs + (this -> result)
+                  )
+                )
+              case Failure(failure) => Failure(failure)
+            }
+          case failure => failure
         }
       case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0)
+      Success(unbroadcast(execution.outputs(a).shape, outputGradient))
+    else if (withRespectToArg == 1)
+      Success(unbroadcast(execution.outputs(b).shape, outputGradient))
+    else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -456,20 +834,47 @@ case class Add[T](a: DifferentiableFunction[T], b: DifferentiableFunction[T])(
   *   The array element type.
   */
 case class Subtract[T](
-    a: DifferentiableFunction[T],
-    b: DifferentiableFunction[T]
-)(implicit
-    num: Numeric[T]
-) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+    override val a: DifferentiableFunction[T],
+    override val b: DifferentiableFunction[T]
+)(implicit num: Numeric[T], override implicit val classTag: ClassTag[T])
+    extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue - bValue
-          case failure         => failure
+        b.computeAll(inputs) match {
+          case Success(bValue) =>
+            aValue.outputs(a) - bValue.outputs(b) match {
+              case Success(result) =>
+                Success(
+                  DifferentiableFunctionExecution(
+                    inputs,
+                    aValue.outputs ++ bValue.outputs + (this -> result)
+                  )
+                )
+              case Failure(failure) => Failure(failure)
+            }
+          case failure => failure
         }
       case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0)
+      Success(unbroadcast(execution.outputs(a).shape, outputGradient))
+    else if (withRespectToArg == 1)
+      Success(unbroadcast(execution.outputs(b).shape, outputGradient.negate))
+    else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -496,21 +901,60 @@ case class Subtract[T](
   * @tparam T
   *   The array element type.
   */
-case class Multiply[T: ClassTag](
-    a: DifferentiableFunction[T],
-    b: DifferentiableFunction[T]
-)(implicit
-    num: Numeric[T]
-) extends BinaryDifferentiableFunctionWithBroadcast[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+case class Multiply[T](
+    override val a: DifferentiableFunction[T],
+    override val b: DifferentiableFunction[T]
+)(implicit num: Numeric[T], override implicit val classTag: ClassTag[T])
+    extends BinaryDifferentiableFunctionWithBroadcast[T] {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue * bValue
-          case failure         => failure
+        b.computeAll(inputs) match {
+          case Success(bValue) =>
+            aValue.outputs(a) * bValue.outputs(b) match {
+              case Success(result) =>
+                Success(
+                  DifferentiableFunctionExecution(
+                    inputs,
+                    aValue.outputs ++ bValue.outputs + (this -> result)
+                  )
+                )
+              case Failure(failure) => Failure(failure)
+            }
+          case failure => failure
         }
       case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) {
+      val bExecution = execution.outputs(b)
+      Success(
+        unbroadcast(
+          execution.outputs(a).shape,
+          (outputGradient * bExecution).get
+        )
+      )
+    } else if (withRespectToArg == 1) {
+      val aExecution = execution.outputs(a)
+      Success(
+        unbroadcast(
+          execution.outputs(b).shape,
+          (outputGradient * aExecution).get
+        )
+      )
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -539,20 +983,60 @@ case class Multiply[T: ClassTag](
   * @tparam T
   *   The array element type.
   */
-case class DotProduct[T: ClassTag](
+case class DotProduct[T](
     a: DifferentiableFunction[T],
     b: DifferentiableFunction[T]
-)(implicit num: Numeric[T])
+)(implicit num: Numeric[T], override implicit val classTag: ClassTag[T])
     extends DifferentiableFunction[T] {
-  override def compute(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
-    a.compute(inputs) match {
+  override def computeAll(
+      inputs: Map[Input[T], NDArray[T]]
+  ): Try[DifferentiableFunctionExecution[T]] =
+    a.computeAll(inputs) match {
       case Success(aValue) =>
-        b.compute(inputs) match {
-          case Success(bValue) => aValue dot bValue
-          case failure         => failure
+        b.computeAll(inputs) match {
+          case Success(bValue) =>
+            aValue.outputs(a) dot bValue.outputs(b) match {
+              case Success(result) =>
+                Success(
+                  DifferentiableFunctionExecution(
+                    inputs,
+                    aValue.outputs ++ bValue.outputs + (this -> result)
+                  )
+                )
+              case Failure(failure) => Failure(failure)
+            }
+          case failure => failure
         }
       case failure => failure
     }
+
+  override def backpropagate(
+      execution: DifferentiableFunctionExecution[T],
+      outputGradient: NDArray[T],
+      withRespectToArg: Int
+  ): Try[NDArray[T]] =
+    if (withRespectToArg == 0) {
+      val aExecution = execution.outputs(a)
+      val bExecution = execution.outputs(b)
+      if (aExecution.shape.length == 1 && bExecution.shape.length == 1)
+        bExecution * outputGradient
+      else if (aExecution.shape.length == 2 && bExecution.shape.length == 2)
+        outputGradient dot bExecution.transpose
+      else ???
+    } else if (withRespectToArg == 1) {
+      val aExecution = execution.outputs(a)
+      val bExecution = execution.outputs(b)
+      if (aExecution.shape.length == 1 && bExecution.shape.length == 1)
+        aExecution * outputGradient
+      else if (aExecution.shape.length == 2 && bExecution.shape.length == 2)
+        aExecution.transpose dot outputGradient
+      else ???
+    } else
+      Failure(
+        new IllegalArgumentException(
+          s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
+        )
+      )
 
   override def gradient(
       withRespectToVariable: Variable[T]
@@ -782,4 +1266,6 @@ case class DotProduct[T: ClassTag](
         )
       )
     else Success(aShape.dropRight(1) ++ bShape.dropRight(2) :+ bShape.last)
+
+  override def getParents: List[DifferentiableFunction[T]] = List(a, b)
 }

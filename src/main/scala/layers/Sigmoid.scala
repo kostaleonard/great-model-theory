@@ -5,6 +5,7 @@ import autodifferentiation.{
   Constant,
   DifferentiableFunction,
   Exp,
+  ModelParameter,
   Negate,
   Reciprocal
 }
@@ -35,4 +36,9 @@ case class Sigmoid[T: ClassTag](previousLayer: Layer[T])(implicit
         Exp(Negate(previousLayer.getComputationGraph))
       )
     )
+
+  // This layer has no parameters.
+  override def withUpdatedParameters(
+      parameters: Map[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = this
 }

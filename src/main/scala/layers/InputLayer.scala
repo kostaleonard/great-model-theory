@@ -1,5 +1,5 @@
 package layers
-import autodifferentiation.{DifferentiableFunction, Input}
+import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
 
 import scala.reflect.ClassTag
 
@@ -14,4 +14,9 @@ import scala.reflect.ClassTag
   */
 case class InputLayer[T: ClassTag](input: Input[T]) extends Layer[T] {
   override def getComputationGraph: DifferentiableFunction[T] = input
+
+  // This layer has no parameters.
+  override def withUpdatedParameters(
+      parameters: Map[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = this
 }
