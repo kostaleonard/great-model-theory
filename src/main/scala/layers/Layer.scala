@@ -29,7 +29,6 @@ abstract class Layer[T: ClassTag] {
   def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] =
     getComputationGraph.compute(inputs)
 
-  // TODO maybe this should be in Model because this will recurse up all layers
   /** Returns the layer's `Input` objects. */
   def getInputs: Set[Input[T]] = getComputationGraph.getInputs
 
@@ -37,8 +36,13 @@ abstract class Layer[T: ClassTag] {
   def getOutputShape: Try[Array[Option[Int]]] =
     getComputationGraph.getOutputShape
 
-  // TODO docstring: updates keys to values
-  // TODO recursively update previous layers
+  /** Returns a new instance of the layer with updated parameters.
+    *
+    * @param parameters
+    *   A Map in which the keys are the current parameters and the values are
+    *   the parameters that should replace them. Any keys not found in the layer
+    *   are ignored.
+    */
   def withUpdatedParameters(
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Layer[T]

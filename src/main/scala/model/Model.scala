@@ -24,10 +24,13 @@ case class Model[T](outputLayer: Layer[T]) {
     inputs
   )
 
-  // TODO getLayers: List[Layer[T]]? Would need to change constructor, or guarantee that Layer has a previousLayer: Option[Layer[T]] field
-
-  // TODO docstring
-  // TODO we want this to preserve layer references
+  /** Returns a new instance of the model with updated parameters.
+    *
+    * @param parameters
+    *   A Map in which the keys are the current parameters and the values are
+    *   the parameters that should replace them. Any keys not found in the model
+    *   are ignored.
+    */
   def withUpdatedParameters(
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
