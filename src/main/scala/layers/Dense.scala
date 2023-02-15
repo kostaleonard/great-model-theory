@@ -128,7 +128,6 @@ case class Dense[T: ClassTag](
       biases
     )
 
-  // TODO if the model has two dense layers with the same weights or biases, this will update all of the instances identically--mitigated by renaming but not resolved
   override def withUpdatedParameters(
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Layer[T] =

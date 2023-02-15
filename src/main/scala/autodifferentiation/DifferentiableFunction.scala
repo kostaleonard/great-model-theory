@@ -60,7 +60,7 @@ trait DifferentiableFunction[T] {
     *   The index of the argument with respect to which to compute the input
     *   gradient, starting at 0. For example, if this function is Subtract(a,
     *   b), supplying 0 would result in outputGradient and 1 would result in
-    * -outputGradient.
+    *   outputGradient * -1.
     */
   def backpropagate(
       execution: DifferentiableFunctionExecution[T],
@@ -68,8 +68,19 @@ trait DifferentiableFunction[T] {
       withRespectToArg: Int
   ): Try[NDArray[T]]
 
-  // TODO docstring
-  // TODO returns a map of all component functions to their gradients. We can then just filter all the ModelParameters and update them.
+  /** Returns the gradient with respect to all component functions.
+    *
+    * @param execution
+    *   The results of function execution on particular inputs. Used to retrieve
+    *   the inputs and outputs of DifferentiableFunctions throughout
+    *   backpropagation.
+    * @param num
+    *   The implicit numeric conversion.
+    * @return
+    *   The gradient of this function with respect to all component functions.
+    *   The gradient of this function with respect to itself is 1. Gradients
+    *   always match the shape of the function with which they correspond.
+    */
   def backpropagateAll(
       execution: DifferentiableFunctionExecution[T]
   )(implicit
@@ -95,7 +106,6 @@ trait DifferentiableFunction[T] {
     Success(Map(this -> outputGradient) ++ parentBackpropagationResults.flatten)
   }
 
-  // TODO define gradient in terms of backpropagation--not super important because we only need first derivative for neural nets. But nice feature for release 2.
   /** Returns the gradient of the function with respect to a variable.
     *
     * @param withRespectToVariable
@@ -113,7 +123,6 @@ trait DifferentiableFunction[T] {
   /** Returns the output shape of the function with possible placeholders. */
   def getOutputShape: Try[Array[Option[Int]]]
 
-  // TODO remove this function
   /** Returns the DifferentiableFunctions on which this function depends. */
   def getParents: List[DifferentiableFunction[T]]
 }
