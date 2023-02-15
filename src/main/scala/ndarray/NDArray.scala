@@ -4,7 +4,6 @@ import exceptions.ShapeException
 
 import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
-import scala.util.{Failure, Success, Try}
 
 /** An N-dimensional array.
   */
@@ -238,15 +237,15 @@ class NDArray[T: ClassTag] private (
     *   A mask describing the equality of the arrays at each position. Each
     *   element of the mask is true if the arrays are equal at that position,
     *   false otherwise. The mask is of the same shape as the arrays when
-    *   broadcast together. If the arrays are of incompatible shapes, returns
-    *   failure.
+    *   broadcast together. If the arrays are of incompatible shapes, returns an
+    *   array with a single element containing false.
     */
-  def ==(other: NDArray[T]): Try[NDArray[Boolean]] =
+  def ==(other: NDArray[T]): NDArray[Boolean] =
     if (shape sameElements other.shape) {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
-      Success(NDArray[Boolean](mask).reshape(shape))
+      NDArray[Boolean](mask).reshape(shape)
     } else
       broadcastWith(other) match {
         case Success((broadcastThis, broadcastOther)) =>
@@ -358,13 +357,11 @@ class NDArray[T: ClassTag] private (
     * @param targetShape
     *   The shape to which to broadcast the array.
     */
-  def broadcastTo(targetShape: Array[Int]): Try[NDArray[T]] =
+  def broadcastTo(targetShape: Array[Int]): NDArray[T] =
     if (shape.length > targetShape.length)
-      Failure(
-        new ShapeException(
-          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape
-              .mkString("Array(", ", ", ")")}"
-        )
+      throw new ShapeException(
+        s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape
+            .mkString("Array(", ", ", ")")}"
       )
     else {
       val onesPaddedShapeThis =
@@ -429,14 +426,12 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to broadcast.
     */
-  def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] =
-    getBroadcastShapeWith(other) match {
-      case Success(resultShape) =>
-        val broadcastThis = broadcastTo(resultShape)
-        val broadcastOther = other.broadcastTo(resultShape)
-        Success(broadcastThis.get, broadcastOther.get)
-      case Failure(error) => Failure(error)
-    }
+  def broadcastWith(other: NDArray[T]): (NDArray[T], NDArray[T]) = {
+    val resultShape = getBroadcastShapeWith(other)
+    val broadcastThis = broadcastTo(resultShape)
+    val broadcastOther = other.broadcastTo(resultShape)
+    (broadcastThis, broadcastOther)
+  }
 
   /** Returns the shape to which the arrays should be broadcast together.
     *
@@ -445,7 +440,7 @@ class NDArray[T: ClassTag] private (
     * @return
     *   The shape of the two broadcast arrays.
     */
-  private def getBroadcastShapeWith(other: NDArray[T]): Try[Array[Int]] = {
+  private def getBroadcastShapeWith(other: NDArray[T]): Array[Int] = {
     val finalNumDimensions = shape.length max other.shape.length
     val onesPaddedShapeThis = shape.reverse.padTo(finalNumDimensions, 1).reverse
     val onesPaddedShapeOther =
@@ -456,15 +451,13 @@ class NDArray[T: ClassTag] private (
         onesPaddedShapeOther(idx) == 1
     )
     if (shapesMatch)
-      Success(
-        (0 until finalNumDimensions)
-          .map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx))
-          .toArray
-      )
+      (0 until finalNumDimensions)
+        .map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx))
+        .toArray
     else
-      Failure(
-        new ShapeException(s"Could not broadcast arrays of shape ${shape
-            .mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}")
+      throw new ShapeException(
+        s"Could not broadcast arrays of shape ${shape
+            .mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}"
       )
   }
 
