@@ -6,7 +6,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.reflect.{ClassTag, classTag}
-import scala.util.{Success, Try}
 
 class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
@@ -19,7 +18,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       withRespectToInput: Input[T],
       inputs: Map[Input[T], NDArray[T]],
       epsilon: Double = 1e-5
-  )(implicit num: Fractional[T]): Try[NDArray[T]] = {
+  )(implicit num: Fractional[T]): NDArray[T] = {
     val epsilonArray = (classTag[T] match {
       case _ if classTag[T] == classTag[Float] =>
         NDArray[Float](List(epsilon.toFloat))
@@ -46,7 +45,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
         difference.asInstanceOf[NDArray[Double]] / NDArray[Double](
           List(2 * epsilon)
         )
-    }).asInstanceOf[Try[NDArray[T]]]
+    }).asInstanceOf[NDArray[T]]
   }
 
   /** Numerically computes the gradient of the function for the inputs.
@@ -60,7 +59,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       withRespectToInput: Input[T],
       inputs: Map[Input[T], NDArray[T]],
       epsilon: Double = 1e-5
-  )(implicit num: Fractional[T]): Try[NDArray[T]] = {
+  )(implicit num: Fractional[T]): NDArray[T] = {
     val epsilonAsT = (classTag[T] match {
       case _ if classTag[T] == classTag[Float]  => epsilon.toFloat
       case _ if classTag[T] == classTag[Double] => epsilon
@@ -84,7 +83,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       val slope = num.div(difference, num.times(num.fromInt(2), epsilonAsT))
       differences = differences.updated(idx, slope)
     }
-    Success(differences)
+    differences
   }
 
   "A DifferentiableFunction" should "return its output shape (1)" in {
@@ -189,10 +188,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
         inputs
       )
     assert(
-      gradients(weights) arrayApproximatelyEquals numericGradientsWeights.get
+      gradients(weights) arrayApproximatelyEquals numericGradientsWeights
     )
     assert(
-      gradients(biases) arrayApproximatelyEquals numericGradientsBiases.get
+      gradients(biases) arrayApproximatelyEquals numericGradientsBiases
     )
   }
 
@@ -341,7 +340,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "fail to compute when the user does not supply a necessary Input" in {
     val input = Input[Float]("X", Array(Some(2), Some(2)))
-    assertThrows[ShapeException](input.compute(Map.empty))
+    assertThrows[NoSuchElementException](input.compute(Map.empty))
   }
 
   it should "returns its output shape" in {
@@ -376,7 +375,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val valueX = NDArray.arange[Double](Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(mean, inputX, inputs).get
+      computeGradientWithFiniteDifferences(mean, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -456,7 +455,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(reciprocal, inputX, inputs).get
+      computeGradientWithFiniteDifferences(reciprocal, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -474,7 +473,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(reciprocal, inputX, inputs).get
+      computeGradientWithFiniteDifferences(reciprocal, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -511,7 +510,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+      computeGradientWithFiniteDifferences(exp, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -532,7 +531,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+      computeGradientWithFiniteDifferences(exp, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -551,7 +550,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       NDArray[Double](List(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(exp, inputX, inputs).get
+      computeGradientWithFiniteDifferences(exp, inputX, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     assert(
       gradientXOnInputs.shape sameElements numericGradientXOnInputs.shape
@@ -779,9 +778,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)
     val numericGradientYOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
     assert(
@@ -809,9 +808,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)
     val numericGradientYOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
     assert(
@@ -841,9 +840,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)
     val numericGradientYOnInputs =
-      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs).get
+      computeGradientWithFiniteDifferences(dotProduct, inputY, inputs)
     val gradientXOnInputs = gradientX.compute(inputs)
     val gradientYOnInputs = gradientY.compute(inputs)
     assert(

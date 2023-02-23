@@ -217,8 +217,11 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare.
     */
-  def arrayEquals(other: NDArray[T]): Boolean =
+  def arrayEquals(other: NDArray[T]): Boolean = try {
     (this == other).flatten().forall(identity)
+  } catch {
+    case _: ShapeException => false
+  }
 
   /** Returns false if the arrays have the same shape and elements.
     *
@@ -260,7 +263,11 @@ class NDArray[T: ClassTag] private (
   def arrayApproximatelyEquals(
       other: NDArray[T],
       epsilon: Double = 1e-5
-  ): Boolean = this.~=(other, epsilon = epsilon).flatten().forall(identity)
+  ): Boolean = try {
+    this.~=(other, epsilon = epsilon).flatten().forall(identity)
+  } catch {
+    case _: ShapeException => false
+  }
 
   /** Returns false if the arrays have the same shape and elements within error.
     *
