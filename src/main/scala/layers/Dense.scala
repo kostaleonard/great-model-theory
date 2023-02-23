@@ -9,7 +9,6 @@ import autodifferentiation.{
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
 
 object Dense {
 
@@ -34,25 +33,23 @@ object Dense {
       units: Int,
       weightsInitialization: Option[ModelParameter[T]] = None,
       biasesInitialization: Option[ModelParameter[T]] = None
-  )(implicit num: Numeric[T]): Try[Dense[T]] =
-    previousLayer.getOutputShape match {
-      case Success(outputShape) =>
-        val weights = weightsInitialization.getOrElse(
-          ModelParameter(
-            s"weights@Dense($previousLayer)",
-            NDArray.random[T](Array(outputShape.last.get, units))
-          )
+  )(implicit num: Numeric[T]): Dense[T] = {
+    val outputShape = previousLayer.getOutputShape
+    val weights = weightsInitialization.getOrElse(
+      ModelParameter(
+        s"weights@Dense($previousLayer)",
+        NDArray.random[T](Array(outputShape.last.get, units))
+      )
+    )
+    val biases =
+      biasesInitialization.getOrElse(
+        ModelParameter(
+          s"biases@Dense($previousLayer)",
+          NDArray.zeros[T](Array(units))
         )
-        val biases =
-          biasesInitialization.getOrElse(
-            ModelParameter(
-              s"biases@Dense($previousLayer)",
-              NDArray.zeros[T](Array(units))
-            )
-          )
-        Success(Dense(previousLayer, units, weights, biases))
-      case Failure(failure) => Failure(failure)
-    }
+      )
+    Dense(previousLayer, units, weights, biases)
+  }
 
   /** Returns a Dense layer with randomly-initialized weights and biases.
     *
@@ -66,22 +63,18 @@ object Dense {
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int
-  )(implicit num: Numeric[T]): Try[Dense[T]] =
-    previousLayer.getOutputShape match {
-      case Success(outputShape) =>
-        val weights =
-          NDArray.random[T](Array(outputShape.last.get, units))
-        val biases = NDArray.zeros[T](Array(units))
-        Success(
-          Dense(
-            previousLayer,
-            units,
-            ModelParameter(s"weights@Dense($previousLayer)", weights),
-            ModelParameter(s"biases@Dense($previousLayer)", biases)
-          )
-        )
-      case Failure(failure) => Failure(failure)
-    }
+  )(implicit num: Numeric[T]): Dense[T] = {
+    val outputShape = previousLayer.getOutputShape
+    val weights =
+      NDArray.random[T](Array(outputShape.last.get, units))
+    val biases = NDArray.zeros[T](Array(units))
+    Dense(
+      previousLayer,
+      units,
+      ModelParameter(s"weights@Dense($previousLayer)", weights),
+      ModelParameter(s"biases@Dense($previousLayer)", biases)
+    )
+  }
 }
 
 /** A densely connected neural network layer.

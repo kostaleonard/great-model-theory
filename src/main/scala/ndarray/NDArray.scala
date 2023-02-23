@@ -4,7 +4,6 @@ import exceptions.ShapeException
 
 import scala.annotation.tailrec
 import scala.reflect.{ClassTag, classTag}
-import scala.util.{Failure, Success, Try}
 
 /** An N-dimensional array.
   */
@@ -218,9 +217,10 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to compare.
     */
-  def arrayEquals(other: NDArray[T]): Boolean = this == other match {
-    case Success(mask) => mask.flatten().forall(identity)
-    case _             => false
+  def arrayEquals(other: NDArray[T]): Boolean = try {
+    (this == other).flatten().forall(identity)
+  } catch {
+    case _: ShapeException => false
   }
 
   /** Returns false if the arrays have the same shape and elements.
@@ -238,21 +238,19 @@ class NDArray[T: ClassTag] private (
     *   A mask describing the equality of the arrays at each position. Each
     *   element of the mask is true if the arrays are equal at that position,
     *   false otherwise. The mask is of the same shape as the arrays when
-    *   broadcast together. If the arrays are of incompatible shapes, returns
-    *   failure.
+    *   broadcast together. If the arrays are of incompatible shapes, returns an
+    *   array with a single element containing false.
     */
-  def ==(other: NDArray[T]): Try[NDArray[Boolean]] =
+  def ==(other: NDArray[T]): NDArray[Boolean] =
     if (shape sameElements other.shape) {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
-      Success(NDArray[Boolean](mask).reshape(shape))
-    } else
-      broadcastWith(other) match {
-        case Success((broadcastThis, broadcastOther)) =>
-          broadcastThis == broadcastOther
-        case Failure(failure) => Failure(failure)
-      }
+      NDArray[Boolean](mask).reshape(shape)
+    } else {
+      val (broadcastThis, broadcastOther) = broadcastWith(other)
+      broadcastThis == broadcastOther
+    }
 
   /** Returns true if the arrays have the same shape and elements within error.
     *
@@ -265,9 +263,10 @@ class NDArray[T: ClassTag] private (
   def arrayApproximatelyEquals(
       other: NDArray[T],
       epsilon: Double = 1e-5
-  ): Boolean = this.~=(other, epsilon = epsilon) match {
-    case Success(mask) => mask.flatten().forall(identity)
-    case _             => false
+  ): Boolean = try {
+    this.~=(other, epsilon = epsilon).flatten().forall(identity)
+  } catch {
+    case _: ShapeException => false
   }
 
   /** Returns false if the arrays have the same shape and elements within error.
@@ -295,9 +294,9 @@ class NDArray[T: ClassTag] private (
     *   position. Each element of the mask is true if the arrays are
     *   approximately equal at that position, false otherwise. The mask is of
     *   the same shape as the arrays when broadcast together. If the arrays are
-    *   of incompatible shapes, returns failure.
+    *   of incompatible shapes, throws a ShapeException.
     */
-  def ~=(other: NDArray[T], epsilon: Double = 1e-5): Try[NDArray[Boolean]] =
+  def ~=(other: NDArray[T], epsilon: Double = 1e-5): NDArray[Boolean] =
     if (shape sameElements other.shape) {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
@@ -311,14 +310,14 @@ class NDArray[T: ClassTag] private (
               thisFlatAsFloat(idx) - otherFlatAsFloat(idx)
             ) <= epsilonAsFloat
           )
-          Success(NDArray[Boolean](mask).reshape(shape))
+          NDArray[Boolean](mask).reshape(shape)
         case _ if classTag[T] == classTag[Double] =>
           val thisFlatAsDouble = thisFlat.asInstanceOf[Array[Double]]
           val otherFlatAsDouble = otherFlat.asInstanceOf[Array[Double]]
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsDouble(idx) - otherFlatAsDouble(idx)) <= epsilon
           )
-          Success(NDArray[Boolean](mask).reshape(shape))
+          NDArray[Boolean](mask).reshape(shape)
         case _ if classTag[T] == classTag[Int] =>
           val epsilonAsInt = epsilon.asInstanceOf[Int]
           val thisFlatAsInt = thisFlat.asInstanceOf[Array[Int]]
@@ -326,7 +325,7 @@ class NDArray[T: ClassTag] private (
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsInt(idx) - otherFlatAsInt(idx)) <= epsilonAsInt
           )
-          Success(NDArray[Boolean](mask).reshape(shape))
+          NDArray[Boolean](mask).reshape(shape)
         case _ if classTag[T] == classTag[Long] =>
           val epsilonAsLong = epsilon.asInstanceOf[Long]
           val thisFlatAsLong = thisFlat.asInstanceOf[Array[Long]]
@@ -336,14 +335,12 @@ class NDArray[T: ClassTag] private (
               thisFlatAsLong(idx) - otherFlatAsLong(idx)
             ) <= epsilonAsLong
           )
-          Success(NDArray[Boolean](mask).reshape(shape))
+          NDArray[Boolean](mask).reshape(shape)
       }
-    } else
-      broadcastWith(other) match {
-        case Success((broadcastThis, broadcastOther)) =>
-          broadcastThis.~=(broadcastOther, epsilon = epsilon)
-        case Failure(failure) => Failure(failure)
-      }
+    } else {
+      val (broadcastThis, broadcastOther) = broadcastWith(other)
+      broadcastThis.~=(broadcastOther, epsilon = epsilon)
+    }
 
   /** Returns this array broadcast to the target shape.
     *
@@ -358,13 +355,11 @@ class NDArray[T: ClassTag] private (
     * @param targetShape
     *   The shape to which to broadcast the array.
     */
-  def broadcastTo(targetShape: Array[Int]): Try[NDArray[T]] =
+  def broadcastTo(targetShape: Array[Int]): NDArray[T] =
     if (shape.length > targetShape.length)
-      Failure(
-        new ShapeException(
-          s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape
-              .mkString("Array(", ", ", ")")}"
-        )
+      throw new ShapeException(
+        s"Cannot broadcast array of shape ${shape.mkString("Array(", ", ", ")")} into smaller shape ${targetShape
+            .mkString("Array(", ", ", ")")}"
       )
     else {
       val onesPaddedShapeThis =
@@ -380,8 +375,8 @@ class NDArray[T: ClassTag] private (
   private def broadcastToWithMatchingNumDimensions(
       targetShape: Array[Int],
       shapeIdx: Int
-  ): Try[NDArray[T]] =
-    if (shapeIdx < 0) Success(this)
+  ): NDArray[T] =
+    if (shapeIdx < 0) this
     else if (shape(shapeIdx) == targetShape(shapeIdx))
       broadcastToWithMatchingNumDimensions(targetShape, shapeIdx - 1)
     else if (shape(shapeIdx) == 1) {
@@ -406,10 +401,8 @@ class NDArray[T: ClassTag] private (
         shapeIdx - 1
       )
     } else
-      Failure(
-        new ShapeException(
-          s"Cannot broadcast dimension of size ${shape(shapeIdx)} to ${targetShape(shapeIdx)}"
-        )
+      throw new ShapeException(
+        s"Cannot broadcast dimension of size ${shape(shapeIdx)} to ${targetShape(shapeIdx)}"
       )
 
   /** Returns this array and the input array broadcast to matching dimensions.
@@ -429,14 +422,12 @@ class NDArray[T: ClassTag] private (
     * @param other
     *   The array with which to broadcast.
     */
-  def broadcastWith(other: NDArray[T]): Try[(NDArray[T], NDArray[T])] =
-    getBroadcastShapeWith(other) match {
-      case Success(resultShape) =>
-        val broadcastThis = broadcastTo(resultShape)
-        val broadcastOther = other.broadcastTo(resultShape)
-        Success(broadcastThis.get, broadcastOther.get)
-      case Failure(error) => Failure(error)
-    }
+  def broadcastWith(other: NDArray[T]): (NDArray[T], NDArray[T]) = {
+    val resultShape = getBroadcastShapeWith(other)
+    val broadcastThis = broadcastTo(resultShape)
+    val broadcastOther = other.broadcastTo(resultShape)
+    (broadcastThis, broadcastOther)
+  }
 
   /** Returns the shape to which the arrays should be broadcast together.
     *
@@ -445,7 +436,7 @@ class NDArray[T: ClassTag] private (
     * @return
     *   The shape of the two broadcast arrays.
     */
-  private def getBroadcastShapeWith(other: NDArray[T]): Try[Array[Int]] = {
+  private def getBroadcastShapeWith(other: NDArray[T]): Array[Int] = {
     val finalNumDimensions = shape.length max other.shape.length
     val onesPaddedShapeThis = shape.reverse.padTo(finalNumDimensions, 1).reverse
     val onesPaddedShapeOther =
@@ -456,15 +447,13 @@ class NDArray[T: ClassTag] private (
         onesPaddedShapeOther(idx) == 1
     )
     if (shapesMatch)
-      Success(
-        (0 until finalNumDimensions)
-          .map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx))
-          .toArray
-      )
+      (0 until finalNumDimensions)
+        .map(idx => onesPaddedShapeThis(idx) max onesPaddedShapeOther(idx))
+        .toArray
     else
-      Failure(
-        new ShapeException(s"Could not broadcast arrays of shape ${shape
-            .mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}")
+      throw new ShapeException(
+        s"Could not broadcast arrays of shape ${shape
+            .mkString("Array(", ", ", ")")} and ${other.shape.mkString("Array(", ", ", ")")}"
       )
   }
 
@@ -480,19 +469,18 @@ class NDArray[T: ClassTag] private (
     */
   def +(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
+  )(implicit num: Numeric[T]): NDArray[T] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape))
-  } else
-    broadcastWith(other) match {
-      case Success((arr1, arr2)) => arr1 + arr2
-      case Failure(failure)      => Failure(failure)
-    }
+    NDArray(result).reshape(shape)
+  } else {
+    val (arr1, arr2) = broadcastWith(other)
+    arr1 + arr2
+  }
 
   /** Returns the result of element-wise subtraction of the two NDArrays.
     *
@@ -506,19 +494,18 @@ class NDArray[T: ClassTag] private (
     */
   def -(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
+  )(implicit num: Numeric[T]): NDArray[T] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape))
-  } else
-    broadcastWith(other) match {
-      case Success((arr1, arr2)) => arr1 - arr2
-      case Failure(failure)      => Failure(failure)
-    }
+    NDArray(result).reshape(shape)
+  } else {
+    val (arr1, arr2) = broadcastWith(other)
+    arr1 - arr2
+  }
 
   /** Returns the result of element-wise multiplication of the two NDArrays.
     *
@@ -532,19 +519,18 @@ class NDArray[T: ClassTag] private (
     */
   def *(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] = if (
+  )(implicit num: Numeric[T]): NDArray[T] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.times(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape))
-  } else
-    broadcastWith(other) match {
-      case Success((arr1, arr2)) => arr1 * arr2
-      case Failure(failure)      => Failure(failure)
-    }
+    NDArray(result).reshape(shape)
+  } else {
+    val (arr1, arr2) = broadcastWith(other)
+    arr1 * arr2
+  }
 
   /** Returns the result of element-wise division of the two NDArrays.
     *
@@ -558,19 +544,18 @@ class NDArray[T: ClassTag] private (
     */
   def /(
       other: NDArray[T]
-  )(implicit num: Fractional[T]): Try[NDArray[T]] = if (
+  )(implicit num: Fractional[T]): NDArray[T] = if (
     shape sameElements other.shape
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.div(thisFlat(idx), otherFlat(idx)))
-    Success(NDArray(result).reshape(shape))
-  } else
-    broadcastWith(other) match {
-      case Success((arr1, arr2)) => arr1 / arr2
-      case Failure(failure)      => Failure(failure)
-    }
+    NDArray(result).reshape(shape)
+  } else {
+    val (arr1, arr2) = broadcastWith(other)
+    arr1 / arr2
+  }
 
   /** Returns the sum of all elements.
     *
@@ -685,11 +670,11 @@ class NDArray[T: ClassTag] private (
     */
   def matmul(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] =
+  )(implicit num: Numeric[T]): NDArray[T] =
     if (shape.length != 2 || other.shape.length != 2)
-      Failure(new ShapeException("matmul inputs must be 2D arrays"))
+      throw new ShapeException("matmul inputs must be 2D arrays")
     else if (shape(1) != other.shape(0))
-      Failure(new ShapeException("Array 1 columns do not match array 2 rows"))
+      throw new ShapeException("Array 1 columns do not match array 2 rows")
     else {
       val numRows = shape(0)
       val numCols = other.shape(1)
@@ -701,12 +686,10 @@ class NDArray[T: ClassTag] private (
           // The dot product of 1D arrays is a scalar.
           val vectorDotProduct = rowVector dot colVector
           newElementsReversed =
-            vectorDotProduct.get.apply(Array(0)) +: newElementsReversed
+            vectorDotProduct(Array(0)) +: newElementsReversed
         }
       }
-      Success(
-        NDArray[T](newElementsReversed.reverse).reshape(Array(numRows, numCols))
-      )
+      NDArray[T](newElementsReversed.reverse).reshape(Array(numRows, numCols))
     }
 
   /** Returns the dot product of this array with another array.
@@ -728,32 +711,28 @@ class NDArray[T: ClassTag] private (
     */
   def dot(
       other: NDArray[T]
-  )(implicit num: Numeric[T]): Try[NDArray[T]] = {
-    def vectorInnerProduct(): Try[NDArray[T]] = {
+  )(implicit num: Numeric[T]): NDArray[T] = {
+    def vectorInnerProduct(): NDArray[T] = {
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       if (thisFlat.length != otherFlat.length)
-        Failure(
-          new ShapeException(
-            "1D arrays must be of the same length to compute dot product"
-          )
+        throw new ShapeException(
+          "1D arrays must be of the same length to compute dot product"
         )
       else
-        Success(
-          NDArray(
-            List(
-              thisFlat
-                .zip(otherFlat)
-                .map(tup => num.times(tup._1, tup._2))
-                .reduce(num.plus)
-            )
+        NDArray(
+          List(
+            thisFlat
+              .zip(otherFlat)
+              .map(tup => num.times(tup._1, tup._2))
+              .reduce(num.plus)
           )
         )
     }
-    def lastAxisInnerProduct(): Try[NDArray[T]] =
+    def lastAxisInnerProduct(): NDArray[T] =
       if (shape.last != other.shape.head)
-        Failure(
-          new ShapeException("Last axes must match for last axis inner product")
+        throw new ShapeException(
+          "Last axes must match for last axis inner product"
         )
       else {
         val resultShape = shape.dropRight(1)
@@ -763,17 +742,15 @@ class NDArray[T: ClassTag] private (
         val newElementsArrays = sliceIndices.map { indices =>
           val sliceIndicesComplete =
             (indices.map(idx => Some(Array(idx))) :+ None).toArray
-          (slice(sliceIndicesComplete).squeeze() dot other).get
+          slice(sliceIndicesComplete).squeeze() dot other
         }
         val newElements = newElementsArrays.map(_.flatten().head)
-        Success(NDArray[T](newElements).reshape(resultShape))
+        NDArray[T](newElements).reshape(resultShape)
       }
-    def multidimensionalInnerProduct(): Try[NDArray[T]] =
+    def multidimensionalInnerProduct(): NDArray[T] =
       if (shape.last != other.shape(other.shape.length - 2))
-        Failure(
-          new ShapeException(
-            "Last axes must match second to last axis for multidimensional inner product"
-          )
+        throw new ShapeException(
+          "Last axes must match second to last axis for multidimensional inner product"
         )
       else {
         val resultShape =
@@ -798,17 +775,17 @@ class NDArray[T: ClassTag] private (
             ) ++ List(None, sliceIndicesOtherIntermediate.last)
             (slice(sliceIndicesThisComplete).squeeze() dot other
               .slice(sliceIndicesOtherComplete)
-              .squeeze()).get.flatten().head
+              .squeeze()).flatten().head
           }
         }
-        Success(NDArray[T](newElements).reshape(resultShape))
+        NDArray[T](newElements).reshape(resultShape)
       }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
     else if (shape.length == 2 && other.shape.length == 2) matmul(other)
     else if (other.shape.length == 1) lastAxisInnerProduct()
     else if (shape.length > 1 && other.shape.length > 1)
       multidimensionalInnerProduct()
-    else Failure(new ShapeException("dot undefined for these shapes"))
+    else throw new ShapeException("dot undefined for these shapes")
   }
 
   /** Returns the list of all combinations of the given lists by index.
