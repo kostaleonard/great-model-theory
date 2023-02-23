@@ -1,6 +1,7 @@
 package layers
 
 import autodifferentiation.{Input, ModelParameter}
+import exceptions.ShapeException
 import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -11,7 +12,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2).get
+    val dense = Dense.withRandomWeights(inputLayer, 2)
     val head = dense.weights.value(Array(0, 0))
     assert(!dense.weights.value.flatten().forall(_ == head))
   }
@@ -20,7 +21,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2).get
+    val dense = Dense.withRandomWeights(inputLayer, 2)
     assert(dense.biases.value.flatten().forall(_ == 0))
   }
 
@@ -28,7 +29,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2).get
+    val dense = Dense.withRandomWeights(inputLayer, 2)
     assert(dense.weights.value.shape sameElements Array(4, 2))
     assert(dense.biases.value.shape sameElements Array(2))
   }
@@ -50,15 +51,13 @@ class DenseSpec extends AnyFlatSpec with Matchers {
         ),
         biasesInitialization = None
       )
-      .get
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
-    assert(outputs.isSuccess)
-    assert(outputs.get.shape sameElements Array(sampleBatchSize, units))
+    assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
-      outputs.get arrayApproximatelyEquals NDArray[Float](
+      outputs arrayApproximatelyEquals NDArray[Float](
         List(28f, 34f, 76f, 98f)
       ).reshape(Array(sampleBatchSize, units))
     )
@@ -85,7 +84,6 @@ class DenseSpec extends AnyFlatSpec with Matchers {
         ),
         biasesInitialization = None
       )
-      .get
     val sampleBatchSize = 2
     val inputs = Map(
       input -> NDArray.arange[Float](
@@ -93,16 +91,15 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       )
     )
     val outputs = dense(inputs)
-    assert(outputs.isSuccess)
     assert(
-      outputs.get.shape sameElements Array(
+      outputs.shape sameElements Array(
         sampleBatchSize,
         numFeaturesRows,
         units
       )
     )
     assert(
-      outputs.get arrayApproximatelyEquals NDArray[Float](
+      outputs arrayApproximatelyEquals NDArray[Float](
         List(10f, 13f, 28f, 40f, 46f, 67f, 64f, 94f, 82f, 121f, 100f, 148f,
           118f, 175f, 136f, 202f)
       ).reshape(Array(sampleBatchSize, numFeaturesRows, units))
@@ -127,15 +124,13 @@ class DenseSpec extends AnyFlatSpec with Matchers {
         biasesInitialization =
           Some(ModelParameter("biases", NDArray.ones[Float](Array(units))))
       )
-      .get
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
-    assert(outputs.isSuccess)
-    assert(outputs.get.shape sameElements Array(sampleBatchSize, units))
+    assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
-      outputs.get arrayApproximatelyEquals NDArray[Float](
+      outputs arrayApproximatelyEquals NDArray[Float](
         List(29f, 35f, 77f, 99f)
       ).reshape(Array(sampleBatchSize, units))
     )
@@ -145,12 +140,11 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val numFeatures = 4
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, 2).get
+    val dense = Dense.withRandomWeights(inputLayer, 2)
     val sampleBatchSize = 2
     val inputs = Map(
       input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures + 1))
     )
-    val outputs = dense(inputs)
-    assert(outputs.isFailure)
+    assertThrows[ShapeException](dense(inputs))
   }
 }

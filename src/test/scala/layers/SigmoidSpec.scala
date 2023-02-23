@@ -22,8 +22,7 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
     val expected = NDArray[Double](
       List(0.5, 0.73105852, 0.88079701, 0.04742591, 0.98201377, 0.5)
     ).reshape(Array(batchSize, numFeatures))
-    assert(outputs.isSuccess)
-    assert(outputs.get arrayApproximatelyEquals expected)
+    assert(outputs arrayApproximatelyEquals expected)
   }
 
   it should "compute values in (0, 1)" in {
@@ -38,8 +37,7 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
       )
     )
     val outputs = sigmoid(inputs)
-    assert(outputs.isSuccess)
-    assert(outputs.get.flatten().forall(x => (0 <= x) && (x <= 1)))
+    assert(outputs.flatten().forall(x => (0 <= x) && (x <= 1)))
   }
 
   it should "compute its gradient" in {
@@ -56,13 +54,11 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
       )
     )
     val gradient = sigmoid.getComputationGraph.gradient(input)
-    assert(gradient.isSuccess)
-    val outputs = gradient.get.compute(inputs)
+    val outputs = gradient.compute(inputs)
     val expected = NDArray[Double](
       List(0.25, 0.19661193324148188, 0.1049935854035065, 0.04517665973091213,
         0.017662706213291114, 0.25)
     ).reshape(Array(batchSize, numFeatures))
-    assert(outputs.isSuccess)
-    assert(outputs.get arrayApproximatelyEquals expected)
+    assert(outputs arrayApproximatelyEquals expected)
   }
 }
