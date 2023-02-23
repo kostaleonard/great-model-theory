@@ -2,8 +2,6 @@ package losses
 
 import ndarray.NDArray
 
-import scala.util.Try
-
 /** A loss function.
   *
   * The loss function is used to compute the gradient for gradient descent and
@@ -23,5 +21,5 @@ trait Loss[T] {
     * @return
     *   The loss tensor of shape (batchSize, d0, d1, ..., dN-1).
     */
-  def compute_loss(y_true: NDArray[T], y_pred: NDArray[T]): Try[NDArray[T]]
+  def compute_loss(y_true: NDArray[T], y_pred: NDArray[T]): NDArray[T]
 }

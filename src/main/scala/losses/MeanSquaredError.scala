@@ -30,12 +30,12 @@ class MeanSquaredError[T: ClassTag](implicit num: Fractional[T])
   override def compute_loss(
       y_true: NDArray[T],
       y_pred: NDArray[T]
-  ): Try[NDArray[T]] =
+  ): NDArray[T] =
     if (!(y_true.shape sameElements y_pred.shape))
-      Failure(new ShapeException("Loss inputs must have matching shape"))
+      throw new ShapeException("Loss inputs must have matching shape")
     else {
       val squaredError =
-        (y_true - y_pred).get.map(diff => num.times(diff, diff))
+        (y_true - y_pred).map(diff => num.times(diff, diff))
       val axis = y_true.shape.length - 1
       val meanSquaredError = squaredError.reduce(
         arr =>
@@ -45,6 +45,6 @@ class MeanSquaredError[T: ClassTag](implicit num: Fractional[T])
           ),
         axis
       )
-      Success(meanSquaredError)
+      meanSquaredError
     }
 }
