@@ -4,8 +4,6 @@ import autodifferentiation.{Input, ModelParameter}
 import layers.Layer
 import ndarray.NDArray
 
-import scala.util.Try
-
 /** A neural network.
   *
   * @param outputLayer
@@ -20,7 +18,7 @@ case class Model[T](outputLayer: Layer[T]) {
     * @param inputs
     *   The inputs to the model.
     */
-  def apply(inputs: Map[Input[T], NDArray[T]]): Try[NDArray[T]] = outputLayer(
+  def apply(inputs: Map[Input[T], NDArray[T]]): NDArray[T] = outputLayer(
     inputs
   )
 

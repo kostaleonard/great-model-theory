@@ -1,6 +1,7 @@
 package model
 
 import autodifferentiation.Input
+import exceptions.ShapeException
 import layers.{Dense, InputLayer}
 import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,15 +14,14 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, outputSize).get
+    val dense = Dense.withRandomWeights(inputLayer, outputSize)
     val model = Model(dense)
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
-    assert(outputs.isSuccess)
-    assert(outputs.get.shape sameElements Array(sampleBatchSize, outputSize))
-    assert(!outputs.get.flatten().forall(_ == 1))
+    assert(outputs.shape sameElements Array(sampleBatchSize, outputSize))
+    assert(!outputs.flatten().forall(_ == 1))
   }
 
   it should "apply multiple layers to the input" in {
@@ -30,19 +30,18 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense1 = Dense.withRandomWeights(inputLayer, hiddenSize).get
-    val dense2 = Dense.withRandomWeights(dense1, outputSize).get
+    val dense1 = Dense.withRandomWeights(inputLayer, hiddenSize)
+    val dense2 = Dense.withRandomWeights(dense1, outputSize)
     val model = Model(dense2)
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
-    assert(outputs.isSuccess)
-    assert(outputs.get.shape sameElements Array(sampleBatchSize, outputSize))
-    assert(!outputs.get.flatten().forall(_ == 1))
+    assert(outputs.shape sameElements Array(sampleBatchSize, outputSize))
+    assert(!outputs.flatten().forall(_ == 1))
     // Check that the model also applied layer 2.
     val dense1Outputs = dense1(inputs)
-    assert(dense1Outputs.get arrayNotApproximatelyEquals outputs.get)
+    assert(dense1Outputs arrayNotApproximatelyEquals outputs)
   }
 
   it should "fail to apply layers on incorrectly shaped input" in {
@@ -50,12 +49,11 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val outputSize = 2
     val input = Input[Float]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
-    val dense = Dense.withRandomWeights(inputLayer, outputSize).get
+    val dense = Dense.withRandomWeights(inputLayer, outputSize)
     val model = Model(dense)
     val sampleBatchSize = 2
     val inputs =
       Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures + 1)))
-    val outputs = model(inputs)
-    assert(outputs.isFailure)
+    assertThrows[ShapeException](model(inputs))
   }
 }
