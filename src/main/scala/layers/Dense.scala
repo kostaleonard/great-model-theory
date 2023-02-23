@@ -9,7 +9,6 @@ import autodifferentiation.{
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
 
 object Dense {
 
@@ -34,7 +33,7 @@ object Dense {
       units: Int,
       weightsInitialization: Option[ModelParameter[T]] = None,
       biasesInitialization: Option[ModelParameter[T]] = None
-  )(implicit num: Numeric[T]): Try[Dense[T]] =
+  )(implicit num: Numeric[T]): Dense[T] =
     previousLayer.getOutputShape match {
       case Success(outputShape) =>
         val weights = weightsInitialization.getOrElse(
