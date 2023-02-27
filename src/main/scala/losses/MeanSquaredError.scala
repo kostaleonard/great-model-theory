@@ -20,23 +20,23 @@ class MeanSquaredError[T: ClassTag](implicit num: Fractional[T])
     *
     * The mean is applied on the last dimension.
     *
-    * @param y_true
+    * @param yTrue
     *   The ground truth tensor of shape (batchSize, d0, d1, ..., dN).
-    * @param y_pred
+    * @param yPred
     *   The prediction tensor of shape (batchSize, d0, d1, ..., dN).
     * @return
     *   The loss tensor of shape (batchSize, d0, d1, ..., dN-1).
     */
   override def compute_loss(
-      y_true: NDArray[T],
-      y_pred: NDArray[T]
+                             yTrue: NDArray[T],
+                             yPred: NDArray[T]
   ): NDArray[T] =
-    if (!(y_true.shape sameElements y_pred.shape))
+    if (!(yTrue.shape sameElements yPred.shape))
       throw new ShapeException("Loss inputs must have matching shape")
     else {
       val squaredError =
-        (y_true - y_pred).map(diff => num.times(diff, diff))
-      val axis = y_true.shape.length - 1
+        (yTrue - yPred).map(diff => num.times(diff, diff))
+      val axis = yTrue.shape.length - 1
       val meanSquaredError = squaredError.reduce(
         arr =>
           num.div(

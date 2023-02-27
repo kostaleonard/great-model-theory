@@ -2,6 +2,7 @@ package model
 
 import autodifferentiation.{Input, ModelParameter}
 import layers.Layer
+import losses.Loss
 import ndarray.NDArray
 
 /** A neural network.
@@ -32,4 +33,10 @@ case class Model[T](outputLayer: Layer[T]) {
   def withUpdatedParameters(
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
+
+  //TODO I don't like that inputs and labels are not of the same type.
+  def fit(inputs: Map[Input[T], NDArray[T]],
+          labels: NDArray[T],
+          loss: Loss[T],
+          epochs: Int): Model[T] = ???
 }

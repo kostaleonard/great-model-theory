@@ -56,4 +56,23 @@ class ModelSpec extends AnyFlatSpec with Matchers {
       Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures + 1)))
     assertThrows[ShapeException](model(inputs))
   }
+
+  it should "perform gradient descent" in {
+    val numExamples = 4
+    val numFeatures = 3
+    val numOutputs = 2
+    // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
+    val xTrain =
+      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+        Array(numExamples, numFeatures)
+      )
+    val yTrain = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
+      Array(numExamples, numOutputs)
+    )
+    val input = Input[Float]("X", Array(None, Some(numFeatures)))
+    val inputLayer = InputLayer(input)
+    val dense = Dense.withRandomWeights(inputLayer, numOutputs)
+    val model = Model(dense)
+
+  }
 }
