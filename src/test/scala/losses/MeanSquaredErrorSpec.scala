@@ -11,7 +11,7 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
     val y_true = NDArray[Float](List(2.0f)).reshape(Array(1, 1))
     val y_pred = NDArray[Float](List(0.0f)).reshape(Array(1, 1))
     val mse = new MeanSquaredError[Float]
-    val loss = mse.compute_loss(y_true, y_pred)
+    val loss = mse.computeLoss(y_true, y_pred)
     assert(loss.shape sameElements Array(1))
     assert(loss arrayApproximatelyEquals NDArray[Float](List(4.0f)))
   }
@@ -20,7 +20,7 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
     val y_true = NDArray[Float](List(2.0f, 1.0f, -3.0f)).reshape(Array(3, 1))
     val y_pred = NDArray[Float](List(0.0f, 1.0f, 1.0f)).reshape(Array(3, 1))
     val mse = new MeanSquaredError[Float]
-    val loss = mse.compute_loss(y_true, y_pred)
+    val loss = mse.computeLoss(y_true, y_pred)
     assert(loss.shape sameElements Array(3))
     assert(
       loss arrayApproximatelyEquals NDArray[Float](List(4.0f, 0.0f, 16.0f))
@@ -33,7 +33,7 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
     val y_pred =
       NDArray[Float](List(0.0f, 1.0f, 0.0f, 2.0f)).reshape(Array(2, 2))
     val mse = new MeanSquaredError[Float]
-    val loss = mse.compute_loss(y_true, y_pred)
+    val loss = mse.computeLoss(y_true, y_pred)
     assert(loss.shape sameElements Array(2))
     assert(loss arrayApproximatelyEquals NDArray[Float](List(6.5f, 0.5f)))
   }
@@ -48,7 +48,7 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
         0.0f)
     ).reshape(Array(2, 3, 2))
     val mse = new MeanSquaredError[Float]
-    val loss = mse.compute_loss(y_true, y_pred)
+    val loss = mse.computeLoss(y_true, y_pred)
     assert(loss.shape sameElements Array(2, 3))
     assert(
       loss arrayApproximatelyEquals NDArray[Float](
@@ -61,6 +61,6 @@ class MeanSquaredErrorSpec extends AnyFlatSpec with Matchers {
     val y_true = NDArray.ones[Float](Array(2, 3))
     val y_pred = NDArray.ones[Float](Array(3, 2))
     val mse = new MeanSquaredError[Float]
-    assertThrows[ShapeException](mse.compute_loss(y_true, y_pred))
+    assertThrows[ShapeException](mse.computeLoss(y_true, y_pred))
   }
 }

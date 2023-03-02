@@ -1,7 +1,6 @@
 package losses
-import autodifferentiation.{DifferentiableFunction, Input, Mean, Square, Subtract}
+
 import exceptions.ShapeException
-import layers.Layer
 import ndarray.NDArray
 
 import scala.reflect.ClassTag
@@ -14,7 +13,7 @@ import scala.reflect.ClassTag
   * @tparam T
   *   The array element type.
   */
-case class MeanSquaredError[T: ClassTag](outputLayer: Layer[T])(implicit num: Fractional[T])
+case class MeanSquaredError[T: ClassTag]()(implicit num: Fractional[T])
     extends Loss[T] {
 
   /** Returns the mean squared error by index.
@@ -28,9 +27,9 @@ case class MeanSquaredError[T: ClassTag](outputLayer: Layer[T])(implicit num: Fr
     * @return
     *   The loss tensor of shape (batchSize, d0, d1, ..., dN-1).
     */
-  override def compute_loss(
-                             yTrue: NDArray[T],
-                             yPred: NDArray[T]
+  override def computeLoss(
+      yTrue: NDArray[T],
+      yPred: NDArray[T]
   ): NDArray[T] =
     if (!(yTrue.shape sameElements yPred.shape))
       throw new ShapeException("Loss inputs must have matching shape")
@@ -48,7 +47,4 @@ case class MeanSquaredError[T: ClassTag](outputLayer: Layer[T])(implicit num: Fr
       )
       meanSquaredError
     }
-
-  override def getComputationGraph: DifferentiableFunction[T] =
-    Mean(Square(Subtract(outputLayer.getComputationGraph, Input("yTrue", outputLayer.getOutputShape))))
 }

@@ -384,7 +384,7 @@ case class Mean[T](a: DifferentiableFunction[T])(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] = Mean(a.gradient(withRespectToVariable))
 
-  override def getInputs: Set[Input[T]] = ???
+  override def getInputs: Set[Input[T]] = a.getInputs
 
   override def getOutputShape: Array[Option[Int]] = {
     // We need to get a's output shape to make sure there are no errors.
@@ -409,6 +409,8 @@ trait UnaryElementWiseDifferentiableFunction[T]
   override def getOutputShape: Array[Option[Int]] = a.getOutputShape
 
   override def getParents: List[DifferentiableFunction[T]] = List(a)
+
+  override def getInputs: Set[Input[T]] = a.getInputs
 }
 
 /** Negates the results of a function.
@@ -445,8 +447,6 @@ case class Negate[T](override val a: DifferentiableFunction[T])(
   override def gradient(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] = Negate(a.gradient(withRespectToVariable))
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** Squares the results of a function.
@@ -490,8 +490,6 @@ case class Square[T](override val a: DifferentiableFunction[T])(
       Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
       a.gradient(withRespectToVariable)
     )
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** Returns the reciprocal of the results of a function.
@@ -532,8 +530,6 @@ case class Reciprocal[T](override val a: DifferentiableFunction[T])(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] =
     Multiply(Reciprocal(Negate(Square(a))), a.gradient(withRespectToVariable))
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** Returns the exponentiation of the results of a function (f(x) = pow(e, x)).
@@ -573,8 +569,6 @@ case class Exp[T](override val a: DifferentiableFunction[T])(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] =
     Multiply(this, a.gradient(withRespectToVariable))
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** A differentiable function with two arguments that broadcasts its operations.
@@ -651,6 +645,8 @@ trait BinaryDifferentiableFunctionWithBroadcast[T]
     )
     unbroadcastGradient
   }
+
+  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 }
 
 /** Adds the results of two functions.
@@ -699,8 +695,6 @@ case class Add[T](
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] =
     Add(a.gradient(withRespectToVariable), b.gradient(withRespectToVariable))
-
-  override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 }
 
 /** Subtracts the results of two functions.
@@ -752,8 +746,6 @@ case class Subtract[T](
       a.gradient(withRespectToVariable),
       b.gradient(withRespectToVariable)
     )
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** Element-wise multiplies the results of two functions.
@@ -813,8 +805,6 @@ case class Multiply[T](
       Multiply(a.gradient(withRespectToVariable), b),
       Multiply(a, b.gradient(withRespectToVariable))
     )
-
-  override def getInputs: Set[Input[T]] = ???
 }
 
 /** Computes the dot product of the results of two functions.

@@ -1,8 +1,8 @@
 package model
 
-import autodifferentiation.Input
+import autodifferentiation.{Constant, Input, Mean, Square, Subtract}
 import exceptions.ShapeException
-import layers.{Dense, InputLayer}
+import layers.{Dense, InputLayer, MeanSquaredError}
 import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -69,10 +69,22 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val yTrain = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(numExamples, numOutputs)
     )
-    val input = Input[Float]("X", Array(None, Some(numFeatures)))
+    val input = Input[Double]("X", Array(None, Some(numFeatures)))
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, numOutputs)
     val model = Model(dense)
-
+    val inputs = Map(input -> xTrain)
+    val lossFunctionBefore = Mean(
+      Square(Subtract(model.outputLayer.getComputationGraph, Constant(yTrain)))
+    )
+    val lossBefore = lossFunctionBefore.compute(inputs).flatten().head
+    val fittedModel = model.fit(inputs, yTrain, 10, learningRate = 1e-2)
+    val lossFunctionAfter = Mean(
+      Square(
+        Subtract(fittedModel.outputLayer.getComputationGraph, Constant(yTrain))
+      )
+    )
+    val lossAfter = lossFunctionAfter.compute(inputs).flatten().head
+    assert(lossAfter < lossBefore)
   }
 }
