@@ -2,7 +2,7 @@ package model
 
 import autodifferentiation.{Constant, Input, Mean, Square, Subtract}
 import exceptions.ShapeException
-import layers.{Dense, InputLayer, MeanSquaredError}
+import layers.{Dense, InputLayer}
 import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
