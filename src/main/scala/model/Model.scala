@@ -35,7 +35,6 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
 
-  // TODO I don't like that inputs and labels are not of the same type.
   def fit(
       inputs: Map[Input[T], NDArray[T]],
       labels: NDArray[T],

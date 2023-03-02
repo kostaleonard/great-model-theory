@@ -21,7 +21,6 @@ import scala.reflect.ClassTag
 case class MeanSquaredError[T: ClassTag](previousLayer: Layer[T])(implicit
     numeric: Fractional[T]
 ) extends Layer[T] {
-  // TODO right now I'm hard coding the input name "yTrue" to the loss function because I know I'm going to refactor.
   val labelsInput: Input[T] = Input("yTrue", previousLayer.getOutputShape)
 
   override def getComputationGraph: DifferentiableFunction[T] =
