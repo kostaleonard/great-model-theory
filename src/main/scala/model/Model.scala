@@ -1,8 +1,10 @@
 package model
 
 import autodifferentiation.{Input, ModelParameter}
-import layers.Layer
+import layers.{Layer, MeanSquaredError}
 import ndarray.NDArray
+
+import scala.reflect.ClassTag
 
 /** A neural network.
   *
@@ -11,7 +13,7 @@ import ndarray.NDArray
   * @tparam T
   *   The array element type.
   */
-case class Model[T](outputLayer: Layer[T]) {
+case class Model[T: ClassTag](outputLayer: Layer[T]) {
 
   /** Returns the output of the model on the inputs.
     *
@@ -32,4 +34,44 @@ case class Model[T](outputLayer: Layer[T]) {
   def withUpdatedParameters(
       parameters: Map[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
+
+  def fit(
+      inputs: Map[Input[T], NDArray[T]],
+      labels: NDArray[T],
+      epochs: Int,
+      learningRate: Double = 1e-3
+  )(implicit numeric: Fractional[T]): Model[T] = {
+    var fittedModel = this
+    val learningRateArray = NDArray[T](List(learningRate.asInstanceOf[T]))
+    (0 until epochs).foreach { epoch =>
+      val nextStepLoss = MeanSquaredError(fittedModel.outputLayer)
+      val inputsWithLabels =
+        inputs + (nextStepLoss.labelsInput -> labels)
+      val execution =
+        nextStepLoss.getComputationGraph.computeAll(inputsWithLabels)
+      val gradients =
+        nextStepLoss.getComputationGraph.backpropagateAll(execution)
+      val modelParameterGradients = gradients
+        .filter(_._1 match {
+          case ModelParameter(_, _) => true
+          case _                    => false
+        })
+        .asInstanceOf[Map[ModelParameter[T], NDArray[T]]]
+      val updatedParameters = modelParameterGradients.map {
+        parameterAndGradient =>
+          val parameter = parameterAndGradient._1
+          val gradient = parameterAndGradient._2
+          val newParameter = ModelParameter(
+            parameter.name,
+            parameter.value - gradient * learningRateArray
+          )
+          parameter -> newParameter
+      }
+      println(
+        s"Epoch $epoch: loss=${execution.outputs(nextStepLoss.getComputationGraph).flatten().head}"
+      )
+      fittedModel = fittedModel.withUpdatedParameters(updatedParameters)
+    }
+    fittedModel
+  }
 }

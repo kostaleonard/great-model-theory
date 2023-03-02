@@ -11,6 +11,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   /** Numerically computes the gradient of the function for the inputs.
     *
+    * This function only computes accurate gradients on element-wise operations.
+    *
     * If you plan to use this function to check gradients, use Double precision.
     */
   private def computeGradientWithFiniteDifferences[T: ClassTag](
@@ -49,6 +51,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   }
 
   /** Numerically computes the gradient of the function for the inputs.
+    *
+    * This function computes accurate gradients, but is very expensive. It
+    * computes the function for every element in the input array.
     *
     * If you plan to use this function to check gradients, use Double precision.
     * This function computes the gradient separately for every element of the

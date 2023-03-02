@@ -14,12 +14,12 @@ trait Loss[T] {
 
   /** Returns the loss on the inputs.
     *
-    * @param y_true
+    * @param yTrue
     *   The ground truth tensor of shape (batchSize, d0, d1, ..., dN).
-    * @param y_pred
+    * @param yPred
     *   The prediction tensor of shape (batchSize, d0, d1, ..., dN).
     * @return
     *   The loss tensor of shape (batchSize, d0, d1, ..., dN-1).
     */
-  def compute_loss(y_true: NDArray[T], y_pred: NDArray[T]): NDArray[T]
+  def computeLoss(yTrue: NDArray[T], yPred: NDArray[T]): NDArray[T]
 }
