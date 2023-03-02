@@ -2,6 +2,8 @@ package applications
 
 import ndarray.NDArray
 
+import scala.io.Source
+
 /** Gets the MNIST dataset. */
 case object MNIST {
   val trainImagesUrl =
@@ -15,5 +17,9 @@ case object MNIST {
     * is 28 x 28 and contains pixel values from 0 to 255. Each label is an
     * integer from 0 to 9 indicating the number shown in the image.
     */
-  def getDataset: (NDArray[Int], NDArray[Int]) = ???
+  def getDataset: (NDArray[Int], NDArray[Int]) = {
+    val trainImagesContent = Source.fromURL(trainImagesUrl)
+    println(trainImagesContent.iter.next())
+    ???
+  }
 }
