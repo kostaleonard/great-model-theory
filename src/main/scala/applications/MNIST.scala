@@ -25,21 +25,12 @@ case object MNIST {
     */
   def getDataset: (NDArray[Int], NDArray[Int]) = {
     val trainImagesGzipContent = Source.fromURL(trainImagesUrl)(urlEncoding)
-    val bytes = trainImagesGzipContent.map(_.toByte).toArray
-    //val bytes = trainImagesGzipContent.mkString.getBytes
-    //println(bytes.take(20).map(b => String.format("%02x", Byte.box(b))).mkString("Array(", ", ", ")"))
-    //println(bytes.length)
-    //TODO want to replace FileInputStream with something that just reads the gzip contents string as bytes
+    val bytes = trainImagesGzipContent.mkString.getBytes(urlEncoding)
+    //TODO remove debugging
+    println(bytes.take(20).map(b => String.format("%02x", Byte.box(b))).mkString("Array(", ", ", ")"))
     val trainImagesContent = Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(bytes)))(urlEncoding)
-    //println(trainImagesGzipContent.getLines().next())
-    //println(trainImagesContent.mkString)
-
-    //TODO this uses a subprocess, which I don't like.
-    //new URL(trainImagesUrl) #> new File("/Users/leo/Downloads/train_images.gz") !!
-    //val trainImagesContent = Source.fromInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream("/Users/leo/Downloads/train_images.gz"))))(urlEncoding)
-    //val trainImagesContent = Source.fromInputStream(new BufferedInputStream(new FileInputStream("/Users/leo/Downloads/train_images.gz")))(urlEncoding)
     //The magic number is 0x00000803(2051)
-    println(trainImagesContent.mkString.getBytes.take(20).map(b => String.format("%02x", Byte.box(b))).mkString("Array(", ", ", ")"))
+    println(trainImagesContent.mkString.getBytes(urlEncoding).take(20).map(b => String.format("%02x", b)).mkString("Array(", ", ", ")"))
     ???
   }
 }
