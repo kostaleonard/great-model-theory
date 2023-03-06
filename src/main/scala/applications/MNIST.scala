@@ -16,6 +16,7 @@ case object MNIST {
   private val urlEncoding = "ISO-8859-1"
   private val imageFileMagicNumber = Array(0, 0, 8, 3)
 
+  //TODO probably want train and test datasets
   /** Returns the MNIST dataset as a pair of arrays (features, labels).
     *
     * The MNIST dataset contains 60,000 grayscale images and labels. Each image
@@ -23,15 +24,18 @@ case object MNIST {
     * integer from 0 to 9 indicating the number shown in the image.
     */
   def getDataset: (NDArray[Int], NDArray[Int]) = {
-    val trainImagesGzipContent = Source.fromURL(trainImagesUrl)(urlEncoding)
-    val bytes = trainImagesGzipContent.mkString.getBytes(urlEncoding)
-    //TODO remove debugging
-    println(bytes.take(20).map(b => String.format("%02x", Byte.box(b))).mkString("Array(", ", ", ")"))
-    val trainImagesContent = Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(bytes)))(urlEncoding)
-    val trainImagesBytes = trainImagesContent.mkString.getBytes(urlEncoding)
+    val trainImagesBytes = getDecompressedBytesFromUrl(trainImagesUrl)
     val trainImages = parseImageFileBytes(trainImagesBytes)
-    println(trainImagesContent.mkString.getBytes(urlEncoding).take(20).map(b => String.format("%02x", b)).mkString("Array(", ", ", ")"))
+
     ???
+  }
+
+  private def getDecompressedBytesFromUrl(url: String): Array[Byte] = {
+    val fileGzipContent = Source.fromURL(url)(urlEncoding)
+    val fileGzipBytes = fileGzipContent.mkString.getBytes(urlEncoding)
+    val fileDecompressedContent = Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(fileGzipBytes)))(urlEncoding)
+    val fileDecompressedBytes = fileDecompressedContent.mkString.getBytes(urlEncoding)
+    fileDecompressedBytes
   }
 
   /** Returns the image array from the decompressed IDX-formatted file.
@@ -49,16 +53,14 @@ case object MNIST {
     val numImages = BigInt(bytes.slice(4, 8)).toInt
     val numRows = BigInt(bytes.slice(8, 12)).toInt
     val numCols = BigInt(bytes.slice(12, 16)).toInt
-    var images = NDArray.zeros[Int](Array(numImages, numRows, numCols))
-    //TODO producing the indices takes way too long and we don't need it.
-    //val imageIndices = images.indices
+    var pixelsReversed = List.empty[Int]
     val numPixelValues = numImages * numRows * numCols
     (0 until numPixelValues).foreach{ pixelIdx =>
       // This bitwise AND causes pixelValue to be an unsigned int in [0, 255].
       val pixelValue = bytes(pixelIdx + 16) & 0xff
-      //val imageIdx = imageIndices(pixelIdx)
-
+      pixelsReversed +:= pixelValue
     }
-    ???
+    val images = NDArray(pixelsReversed.reverse).reshape(Array(numImages, numRows, numCols))
+    images
   }
 }
