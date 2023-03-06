@@ -14,7 +14,8 @@ case object MNIST {
   private val trainLabelsUrl =
     "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"
   private val urlEncoding = "ISO-8859-1"
-  private val imageFileMagicNumber = Array(0, 0, 8, 3)
+  private val imagesFileMagicNumber = Array(0, 0, 8, 3)
+  private val labelsFileMagicNumber = Array(0, 0, 8, 1)
 
   //TODO probably want train and test datasets
   /** Returns the MNIST dataset as a pair of arrays (features, labels).
@@ -26,8 +27,9 @@ case object MNIST {
   def getDataset: (NDArray[Int], NDArray[Int]) = {
     val trainImagesBytes = getDecompressedBytesFromUrl(trainImagesUrl)
     val trainImages = parseImageFileBytes(trainImagesBytes)
-
-    ???
+    val trainLabelsBytes = getDecompressedBytesFromUrl(trainLabelsUrl)
+    val trainLabels = parseLabelsFileBytes(trainLabelsBytes)
+    (trainImages, trainLabels)
   }
 
   private def getDecompressedBytesFromUrl(url: String): Array[Byte] = {
@@ -49,18 +51,39 @@ case object MNIST {
     */
   private def parseImageFileBytes(bytes: Array[Byte]): NDArray[Int] = {
     val magicNumber = bytes.take(4)
-    if(!(magicNumber sameElements imageFileMagicNumber)) throw new IOException(s"Images file has incorrect magic number: ${magicNumber.mkString("Array(", ", ", ")")}")
+    if(!(magicNumber sameElements imagesFileMagicNumber)) throw new IOException(s"Images file has incorrect magic number: ${magicNumber.mkString("Array(", ", ", ")")}")
     val numImages = BigInt(bytes.slice(4, 8)).toInt
     val numRows = BigInt(bytes.slice(8, 12)).toInt
     val numCols = BigInt(bytes.slice(12, 16)).toInt
-    var pixelsReversed = List.empty[Int]
     val numPixelValues = numImages * numRows * numCols
+    val pixels = Array.fill(numPixelValues)(0)
     (0 until numPixelValues).foreach{ pixelIdx =>
       // This bitwise AND causes pixelValue to be an unsigned int in [0, 255].
       val pixelValue = bytes(pixelIdx + 16) & 0xff
-      pixelsReversed +:= pixelValue
+      pixels(pixelIdx) = pixelValue
     }
-    val images = NDArray(pixelsReversed.reverse).reshape(Array(numImages, numRows, numCols))
+    val images = NDArray(pixels).reshape(Array(numImages, numRows, numCols))
     images
+  }
+
+  /** Returns the labels array from the decompressed IDX-formatted file.
+    *
+    * The following site contains both the download links for the MNIST dataset
+    * and the parsing instructions for IDX files:
+    * http://yann.lecun.com/exdb/mnist/
+    *
+    * @param bytes
+    *   The binary contents of the decompressed IDX-formatted file.
+    */
+  private def parseLabelsFileBytes(bytes: Array[Byte]): NDArray[Int] = {
+    val magicNumber = bytes.take(4)
+    if(!(magicNumber sameElements labelsFileMagicNumber)) throw new IOException(s"Labels file has incorrect magic number: ${magicNumber.mkString("Array(", ", ", ")")}")
+    val numLabels = BigInt(bytes.slice(4, 8)).toInt
+    val labels = Array.fill(numLabels)(0)
+    (0 until numLabels).foreach{ labelIdx =>
+      val label = bytes(labelIdx + 8).toInt
+      labels(labelIdx) = label
+    }
+    NDArray(labels)
   }
 }
