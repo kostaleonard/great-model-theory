@@ -186,6 +186,18 @@ class NDArray[T: ClassTag] private (
   def reshape(targetShape: Array[Int]): NDArray[T] =
     new NDArray[T](targetShape, elements)
 
+  /** Returns an NDArray with the same elements converted to Float. */
+  def toFloat(implicit num: Numeric[T]): NDArray[Float] = map(x => num.toFloat(x))
+
+  /** Returns an NDArray with the same elements converted to Double. */
+  def toDouble(implicit num: Numeric[T]): NDArray[Double] = map(x => num.toDouble(x))
+
+  /** Returns an NDArray with the same elements converted to Int. */
+  def toInt(implicit num: Numeric[T]): NDArray[Int] = map(x => num.toInt(x))
+
+  /** Returns an NDArray with the same elements converted to Long. */
+  def toLong(implicit num: Numeric[T]): NDArray[Long] = map(x => num.toLong(x))
+
   /** Returns an array of all element indices, in order.
     *
     * Each element in the returned array is an array that can be applied to

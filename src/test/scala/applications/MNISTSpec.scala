@@ -23,11 +23,10 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     //TODO update README with trimmed version of this example, plus the output
     //TODO fixture for MNIST dataset so test suite only downloads once per run
     val dataset = MNIST.getDataset
-    //TODO asInstanceOf not going to work probably
     //TODO normalize xTrain
     //TODO yTrain needs to be one-hot
-    val xTrain = dataset._1.asInstanceOf[NDArray[Double]].reshape(Array(60000, 28 * 28))
-    val yTrain = dataset._2.asInstanceOf[NDArray[Double]]
+    val xTrain = dataset._1.toDouble.reshape(Array(60000, 28 * 28))
+    val yTrain = dataset._2.toDouble
     val input = Input[Double]("X", Array(None, Some(28 * 28)))
     val inputLayer = InputLayer(input)
     val dense1 = Dense.withRandomWeights(inputLayer, 128)

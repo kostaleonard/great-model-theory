@@ -62,6 +62,30 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assertThrows[ShapeException](arr.reshape(Array(2, 2)))
   }
 
+  it should "convert a numeric data type to Float" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    val expected = NDArray.arange[Float](Array(2, 3))
+    assert(arr.toFloat arrayApproximatelyEquals expected)
+  }
+
+  it should "convert a numeric data type to Double" in {
+    val arr = NDArray.arange[Int](Array(2, 3))
+    val expected = NDArray.arange[Double](Array(2, 3))
+    assert(arr.toDouble arrayApproximatelyEquals expected)
+  }
+
+  it should "convert a numeric data type to Int" in {
+    val arr = NDArray.arange[Float](Array(2, 3))
+    val expected = NDArray.arange[Int](Array(2, 3))
+    assert(arr.toInt arrayEquals expected)
+  }
+
+  it should "convert a numeric data type to Long" in {
+    val arr = NDArray.arange[Float](Array(2, 3))
+    val expected = NDArray.arange[Long](Array(2, 3))
+    assert(arr.toLong arrayEquals expected)
+  }
+
   it should "be able to contain arbitrary data types" in {
     val arr1 = NDArray.ofValue[String](Array(2, 3), "hello")
     assert(arr1.flatten().forall(_.equals("hello")))
