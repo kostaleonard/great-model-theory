@@ -607,6 +607,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
     assertThrows[ShapeException](arr1 / arr2)
   }
 
+  it should "overload / to allow division with the array element type" in {
+    val arr = NDArray[Float](List(2, 4, 6))
+    val division = arr / 2
+    assert(division arrayApproximatelyEquals NDArray[Float](List(1, 2, 3)))
+  }
+
   it should "return the sum of all elements" in {
     val arr = NDArray[Int](List(0, 1, 2, 3, 4))
     assert(arr.sum == 10)

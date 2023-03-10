@@ -3,6 +3,7 @@ package ndarray
 import exceptions.ShapeException
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ArraySeq
 import scala.reflect.{ClassTag, classTag}
 
 /** An N-dimensional array.
@@ -383,6 +384,8 @@ class NDArray[T: ClassTag] private (
       )
     }
 
+  //TODO this method is slow
+  //TODO is listCartesianProduct the source of our OOM errors during training?
   @tailrec
   private def broadcastToWithMatchingNumDimensions(
       targetShape: Array[Int],
@@ -568,6 +571,19 @@ class NDArray[T: ClassTag] private (
     val (arr1, arr2) = broadcastWith(other)
     arr1 / arr2
   }
+
+  //TODO add similar methods for other binary ops
+  /** Returns the result of element-wise division by broadcasting the operand.
+    *
+    * @param other
+    *   The number to divide. This function broadcasts the operand across all
+    *   elements.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def /(other: T)(implicit num: Fractional[T]): NDArray[T] = this / NDArray(List(other))
 
   /** Returns the sum of all elements.
     *
@@ -855,8 +871,19 @@ class NDArray[T: ClassTag] private (
     * @tparam B
     *   The return type of the map function.
     */
-  def map[B: ClassTag](f: T => B): NDArray[B] =
-    NDArray(flatten().toList.map(f)).reshape(shape)
+  def map[B: ClassTag](f: T => B): NDArray[B] = {
+    // We could write a shorter version of this method using Array's map
+    // method, but implicit conversion of Array to IndexedSeq is deprecated. The
+    // deprecation warning suggests using ArraySeq.unsafeWrapArray or an
+    // explicit Array.toIndexedSeq. Both of these strategies resulted in longer
+    // execution times compared to a direct Array.map call in a small number of
+    // experiments. To preserve performance and avoid the deprecation warning,
+    // we implement the mapping logic directly.
+    val thisFlat = flatten()
+    val newElements = Array.ofDim[B](thisFlat.length)
+    newElements.indices.foreach(idx => newElements(idx) = f(thisFlat(idx)))
+    NDArray(newElements).reshape(shape)
+  }
 
   /** Returns a new NDArray by reducing slices on the given axis.
     *
