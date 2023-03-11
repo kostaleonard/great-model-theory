@@ -23,11 +23,11 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     //TODO update README with trimmed version of this example, plus the output
     //TODO fixture for MNIST dataset so test suite only downloads once per run
     val dataset = MNIST.getDataset
-    //TODO yTrain needs to be one-hot
-    val xTrain = dataset._1.toFloat.reshape(Array(60000, 28 * 28))
+    val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).toFloat / 255
+    assert(xTrain.flatten().forall(pixel => pixel >= 0 && pixel <= 1))
+    val yTrain = dataset._2.toCategorical().toFloat
+    assert(yTrain.flatten().forall(label => label == 0 || label == 1))
     /*
-    val xTrain = dataset._1.toFloat.reshape(Array(60000, 28 * 28)) / 255
-    val yTrain = dataset._2.toFloat
     val input = Input[Float]("X", Array(None, Some(28 * 28)))
     val inputLayer = InputLayer(input)
     val dense1 = Dense.withRandomWeights(inputLayer, 128)
@@ -46,6 +46,6 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     )
     val lossAfter = lossFunctionAfter.compute(inputs).flatten().head
     assert(lossAfter < lossBefore)
-     */
+    */
   }
 }

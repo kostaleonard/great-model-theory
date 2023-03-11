@@ -398,7 +398,7 @@ class NDArray[T: ClassTag] private (
       )
     }
 
-  //TODO this method is slow
+  //TODO this method is slow (but so are some others, so just make a general issue)
   @tailrec
   private def broadcastToWithMatchingNumDimensions(
       targetShape: Array[Int],
@@ -584,7 +584,42 @@ class NDArray[T: ClassTag] private (
     arr1 / arr2
   }
 
-  //TODO add similar methods for other binary ops
+  /** Returns the result of element-wise addition by broadcasting the operand.
+    *
+    * @param other
+    *   The number to add. This function broadcasts the operand across all
+    *   elements.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def +(other: T)(implicit num: Numeric[T]): NDArray[T] = this + NDArray(Array(other))
+
+  /** Returns the result of element-wise subtraction by broadcasting the operand.
+    *
+    * @param other
+    *   The number to subtract. This function broadcasts the operand across all
+    *   elements.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def -(other: T)(implicit num: Numeric[T]): NDArray[T] = this - NDArray(Array(other))
+
+  /** Returns the result of element-wise multiplication by broadcasting the operand.
+    *
+    * @param other
+    *   The number to multiply. This function broadcasts the operand across all
+    *   elements.
+    * @param num
+    *   An implicit parameter defining a set of numeric operations.
+    * @return
+    *   An NDArray of the same size.
+    */
+  def *(other: T)(implicit num: Numeric[T]): NDArray[T] = this * NDArray(Array(other))
+
   /** Returns the result of element-wise division by broadcasting the operand.
     *
     * @param other
@@ -659,7 +694,7 @@ class NDArray[T: ClassTag] private (
       map(x => Math.exp(num.toDouble(x)))
   }).asInstanceOf[NDArray[T]]
 
-  //TODO docstring
+  /** Returns an array with axes transposed. */
   def transpose: NDArray[T] = {
     val ndarrayIndices = indexIterator(shape.reverse).map(_.reverse)
     val transposeElements = ndarrayIndices.map(ndarrayIndex => apply(ndarrayIndex))
@@ -891,6 +926,26 @@ class NDArray[T: ClassTag] private (
       )
       .toArray
     NDArray[B](newElements.toArray).reshape(newShape)
+  }
+
+  /** Converts an Int array of classes to one-hot encoded binary vectors.
+    *
+    * If this array is not NDArray[Int], it is first converted to that type.
+    *
+    * @param numClasses
+    *   The number of classes in the dataset. If None, this function assumes it
+    *   is the max of the array plus 1.
+    * @return
+    *   An array of one-hot encoded binary vectors. The output has one greater
+    *   rank than the input. This last dimension is for the one-hot vectors.
+    */
+  def toCategorical(numClasses: Option[Int] = None)(implicit num: Numeric[T]): NDArray[Int] = classTag[T] match {
+      case _ if classTag[T] == classTag[Int] =>
+        val oneHotLength = numClasses.getOrElse(elements.asInstanceOf[Array[Int]].max + 1)
+        NDArray(elements.flatMap(classIdx =>
+          Array.tabulate(oneHotLength)(arrIdx => if(arrIdx == classIdx.asInstanceOf[Int]) 1 else 0)
+        )).reshape(shape :+ oneHotLength)
+      case _ => toInt.toCategorical(numClasses = numClasses)
   }
 
   /** Returns the string representation of the NDArray. */

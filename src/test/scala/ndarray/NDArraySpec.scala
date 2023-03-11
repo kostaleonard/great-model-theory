@@ -145,7 +145,6 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     val arr1 = NDArray.zeros[Int](Array(2, 3, 2))
     val meanTimeArr1 = getMeanExecutionTimeMilliseconds(() => arr1.indices)
     val arr2 = NDArray.zeros[Int](Array(60000, 28, 28))
-    //TODO scalatest failAfter doesn't terminate the test after the time limit--make issue
     failAfter(100 millis) {
       val meanTimeArr2 = getMeanExecutionTimeMilliseconds(() => arr2.indices)
       assert(meanTimeArr2 < meanTimeArr1 * executionTimeDifferenceBuffer)
@@ -538,6 +537,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     assertThrows[ShapeException](arr1 + arr2)
   }
 
+  it should "overload + to allow addition with the array element type" in {
+    val arr = NDArray[Int](Array(2, 4, 6))
+    val addition = arr + 1
+    assert(addition arrayEquals NDArray[Int](Array(3, 5, 7)))
+  }
+
   it should "define - for element-wise subtraction (Int)" in {
     val arr1 = NDArray[Int](Array(0, 1, 2, 3, 4))
     val arr2 = NDArray[Int](Array(1, 1, 3, 2, 4))
@@ -584,6 +589,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     assert(subtraction arrayEquals expectedSum)
   }
 
+  it should "overload - to allow subtraction with the array element type" in {
+    val arr = NDArray[Int](Array(2, 4, 6))
+    val subtraction = arr - 1
+    assert(subtraction arrayEquals NDArray[Int](Array(1, 3, 5)))
+  }
+
   it should "fail to perform element-wise subtraction on arrays with different shape" in {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     val arr2 = NDArray.arange[Int](Array(3, 2))
@@ -612,6 +623,12 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     val arr1 = NDArray.arange[Int](Array(2, 3))
     val arr2 = NDArray.arange[Int](Array(3, 2))
     assertThrows[ShapeException](arr1 * arr2)
+  }
+
+  it should "overload * to allow multiplication with the array element type" in {
+    val arr = NDArray[Int](Array(2, 4, 6))
+    val multiplication = arr * 2
+    assert(multiplication arrayEquals NDArray[Int](Array(4, 8, 12)))
   }
 
   it should "define / for element-wise division" in {
@@ -936,6 +953,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     val arr = NDArray.ones[Int](Array(3))
     val reduced = arr.reduce(_.sum, 0)
     assert(reduced arrayEquals NDArray[Int](Array(3)))
+  }
+
+  it should "convert an Int array of classes to one-hot encoded categorical vectors" in {
+    val arr = NDArray[Int](Array(0, 1, 2, 3))
+    val expected = NDArray[Int](Array(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)).reshape(Array(4, 4))
+    assert(arr.toCategorical() arrayEquals expected)
+  }
+
+  it should "convert an Int array of classes to one-hot vectors with the specified number of classes" in {
+    val arr = NDArray[Int](Array(2, 1, 0, 2))
+    val expected = NDArray[Int](Array(0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0)).reshape(Array(4, 4))
+    assert(arr.toCategorical(numClasses = Some(4)) arrayEquals expected)
+  }
+
+  it should "convert a non-Int array to categorical by converting the array to Int" in {
+    val arr = NDArray[Float](Array(2, 1, 0, 2))
+    val expected = NDArray[Int](Array(0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1)).reshape(Array(4, 3))
+    assert(arr.toCategorical() arrayEquals expected)
   }
 
   it should "represent its elements in string form" in {

@@ -724,7 +724,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val gradientX = addition.gradient(inputX)
     val valueX = NDArray[Float](Array(1, -2, 0, 3, 2, 1)).reshape(Array(2, 3))
     val outputX = gradientX.compute(Map(inputX -> valueX))
-    val expectedX = valueX * NDArray(Array(2))
+    val expectedX = valueX * 2
     assert(outputX arrayApproximatelyEquals expectedX)
     val gradientY = addition.gradient(inputY)
     val outputY = gradientY.compute(Map(inputX -> valueX))
