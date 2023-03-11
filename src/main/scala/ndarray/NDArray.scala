@@ -793,14 +793,12 @@ class NDArray[T: ClassTag] private (
         )
       else {
         val resultShape = shape.dropRight(1)
-        val dimensionIndices = resultShape.map(List.range(0, _)).toList
-        val sliceIndices = listCartesianProduct(dimensionIndices)
-        // Because this is a 1D vector inner product, each array holds a scalar.
-        val newElementsArrays = sliceIndices.map { indices =>
-          val sliceIndicesComplete =
-            (indices.map(idx => Some(Array(idx))) :+ None).toArray
-          slice(sliceIndicesComplete).squeeze() dot other
+        val ndarrayIndices = indexIterator(resultShape)
+        val newElementsArrays = ndarrayIndices.map { ndarrayIndex =>
+          val sliceIndices = ndarrayIndex.map(idx => Some(Array(idx))) :+ None
+          slice(sliceIndices).squeeze() dot other
         }
+        // Because this is a 1D vector inner product, each array holds a scalar.
         val newElements = newElementsArrays.map(_.flatten().head)
         NDArray[T](newElements.toArray).reshape(resultShape)
       }
