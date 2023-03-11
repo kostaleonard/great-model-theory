@@ -205,15 +205,21 @@ class NDArray[T: ClassTag] private (
     * first. For example, if this array was of shape 4 x 3 x 2, the indices
     * would be (0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1), etc.
     */
-  def indices: Iterator[Array[Int]] = {
-    Iterator.tabulate(elements.length){ elementIdx =>
-      val indexArray = Array.fill(shape.length)(0)
+  def indices: Iterator[Array[Int]] = indexIterator(shape)
+
+  private def indexIterator(indexShape: Array[Int]): Iterator[Array[Int]] = {
+    val indexStrides = Array.fill[Int](indexShape.length)(1)
+    indexStrides.indices.reverse.drop(1).foreach { idx =>
+      indexStrides(idx) = indexShape(idx + 1) * indexStrides(idx + 1)
+    }
+    Iterator.tabulate(indexShape.product){ elementIdx =>
+      val indexArray = Array.fill(indexShape.length)(0)
       var remainder = elementIdx
-      strides.indices.foreach{ strideIdx =>
-        if(strideIdx == strides.length - 1) indexArray(strideIdx) = remainder
+      indexStrides.indices.foreach{ strideIdx =>
+        if(strideIdx == indexStrides.length - 1) indexArray(strideIdx) = remainder
         else {
-          indexArray(strideIdx) = remainder / strides(strideIdx)
-          remainder = remainder % strides(strideIdx)
+          indexArray(strideIdx) = remainder / indexStrides(strideIdx)
+          remainder = remainder % indexStrides(strideIdx)
         }
       }
       indexArray
@@ -905,22 +911,20 @@ class NDArray[T: ClassTag] private (
       axis: Int,
       keepDims: Boolean = false
   ): NDArray[B] = {
-    val dimensionsIndices = shape.indices
+    val ndarrayIndices = indexIterator(shape.indices
       .map(idx =>
-        if (idx == axis) List(-1)
-        else (0 until shape(idx)).toList
-      )
-      .toList
-    val combinations = listCartesianProduct(dimensionsIndices)
-    val sliceCombinations = combinations.map(combination =>
-      combination.indices
+        if (idx == axis) 1
+        else shape(idx)
+      ).toArray)
+    val sliceIndices = ndarrayIndices.map(ndarrayIndex =>
+      ndarrayIndex.indices
         .map(idx =>
           if (idx == axis) None
-          else Some(Array(combination(idx)))
+          else Some(Array(ndarrayIndex(idx)))
         )
         .toArray
     )
-    val slices = sliceCombinations.map(slice)
+    val slices = sliceIndices.map(slice)
     val newElements = slices.map(f)
     val newShape = shape.indices
       .flatMap(idx =>
