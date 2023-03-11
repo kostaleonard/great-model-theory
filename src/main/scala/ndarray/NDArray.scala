@@ -399,7 +399,6 @@ class NDArray[T: ClassTag] private (
     }
 
   //TODO this method is slow
-  //TODO is listCartesianProduct the source of our OOM errors during training?
   @tailrec
   private def broadcastToWithMatchingNumDimensions(
       targetShape: Array[Int],
@@ -409,19 +408,18 @@ class NDArray[T: ClassTag] private (
     else if (shape(shapeIdx) == targetShape(shapeIdx))
       broadcastToWithMatchingNumDimensions(targetShape, shapeIdx - 1)
     else if (shape(shapeIdx) == 1) {
-      val dimensionIndices = shape.take(shapeIdx).map(List.range(0, _)).toList
-      val sliceIndices = listCartesianProduct(dimensionIndices)
-      val sliceIndicesComplete =
-        if (sliceIndices.isEmpty)
-          List(Array.fill[Option[Array[Int]]](targetShape.length)(None))
+      val ndarrayIndices = indexIterator(shape.take(shapeIdx))
+      val sliceIndices =
+        if (ndarrayIndices.isEmpty)
+          Iterator(Array.fill[Option[Array[Int]]](targetShape.length)(None))
         else
-          sliceIndices.map(indices =>
-            indices.map(idx => Some(Array(idx))).toArray ++ Array.fill(
+          ndarrayIndices.map(ndarrayIndex =>
+            ndarrayIndex.map(idx => Some(Array(idx))) ++ Array.fill(
               targetShape.length - shapeIdx
             )(None)
           )
-      val sliceElements = sliceIndicesComplete.flatMap(indices =>
-        (0 until targetShape(shapeIdx)).flatMap(_ => slice(indices).flatten())
+      val sliceElements = sliceIndices.flatMap(sliceIndex =>
+        (0 until targetShape(shapeIdx)).flatMap(_ => slice(sliceIndex).flatten())
       )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
       val broadcastArray = NDArray[T](sliceElements.toArray).reshape(newShape)
@@ -838,32 +836,6 @@ class NDArray[T: ClassTag] private (
     else if (shape.length > 1 && other.shape.length > 1)
       multidimensionalInnerProduct()
     else throw new ShapeException("dot undefined for these shapes")
-  }
-
-  //TODO this would probably be faster if we made it an iterator
-  /** Returns the list of all combinations of the given lists by index.
-    *
-    * For example, the list List(List(0, 1), List(0, 1, 2)) would return
-    * List(List(0, 0), List(0, 1), List(0, 2), List(1, 0), List(1, 1), List(1,
-    * 2)).
-    *
-    * @param lists
-    *   A list of lists. The elements of each list will be combined with the
-    *   elements of all other lists in cartesian product fashion.
-    * @return
-    *   The list of all combinations of the given lists by index. If the input
-    *   lists are of lengths n1, n2, n3, ..., then the output will be of shape
-    *   (n1, n2, n3, ...).
-    */
-  private def listCartesianProduct(
-      lists: List[List[Int]]
-  ): List[List[Int]] = {
-    lists.foldRight(List.empty[List[Int]])((oneDimIndices, accum) =>
-      oneDimIndices.flatMap(dimIndex =>
-        if (accum.isEmpty) List(List(dimIndex))
-        else accum.map(dimIndex +: _)
-      )
-    )
   }
 
   /** Returns the list of all combinations of the lists, incrementing from left.
