@@ -810,26 +810,23 @@ class NDArray[T: ClassTag] private (
       else {
         val resultShape =
           shape.dropRight(1) ++ other.shape.dropRight(2) :+ other.shape.last
-        val dimensionIndicesThis =
-          shape.dropRight(1).map(List.range(0, _)).toList
-        val sliceIndicesThis = listCartesianProduct(dimensionIndicesThis)
-        val dimensionIndicesOther = (other.shape.dropRight(
-          2
-        ) :+ other.shape.last).map(List.range(0, _)).toList
-        val sliceIndicesOther = listCartesianProduct(dimensionIndicesOther)
+        val ndarrayIndicesThis = indexIterator(shape.dropRight(1))
         // Because this is a 1D vector inner product, each array holds a scalar.
-        val newElements = sliceIndicesThis.flatMap { indicesThis =>
-          val sliceIndicesThisComplete =
-            (indicesThis.map(idx => Some(Array(idx))) :+ None).toArray
-          sliceIndicesOther.map { indicesOther =>
+        val newElements = ndarrayIndicesThis.flatMap { ndarrayIndexThis =>
+          val sliceIndicesThis =
+            ndarrayIndexThis.map(idx => Some(Array(idx))) :+ None
+          val ndarrayIndicesOther = indexIterator(other.shape.dropRight(
+            2
+          ) :+ other.shape.last)
+          ndarrayIndicesOther.map { ndarrayIndexOther =>
             val sliceIndicesOtherIntermediate =
-              indicesOther.map(idx => Some(Array(idx))).toArray
-            val sliceIndicesOtherComplete = sliceIndicesOtherIntermediate.slice(
+              ndarrayIndexOther.map(idx => Some(Array(idx)))
+            val sliceIndicesOther = sliceIndicesOtherIntermediate.slice(
               0,
               sliceIndicesOtherIntermediate.length - 2
             ) ++ List(None, sliceIndicesOtherIntermediate.last)
-            (slice(sliceIndicesThisComplete).squeeze() dot other
-              .slice(sliceIndicesOtherComplete)
+            (slice(sliceIndicesThis).squeeze() dot other
+              .slice(sliceIndicesOther)
               .squeeze()).flatten().head
           }
         }
