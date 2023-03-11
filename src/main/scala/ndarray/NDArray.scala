@@ -661,6 +661,7 @@ class NDArray[T: ClassTag] private (
       map(x => Math.exp(num.toDouble(x)))
   }).asInstanceOf[NDArray[T]]
 
+  //TODO docstring
   def transpose: NDArray[T] = {
     val indices = listCartesianProductIncrementLeft(
       shape.map(x => (0 until x).toList).toList
@@ -676,9 +677,9 @@ class NDArray[T: ClassTag] private (
     *
     * @param indices
     *   The indices on which to collect elements from the array. Each member of
-    *   indices can be None (take all elements along this dimension) or List of
+    *   indices can be None (take all elements along this dimension) or Array of
     *   Int (take all elements for the values of this dimension specified in the
-    *   list; if the list contains only one element, do not flatten this
+    *   array; if the array contains only one element, do not flatten this
     *   dimension).
     * @return
     *   A slice of the NDArray. The shape is determined by indices.
@@ -687,16 +688,30 @@ class NDArray[T: ClassTag] private (
     val dimensionIndices = indices.indices
       .map(dimensionIdx =>
         indices(dimensionIdx) match {
-          case None             => List.range(0, shape(dimensionIdx))
-          case Some(indexArray) => indexArray.toList
+          case None             => Array.range(0, shape(dimensionIdx))
+          case Some(indexArray) => indexArray
         }
-      )
-      .toList
+      ).toArray
     val resultShape = dimensionIndices.map(_.length)
-    val sliceIndices = listCartesianProduct(dimensionIndices)
-    val sliceElements =
-      sliceIndices.map(elementIndices => apply(elementIndices.toArray))
-    NDArray(sliceElements.toArray).reshape(resultShape.toArray)
+    val indexStrides = Array.fill[Int](dimensionIndices.length)(1)
+    indexStrides.indices.reverse.drop(1).foreach { idx =>
+      indexStrides(idx) = dimensionIndices(idx + 1).length * indexStrides(idx + 1)
+    }
+    // For optimization purposes, we are reimplementing some of indexIterator.
+    val ndarrayIndices = Iterator.tabulate(resultShape.product){ elementIdx =>
+      val indexArray = Array.fill(shape.length)(0)
+      var remainder = elementIdx
+      indexStrides.indices.foreach{ strideIdx =>
+        if(strideIdx == indexStrides.length - 1) indexArray(strideIdx) = dimensionIndices(strideIdx)(remainder)
+        else {
+          indexArray(strideIdx) = dimensionIndices(strideIdx)(remainder / indexStrides(strideIdx))
+          remainder = remainder % indexStrides(strideIdx)
+        }
+      }
+      indexArray
+    }
+    val sliceElements = ndarrayIndices.map(elementIndices => apply(elementIndices))
+    NDArray(sliceElements.toArray).reshape(resultShape)
   }
 
   /** Returns the result of matrix multiplication of 2D arrays.
