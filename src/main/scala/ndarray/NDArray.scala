@@ -880,20 +880,8 @@ class NDArray[T: ClassTag] private (
     * @tparam B
     *   The return type of the map function.
     */
-  def map[B: ClassTag](f: T => B): NDArray[B] = {
-    // We could write a shorter version of this method using Array's map
-    // method, but implicit conversion of Array to IndexedSeq is deprecated. The
-    // deprecation warning suggests using ArraySeq.unsafeWrapArray or an
-    // explicit Array.toIndexedSeq. Both of these strategies resulted in longer
-    // execution times compared to a direct Array.map call in a small number of
-    // experiments. To preserve performance and avoid the deprecation warning,
-    // we implement the mapping logic directly.
-    val thisFlat = flatten()
-    val newElements = Array.ofDim[B](thisFlat.length)
-    newElements.indices.foreach(idx => newElements(idx) = f(thisFlat(idx)))
-    //TODO newElements is getting converted to IndexedSeq, check time and try to find most efficient conversion
-    NDArray(newElements).reshape(shape)
-  }
+  def map[B: ClassTag](f: T => B): NDArray[B] =
+    NDArray(flatten().map(f)).reshape(shape)
 
   /** Returns a new NDArray by reducing slices on the given axis.
     *
