@@ -199,17 +199,26 @@ class NDArray[T: ClassTag] private (
   /** Returns an NDArray with the same elements converted to Long. */
   def toLong(implicit num: Numeric[T]): NDArray[Long] = map(x => num.toLong(x))
 
-  /** Returns an array of all element indices, in order.
+  /** Returns an iterator of all element indices, in order.
     *
-    * Each element in the returned array is an array that can be applied to
+    * Each element in the returned iterator is an array that can be applied to
     * extract a single element. The order of these indices is last dimension
     * first. For example, if this array was of shape 4 x 3 x 2, the indices
     * would be (0, 0, 0), (0, 0, 1), (0, 1, 0), (0, 1, 1), etc.
     */
-  def indices: Array[Array[Int]] = {
-    val dimensionIndices = shape.map(List.range(0, _)).toList
-    val elementIndices = listCartesianProduct(dimensionIndices)
-    elementIndices.map(_.toArray).toArray
+  def indices: Iterator[Array[Int]] = {
+    Iterator.tabulate(elements.length){ elementIdx =>
+      val indexArray = Array.fill(shape.length)(0)
+      var remainder = elementIdx
+      strides.indices.foreach{ strideIdx =>
+        if(strideIdx == strides.length - 1) indexArray(strideIdx) = remainder
+        else {
+          indexArray(strideIdx) = remainder / strides(strideIdx)
+          remainder = remainder % strides(strideIdx)
+        }
+      }
+      indexArray
+    }
   }
 
   /** Returns an NDArray with the value at the indices updated.
@@ -816,6 +825,7 @@ class NDArray[T: ClassTag] private (
     else throw new ShapeException("dot undefined for these shapes")
   }
 
+  //TODO this would probably be faster if we made it an iterator
   /** Returns the list of all combinations of the given lists by index.
     *
     * For example, the list List(List(0, 1), List(0, 1, 2)) would return
@@ -882,6 +892,7 @@ class NDArray[T: ClassTag] private (
     val thisFlat = flatten()
     val newElements = Array.ofDim[B](thisFlat.length)
     newElements.indices.foreach(idx => newElements(idx) = f(thisFlat(idx)))
+    //TODO newElements is getting converted to IndexedSeq, check time and try to find most efficient conversion
     NDArray(newElements).reshape(shape)
   }
 

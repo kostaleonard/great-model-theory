@@ -3,8 +3,30 @@ package ndarray
 import exceptions.ShapeException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.concurrent.TimeLimits
+import org.scalatest.time.SpanSugar._
 
-class NDArraySpec extends AnyFlatSpec with Matchers {
+import scala.language.postfixOps
+
+class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
+
+  /** Returns the mean execution time of the function over a number of trials.
+    *
+    * @param f
+    *   The function to profile.
+    * @param trials
+    *   The number of times to execute the function. The result will be the mean
+    *   execution time over all trials.
+    * @tparam T
+    *   The returns type of the function. Unused.
+    */
+  private def getMeanExecutionTimeMilliseconds[T](f: () => T, trials: Int = 1000): Double = {
+    val t0 = System.nanoTime()
+    (0 until trials).foreach(_ => f())
+    val t1 = System.nanoTime()
+    val elapsed = (t1 - t0) / (trials * 1e6)
+    elapsed
+  }
 
   "An N-dimensional array" should "have the correct number of elements (rank 2)" in {
     val arr = NDArray.zeros[Int](Array(2, 3))
@@ -96,7 +118,7 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
 
   it should "return an array of all indices in order" in {
     val arr = NDArray.zeros[Int](Array(2, 3, 2))
-    val indices = arr.indices
+    val indices = arr.indices.toArray
     val expected = Array(
       Array(0, 0, 0),
       Array(0, 0, 1),
@@ -116,6 +138,18 @@ class NDArraySpec extends AnyFlatSpec with Matchers {
         indices(elementIdx) sameElements expected(elementIdx)
       )
     )
+  }
+
+  it should "return the indices in near-constant time" in {
+    val executionTimeDifferenceBuffer = 10
+    val arr1 = NDArray.zeros[Int](Array(2, 3, 2))
+    val meanTimeArr1 = getMeanExecutionTimeMilliseconds(() => arr1.indices)
+    val arr2 = NDArray.zeros[Int](Array(60000, 28, 28))
+    //TODO scalatest failAfter doesn't terminate the test after the time limit--make issue
+    failAfter(100 millis) {
+      val meanTimeArr2 = getMeanExecutionTimeMilliseconds(() => arr2.indices)
+      assert(meanTimeArr2 < meanTimeArr1 * executionTimeDifferenceBuffer)
+    }
   }
 
   it should "return an array with one element updated" in {
