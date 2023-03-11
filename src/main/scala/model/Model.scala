@@ -4,7 +4,7 @@ import autodifferentiation.{Input, ModelParameter}
 import layers.{Layer, MeanSquaredError}
 import ndarray.NDArray
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 /** A neural network.
   *
@@ -36,6 +36,7 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
 
   //TODO docstring
+  //TODO learning rate cast does not work properly
   def fit(
       inputs: Map[Input[T], NDArray[T]],
       labels: NDArray[T],
@@ -43,15 +44,20 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
       learningRate: Double = 1e-3
   )(implicit numeric: Fractional[T]): Model[T] = {
     var fittedModel = this
-    val learningRateArray = NDArray[T](Array(learningRate.asInstanceOf[T]))
+    val learningRateAsT = classTag[T] match {
+      case _ if classTag[T] == classTag[Float]  => learningRate.toFloat.asInstanceOf[T]
+      case _ if classTag[T] == classTag[Double] => learningRate.asInstanceOf[T]
+    }
     (0 until epochs).foreach { epoch =>
       val nextStepLoss = MeanSquaredError(fittedModel.outputLayer)
       val inputsWithLabels =
         inputs + (nextStepLoss.labelsInput -> labels)
       val execution =
         nextStepLoss.getComputationGraph.computeAll(inputsWithLabels)
+      println("Execution complete")
       val gradients =
         nextStepLoss.getComputationGraph.backpropagateAll(execution)
+      println("Backprop complete")
       val modelParameterGradients = gradients
         .filter(_._1 match {
           case ModelParameter(_, _) => true
@@ -64,7 +70,7 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
           val gradient = parameterAndGradient._2
           val newParameter = ModelParameter(
             parameter.name,
-            parameter.value - gradient * learningRateArray
+            parameter.value - gradient * learningRateAsT
           )
           parameter -> newParameter
       }
