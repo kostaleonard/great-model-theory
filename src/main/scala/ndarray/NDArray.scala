@@ -70,14 +70,13 @@ object NDArray {
 
   /** Returns an array from the given sequence.
     *
-    * @param seq
-    *   A sequence of array elements.
+    * @param arr
+    *   A array elements.
     * @tparam T
     *   The array element type.
     */
-  def apply[T: ClassTag](seq: Seq[T]): NDArray[T] = {
-    val elements = seq.toArray
-    new NDArray[T](Array(elements.length), elements)
+  def apply[T: ClassTag](arr: Array[T]): NDArray[T] = {
+    new NDArray[T](Array(arr.length), arr)
   }
 
   /** Returns an array whose elements are 0, 1, 2, etc. when flattened.
@@ -268,7 +267,7 @@ class NDArray[T: ClassTag] private (
       val thisFlat = flatten()
       val otherFlat = other.flatten()
       val mask = thisFlat.indices.map(idx => thisFlat(idx) == otherFlat(idx))
-      NDArray[Boolean](mask).reshape(shape)
+      NDArray[Boolean](mask.toArray).reshape(shape)
     } else {
       val (broadcastThis, broadcastOther) = broadcastWith(other)
       broadcastThis == broadcastOther
@@ -332,14 +331,14 @@ class NDArray[T: ClassTag] private (
               thisFlatAsFloat(idx) - otherFlatAsFloat(idx)
             ) <= epsilonAsFloat
           )
-          NDArray[Boolean](mask).reshape(shape)
+          NDArray[Boolean](mask.toArray).reshape(shape)
         case _ if classTag[T] == classTag[Double] =>
           val thisFlatAsDouble = thisFlat.asInstanceOf[Array[Double]]
           val otherFlatAsDouble = otherFlat.asInstanceOf[Array[Double]]
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsDouble(idx) - otherFlatAsDouble(idx)) <= epsilon
           )
-          NDArray[Boolean](mask).reshape(shape)
+          NDArray[Boolean](mask.toArray).reshape(shape)
         case _ if classTag[T] == classTag[Int] =>
           val epsilonAsInt = epsilon.asInstanceOf[Int]
           val thisFlatAsInt = thisFlat.asInstanceOf[Array[Int]]
@@ -347,7 +346,7 @@ class NDArray[T: ClassTag] private (
           val mask = thisFlat.indices.map(idx =>
             Math.abs(thisFlatAsInt(idx) - otherFlatAsInt(idx)) <= epsilonAsInt
           )
-          NDArray[Boolean](mask).reshape(shape)
+          NDArray[Boolean](mask.toArray).reshape(shape)
         case _ if classTag[T] == classTag[Long] =>
           val epsilonAsLong = epsilon.asInstanceOf[Long]
           val thisFlatAsLong = thisFlat.asInstanceOf[Array[Long]]
@@ -357,7 +356,7 @@ class NDArray[T: ClassTag] private (
               thisFlatAsLong(idx) - otherFlatAsLong(idx)
             ) <= epsilonAsLong
           )
-          NDArray[Boolean](mask).reshape(shape)
+          NDArray[Boolean](mask.toArray).reshape(shape)
       }
     } else {
       val (broadcastThis, broadcastOther) = broadcastWith(other)
@@ -419,7 +418,7 @@ class NDArray[T: ClassTag] private (
         (0 until targetShape(shapeIdx)).flatMap(_ => slice(indices).flatten())
       )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
-      val broadcastArray = NDArray[T](sliceElements).reshape(newShape)
+      val broadcastArray = NDArray[T](sliceElements.toArray).reshape(newShape)
       broadcastArray.broadcastToWithMatchingNumDimensions(
         targetShape,
         shapeIdx - 1
@@ -500,7 +499,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result).reshape(shape)
+    NDArray(result.toArray).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 + arr2
@@ -525,7 +524,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result).reshape(shape)
+    NDArray(result.toArray).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 - arr2
@@ -550,7 +549,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.times(thisFlat(idx), otherFlat(idx)))
-    NDArray(result).reshape(shape)
+    NDArray(result.toArray).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 * arr2
@@ -575,7 +574,7 @@ class NDArray[T: ClassTag] private (
     val otherFlat = other.flatten()
     val result =
       thisFlat.indices.map(idx => num.div(thisFlat(idx), otherFlat(idx)))
-    NDArray(result).reshape(shape)
+    NDArray(result.toArray).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 / arr2
@@ -592,7 +591,7 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size.
     */
-  def /(other: T)(implicit num: Fractional[T]): NDArray[T] = this / NDArray(List(other))
+  def /(other: T)(implicit num: Fractional[T]): NDArray[T] = this / NDArray(Array(other))
 
   /** Returns the sum of all elements.
     *
@@ -661,7 +660,7 @@ class NDArray[T: ClassTag] private (
       shape.map(x => (0 until x).toList).toList
     )
     val transposeElements = indices.map(x => apply(x.toArray))
-    NDArray(transposeElements).reshape(shape.reverse)
+    NDArray(transposeElements.toArray).reshape(shape.reverse)
   }
 
   /** Returns a new NDArray with dimensions of length 1 removed. */
@@ -691,7 +690,7 @@ class NDArray[T: ClassTag] private (
     val sliceIndices = listCartesianProduct(dimensionIndices)
     val sliceElements =
       sliceIndices.map(elementIndices => apply(elementIndices.toArray))
-    NDArray(sliceElements).reshape(resultShape.toArray)
+    NDArray(sliceElements.toArray).reshape(resultShape.toArray)
   }
 
   /** Returns the result of matrix multiplication of 2D arrays.
@@ -726,7 +725,7 @@ class NDArray[T: ClassTag] private (
             vectorDotProduct(Array(0)) +: newElementsReversed
         }
       }
-      NDArray[T](newElementsReversed.reverse).reshape(Array(numRows, numCols))
+      NDArray[T](newElementsReversed.reverse.toArray).reshape(Array(numRows, numCols))
     }
 
   /** Returns the dot product of this array with another array.
@@ -763,7 +762,7 @@ class NDArray[T: ClassTag] private (
               .zip(otherFlat)
               .map(tup => num.times(tup._1, tup._2))
               .reduce(num.plus)
-          )
+          ).toArray
         )
     }
     def lastAxisInnerProduct(): NDArray[T] =
@@ -782,7 +781,7 @@ class NDArray[T: ClassTag] private (
           slice(sliceIndicesComplete).squeeze() dot other
         }
         val newElements = newElementsArrays.map(_.flatten().head)
-        NDArray[T](newElements).reshape(resultShape)
+        NDArray[T](newElements.toArray).reshape(resultShape)
       }
     def multidimensionalInnerProduct(): NDArray[T] =
       if (shape.last != other.shape(other.shape.length - 2))
@@ -815,7 +814,7 @@ class NDArray[T: ClassTag] private (
               .squeeze()).flatten().head
           }
         }
-        NDArray[T](newElements).reshape(resultShape)
+        NDArray[T](newElements.toArray).reshape(resultShape)
       }
     if (shape.length == 1 && other.shape.length == 1) vectorInnerProduct()
     else if (shape.length == 2 && other.shape.length == 2) matmul(other)
@@ -942,7 +941,7 @@ class NDArray[T: ClassTag] private (
         else Some(shape(idx))
       )
       .toArray
-    NDArray[B](newElements).reshape(newShape)
+    NDArray[B](newElements.toArray).reshape(newShape)
   }
 
   /** Returns the string representation of the NDArray. */

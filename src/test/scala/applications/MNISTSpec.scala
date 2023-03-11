@@ -24,7 +24,7 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     //TODO fixture for MNIST dataset so test suite only downloads once per run
     val dataset = MNIST.getDataset
     //TODO yTrain needs to be one-hot
-    val xTrain = dataset._1.toFloat.reshape(Array(60000, 28 * 28)) / NDArray.ofValue[Float](Array(60000, 28 * 28), 255)
+    val xTrain = dataset._1.toFloat.reshape(Array(60000, 28 * 28))
     /*
     val xTrain = dataset._1.toFloat.reshape(Array(60000, 28 * 28)) / 255
     val yTrain = dataset._2.toFloat

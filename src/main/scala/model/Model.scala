@@ -42,7 +42,7 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
       learningRate: Double = 1e-3
   )(implicit numeric: Fractional[T]): Model[T] = {
     var fittedModel = this
-    val learningRateArray = NDArray[T](List(learningRate.asInstanceOf[T]))
+    val learningRateArray = NDArray[T](Array(learningRate.asInstanceOf[T]))
     (0 until epochs).foreach { epoch =>
       val nextStepLoss = MeanSquaredError(fittedModel.outputLayer)
       val inputsWithLabels =

@@ -63,10 +63,10 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val numOutputs = 2
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val xTrain =
-      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+      NDArray[Double](Array(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
         Array(numExamples, numFeatures)
       )
-    val yTrain = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
+    val yTrain = NDArray[Double](Array(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(numExamples, numOutputs)
     )
     val input = Input[Double]("X", Array(None, Some(numFeatures)))
