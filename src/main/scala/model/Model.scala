@@ -54,10 +54,8 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
         inputs + (nextStepLoss.labelsInput -> labels)
       val execution =
         nextStepLoss.getComputationGraph.computeAll(inputsWithLabels)
-      println("Execution complete")
       val gradients =
         nextStepLoss.getComputationGraph.backpropagateAll(execution)
-      println("Backprop complete")
       val modelParameterGradients = gradients
         .filter(_._1 match {
           case ModelParameter(_, _) => true
@@ -81,4 +79,10 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     }
     fittedModel
   }
+
+  //TODO docstring
+  def evaluate(
+           inputs: Map[Input[T], NDArray[T]],
+           labels: NDArray[T]
+         )(implicit numeric: Fractional[T]): NDArray[T] = ???
 }

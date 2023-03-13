@@ -13,23 +13,30 @@ case object MNIST {
     "http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz"
   private val trainLabelsUrl =
     "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"
+  private val testImagesUrl =
+    "http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz"
+  private val testLabelsUrl =
+    "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"
   private val urlEncoding = "ISO-8859-1"
   private val imagesFileMagicNumber = Array(0, 0, 8, 3)
   private val labelsFileMagicNumber = Array(0, 0, 8, 1)
-
-  //TODO probably want train and test datasets
-  /** Returns the MNIST dataset as a pair of arrays (features, labels).
+  
+  /** Returns the MNIST dataset as a tuple (xTrain, yTrain, xTest, yTest).
     *
     * The MNIST dataset contains 60,000 grayscale images and labels. Each image
     * is 28 x 28 and contains pixel values from 0 to 255. Each label is an
     * integer from 0 to 9 indicating the number shown in the image.
     */
-  def getDataset: (NDArray[Int], NDArray[Int]) = {
+  def getDataset: (NDArray[Int], NDArray[Int], NDArray[Int], NDArray[Int]) = {
     val trainImagesBytes = getDecompressedBytesFromUrl(trainImagesUrl)
     val trainImages = parseImageFileBytes(trainImagesBytes)
     val trainLabelsBytes = getDecompressedBytesFromUrl(trainLabelsUrl)
     val trainLabels = parseLabelsFileBytes(trainLabelsBytes)
-    (trainImages, trainLabels)
+    val testImagesBytes = getDecompressedBytesFromUrl(testImagesUrl)
+    val testImages = parseImageFileBytes(testImagesBytes)
+    val testLabelsBytes = getDecompressedBytesFromUrl(testLabelsUrl)
+    val testLabels = parseLabelsFileBytes(testLabelsBytes)
+    (trainImages, trainLabels, testImages, testLabels)
   }
 
   private def getDecompressedBytesFromUrl(url: String): Array[Byte] = {

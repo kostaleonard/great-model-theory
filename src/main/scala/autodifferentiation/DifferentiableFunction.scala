@@ -82,12 +82,7 @@ trait DifferentiableFunction[T] {
   )(implicit
       num: Numeric[T]
   ): Map[DifferentiableFunction[T], NDArray[T]] = {
-    //TODO remove debugging
-    println("looking for key")
-    //TODO is hashing very expensive? Or printing?
-    println(execution.outputs)
     val lastStepGradient = NDArray.ones[T](execution.outputs(this).shape)
-    println("Found key")
     backpropagateAllRecursive(execution, lastStepGradient)
   }
 
