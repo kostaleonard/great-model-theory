@@ -24,8 +24,7 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     assert(yTest.flatten().forall(label => label >= 0 && label < 10))
   }
 
-  // We ignore this test because it is too slow to converge, but we keep it as
-  // our goal for the initial release.
+  // TODO do not ignore
   ignore should "be easy to train a model on MNIST" in {
     val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).toFloat / 255
     val yTrain = dataset._2.toCategorical().toFloat

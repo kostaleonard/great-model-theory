@@ -100,17 +100,6 @@ trait DifferentiableFunction[T] {
     Map(this -> outputGradient) ++ parentBackpropagationResults.flatten
   }
 
-  /** Returns the gradient of the function with respect to a variable.
-    *
-    * @param withRespectToVariable
-    *   The variable with which to compute the gradient. If we call this
-    *   DifferentiableFunction y and the variable x, this operation produces
-    *   dy/dx.
-    */
-  def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T]
-
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
@@ -163,10 +152,6 @@ case class Constant[T](value: NDArray[T])(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
 
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = Constant(NDArray.zeros(value.shape))
-
   override def getInputs: Set[Input[T]] = Set.empty
 
   override def getOutputShape: Array[Option[Int]] = value.shape.map(Some(_))
@@ -195,18 +180,6 @@ trait Variable[T] extends DifferentiableFunction[T] {
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    if (withRespectToVariable == this) Constant(NDArray.ones(getGradientShape))
-    else Constant(NDArray.zeros(getGradientShape))
-
-  /** Returns the shape of the returned gradient. */
-  private def getGradientShape: Array[Int] = getOutputShape.map {
-    case Some(dimension) => dimension
-    case None            => 1
-  }
 }
 
 /** A model parameter.
@@ -321,10 +294,6 @@ case class Sum[T](a: DifferentiableFunction[T])(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
 
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = ???
-
   override def getInputs: Set[Input[T]] = ???
 
   override def getOutputShape: Array[Option[Int]] = {
@@ -379,10 +348,6 @@ case class Mean[T](a: DifferentiableFunction[T])(
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = Mean(a.gradient(withRespectToVariable))
 
   override def getInputs: Set[Input[T]] = a.getInputs
 
@@ -443,10 +408,6 @@ case class Negate[T](override val a: DifferentiableFunction[T])(
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = Negate(a.gradient(withRespectToVariable))
 }
 
 /** Squares the results of a function.
@@ -482,14 +443,6 @@ case class Square[T](override val a: DifferentiableFunction[T])(
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Multiply(
-      Multiply(Constant(NDArray[T](Array(num.fromInt(2)))), a),
-      a.gradient(withRespectToVariable)
-    )
 }
 
 /** Returns the reciprocal of the results of a function.
@@ -525,11 +478,6 @@ case class Reciprocal[T](override val a: DifferentiableFunction[T])(
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Multiply(Reciprocal(Negate(Square(a))), a.gradient(withRespectToVariable))
 }
 
 /** Returns the exponentiation of the results of a function (f(x) = pow(e, x)).
@@ -564,11 +512,6 @@ case class Exp[T](override val a: DifferentiableFunction[T])(
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Multiply(this, a.gradient(withRespectToVariable))
 }
 
 /** A differentiable function with two arguments that broadcasts its operations.
@@ -690,11 +633,6 @@ case class Add[T](
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Add(a.gradient(withRespectToVariable), b.gradient(withRespectToVariable))
 }
 
 /** Subtracts the results of two functions.
@@ -738,14 +676,6 @@ case class Subtract[T](
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Subtract(
-      a.gradient(withRespectToVariable),
-      b.gradient(withRespectToVariable)
-    )
 }
 
 /** Element-wise multiplies the results of two functions.
@@ -797,14 +727,6 @@ case class Multiply[T](
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    Add(
-      Multiply(a.gradient(withRespectToVariable), b),
-      Multiply(a, b.gradient(withRespectToVariable))
-    )
 }
 
 /** Computes the dot product of the results of two functions.
@@ -860,93 +782,6 @@ case class DotProduct[T](
       throw new IllegalArgumentException(
         s"withRespectToArg was $withRespectToArg, but the valid choices are {0, 1}."
       )
-
-  override def gradient(
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    gradientFromShapes(
-      a.getOutputShape,
-      b.getOutputShape,
-      withRespectToVariable
-    )
-
-  private def gradientFromShapes(
-      aShape: Array[Option[Int]],
-      bShape: Array[Option[Int]],
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] =
-    if (aShape.length == 1 && bShape.length == 1)
-      vectorInnerProductGradient(aShape, bShape, withRespectToVariable)
-    else if (aShape.length == 2 && bShape.length == 2)
-      matmulGradient(aShape, bShape, withRespectToVariable)
-    else ???
-
-  /** Returns the shape of the dot product on two 1D arrays. */
-  private def vectorInnerProductGradient(
-      aShape: Array[Option[Int]],
-      bShape: Array[Option[Int]],
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = {
-    val aVectorLength = aShape.head
-    val bVectorLength = bShape.head
-    if (aVectorLength.isEmpty || bVectorLength.isEmpty)
-      throw new ShapeException(
-        "Cannot get the vector inner product gradient with placeholder dimensions"
-      )
-    else if (aVectorLength.get != bVectorLength.get)
-      throw new ShapeException(
-        s"Arrays must have matching shape for vector inner product, but found ${aShape
-            .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
-      )
-    else
-      gradientUnbroadcastZeros(
-        a.gradient(withRespectToVariable),
-        b.gradient(withRespectToVariable)
-      )
-  }
-
-  private def gradientUnbroadcastZeros(
-      aGradient: DifferentiableFunction[T],
-      bGradient: DifferentiableFunction[T]
-  ): DifferentiableFunction[T] = {
-    val omitAGradient = aGradient match {
-      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
-      case _                                                            => false
-    }
-    val omitBGradient = bGradient match {
-      case Constant(value) if value arrayEquals NDArray.zeros(Array(1)) => true
-      case _                                                            => false
-    }
-    if (omitAGradient && omitBGradient)
-      Constant(NDArray.zeros(Array(1)))
-    else if (omitAGradient) DotProduct(a, bGradient)
-    else if (omitBGradient) DotProduct(aGradient, b)
-    else Add(DotProduct(aGradient, b), DotProduct(a, bGradient))
-  }
-
-  /** Returns the shape of the dot product on two 2D arrays. */
-  private def matmulGradient(
-      aShape: Array[Option[Int]],
-      bShape: Array[Option[Int]],
-      withRespectToVariable: Variable[T]
-  ): DifferentiableFunction[T] = {
-    val j1 = aShape.tail.head
-    val j2 = bShape.head
-    if (j1.isEmpty || j2.isEmpty)
-      throw new ShapeException(
-        "Cannot get matmul gradient with placeholder in middle dimension"
-      )
-    else if (j1.get != j2.get)
-      throw new ShapeException(
-        s"Arrays must have matching middle dimension for matmul, but found ${aShape
-            .mkString("Array(", ", ", ")")} and ${bShape.mkString("Array(", ", ", ")")}"
-      )
-    else
-      Add(
-        DotProduct(a.gradient(withRespectToVariable), b),
-        DotProduct(a, b.gradient(withRespectToVariable))
-      )
-  }
 
   override def getInputs: Set[Input[T]] = a.getInputs union b.getInputs
 
