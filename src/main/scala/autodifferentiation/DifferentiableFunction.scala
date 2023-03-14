@@ -298,7 +298,7 @@ case class Sum[T](a: DifferentiableFunction[T])(
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAll(inputs)
     value.copy(outputs =
-      value.outputs + (this -> NDArray(List(value.outputs(a).sum)))
+      value.outputs + (this -> NDArray(Array(value.outputs(a).sum)))
     )
   }
 
@@ -354,7 +354,7 @@ case class Mean[T](a: DifferentiableFunction[T])(
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAll(inputs)
     value.copy(outputs =
-      value.outputs + (this -> NDArray(List(value.outputs(a).mean)))
+      value.outputs + (this -> NDArray(Array(value.outputs(a).mean)))
     )
   }
 
@@ -476,7 +476,7 @@ case class Square[T](override val a: DifferentiableFunction[T])(
   ): NDArray[T] =
     if (withRespectToArg == 0) {
       val aExecution = execution.outputs(a)
-      val aExecutionDouble = aExecution * NDArray(List(num.fromInt(2)))
+      val aExecutionDouble = aExecution * NDArray(Array(num.fromInt(2)))
       aExecutionDouble * outputGradient
     } else
       throw new IllegalArgumentException(
@@ -487,7 +487,7 @@ case class Square[T](override val a: DifferentiableFunction[T])(
       withRespectToVariable: Variable[T]
   ): DifferentiableFunction[T] =
     Multiply(
-      Multiply(Constant(NDArray[T](List(num.fromInt(2)))), a),
+      Multiply(Constant(NDArray[T](Array(num.fromInt(2)))), a),
       a.gradient(withRespectToVariable)
     )
 }

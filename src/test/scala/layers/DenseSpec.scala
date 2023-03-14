@@ -58,7 +58,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
       outputs arrayApproximatelyEquals NDArray[Float](
-        List(28f, 34f, 76f, 98f)
+        Array(28f, 34f, 76f, 98f)
       ).reshape(Array(sampleBatchSize, units))
     )
   }
@@ -100,7 +100,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     )
     assert(
       outputs arrayApproximatelyEquals NDArray[Float](
-        List(10f, 13f, 28f, 40f, 46f, 67f, 64f, 94f, 82f, 121f, 100f, 148f,
+        Array(10f, 13f, 28f, 40f, 46f, 67f, 64f, 94f, 82f, 121f, 100f, 148f,
           118f, 175f, 136f, 202f)
       ).reshape(Array(sampleBatchSize, numFeaturesRows, units))
     )
@@ -131,7 +131,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
       outputs arrayApproximatelyEquals NDArray[Float](
-        List(29f, 35f, 77f, 99f)
+        Array(29f, 35f, 77f, 99f)
       ).reshape(Array(sampleBatchSize, units))
     )
   }

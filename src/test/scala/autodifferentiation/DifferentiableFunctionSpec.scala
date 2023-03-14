@@ -23,9 +23,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   )(implicit num: Fractional[T]): NDArray[T] = {
     val epsilonArray = (classTag[T] match {
       case _ if classTag[T] == classTag[Float] =>
-        NDArray[Float](List(epsilon.toFloat))
+        NDArray[Float](Array(epsilon.toFloat))
       case _ if classTag[T] == classTag[Double] =>
-        NDArray[Double](List(epsilon))
+        NDArray[Double](Array(epsilon))
     }).asInstanceOf[NDArray[T]]
     val inputsMinusEpsilon = inputs.updated(
       withRespectToInput,
@@ -41,11 +41,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     (classTag[T] match {
       case _ if classTag[T] == classTag[Float] =>
         difference.asInstanceOf[NDArray[Float]] / NDArray[Float](
-          List(2 * epsilon.toFloat)
+          Array(2 * epsilon.toFloat)
         )
       case _ if classTag[T] == classTag[Double] =>
         difference.asInstanceOf[NDArray[Double]] / NDArray[Double](
-          List(2 * epsilon)
+          Array(2 * epsilon)
         )
     }).asInstanceOf[NDArray[T]]
   }
@@ -121,10 +121,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
     val batchX =
-      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+      NDArray[Double](Array(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
         Array(batchSize, numFeatures)
       )
-    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
+    val batchY = NDArray[Double](Array(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
     val inputs = Map(inputX -> batchX, inputY -> batchY)
@@ -132,10 +132,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val gradients = loss.backpropagateAll(execution)
     val learningRate = 1e-3
     val nextStepWeightsValue = weights.value - (gradients(weights) * NDArray(
-      List(learningRate)
+      Array(learningRate)
     ))
     val nextStepBiasesValue =
-      biases.value - (gradients(biases) * NDArray(List(learningRate)))
+      biases.value - (gradients(biases) * NDArray(Array(learningRate)))
     val nextStepWeights =
       ModelParameter[Double]("weights", nextStepWeightsValue)
     val nextStepBiases = ModelParameter[Double]("biases", nextStepBiasesValue)
@@ -166,10 +166,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
     val batchX =
-      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+      NDArray[Double](Array(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
         Array(batchSize, numFeatures)
       )
-    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
+    val batchY = NDArray[Double](Array(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
     val inputs = Map(
@@ -217,10 +217,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     // The function we are trying to model is f(x) = (x0 ^ 2 - x1, 2 * x2)
     val batchSize = 4
     val batchX =
-      NDArray[Double](List(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
+      NDArray[Double](Array(1, 3, 2, 4, 9, 1, 2, 2, 2, 1, 0, -1)).reshape(
         Array(batchSize, numFeatures)
       )
-    val batchY = NDArray[Double](List(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
+    val batchY = NDArray[Double](Array(-2, 4, 7, 2, 2, 4, 1, -2)).reshape(
       Array(batchSize, numOutputs)
     )
     val inputs = Map(inputX -> batchX, inputY -> batchY)
@@ -238,11 +238,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       val gradients = nextStepLoss.backpropagateAll(execution)
       val nextStepWeightsValue =
         nextStepWeights.value - (gradients(nextStepWeights) * NDArray(
-          List(learningRate)
+          Array(learningRate)
         ))
       val nextStepBiasesValue =
         nextStepBiases.value - (gradients(nextStepBiases) * NDArray(
-          List(learningRate)
+          Array(learningRate)
         ))
       nextStepWeights = ModelParameter[Double]("weights", nextStepWeightsValue)
       nextStepBiases = ModelParameter[Double]("biases", nextStepBiasesValue)
@@ -367,7 +367,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       Constant(NDArray.arange[Float](Array(2, 4)))
     )
     val output = mean.compute(Map.empty)
-    assert(output arrayApproximatelyEquals NDArray(List(3.5f)))
+    assert(output arrayApproximatelyEquals NDArray(Array(3.5f)))
   }
 
   it should "compute its gradient" in {
@@ -400,11 +400,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the negation of all elements" in {
     val negation = Negate(
-      Constant(NDArray[Int](List(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)))
+      Constant(NDArray[Int](Array(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)))
     )
     val output = negation.compute(Map.empty)
     val expected =
-      NDArray[Int](List(-1, -2, -3, -4, -5, -6)).reshape(Array(2, 3))
+      NDArray[Int](Array(-1, -2, -3, -4, -5, -6)).reshape(Array(2, 3))
     assert(output arrayEquals expected)
   }
 
@@ -441,12 +441,12 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
   it should "compute the reciprocal of all elements" in {
     val reciprocal = Reciprocal(
       Constant(
-        NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+        NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
       )
     )
     val output = reciprocal.compute(Map.empty)
     val expected = NDArray[Double](
-      List(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
+      Array(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
         0.14285714285714285, 0.125)
     ).reshape(Array(2, 4))
     assert(output arrayApproximatelyEquals expected)
@@ -457,7 +457,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val reciprocal = Reciprocal(inputX)
     val gradientX = reciprocal.gradient(inputX)
     val valueX =
-      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+      NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(reciprocal, inputX, inputs)
@@ -475,7 +475,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val reciprocal = Reciprocal(Negate(Square(inputX)))
     val gradientX = reciprocal.gradient(inputX)
     val valueX =
-      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+      NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(reciprocal, inputX, inputs)
@@ -498,11 +498,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the exponentiation of all elements" in {
     val exp = Exp(
-      Constant(NDArray[Double](List(0, 1, 2, -3, 4)))
+      Constant(NDArray[Double](Array(0, 1, 2, -3, 4)))
     )
     val output = exp.compute(Map.empty)
     val expected = NDArray[Double](
-      List(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
+      Array(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
     )
     assert(output arrayApproximatelyEquals expected)
   }
@@ -512,7 +512,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val exp = Exp(inputX)
     val gradientX = exp.gradient(inputX)
     val valueX =
-      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+      NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs)
@@ -533,7 +533,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val exp = Exp(Reciprocal(inputX))
     val gradientX = exp.gradient(inputX)
     val valueX =
-      NDArray[Double](List(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+      NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs)
@@ -552,7 +552,7 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
       Reciprocal(Add(Constant(NDArray.ones(Array(1))), Exp(Negate(inputX))))
     val gradientX = exp.gradient(inputX)
     val valueX =
-      NDArray[Double](List(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
+      NDArray[Double](Array(4, 6, 1, 4, -2, -3, 9, 0)).reshape(Array(2, 4))
     val inputs = Map(inputX -> valueX)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(exp, inputX, inputs)
@@ -662,11 +662,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute the addition of two functions" in {
     val addition = Add(
-      Constant(NDArray(List(2, -2, -1, 1)).reshape(Array(2, 2))),
-      Constant(NDArray(List(9, 1, 0, 2)).reshape(Array(2, 2)))
+      Constant(NDArray(Array(2, -2, -1, 1)).reshape(Array(2, 2))),
+      Constant(NDArray(Array(9, 1, 0, 2)).reshape(Array(2, 2)))
     )
     val output = addition.compute(Map.empty)
-    val expected = NDArray(List(11, -1, -1, 3)).reshape(Array(2, 2))
+    val expected = NDArray(Array(11, -1, -1, 3)).reshape(Array(2, 2))
     assert(output arrayEquals expected)
   }
 
@@ -676,11 +676,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val addition = Add(input1, input2)
     val output = addition.compute(
       Map(
-        input1 -> NDArray(List(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)),
-        input2 -> NDArray(List(-2, 4, 3))
+        input1 -> NDArray(Array(1, 2, 3, 4, 5, 6)).reshape(Array(2, 3)),
+        input2 -> NDArray(Array(-2, 4, 3))
       )
     )
-    val expected = NDArray(List(-1, 6, 6, 2, 9, 9)).reshape(Array(2, 3))
+    val expected = NDArray(Array(-1, 6, 6, 2, 9, 9)).reshape(Array(2, 3))
     assert(output arrayEquals expected)
   }
 
@@ -694,12 +694,12 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "get the gradient of the addition of two constants" in {
     val addition = Add[Float](
-      Constant(NDArray[Float](List(2, -2, -1, 1)).reshape(Array(2, 2))),
-      Constant(NDArray[Float](List(9, 1, 0, 2)).reshape(Array(2, 2)))
+      Constant(NDArray[Float](Array(2, -2, -1, 1)).reshape(Array(2, 2))),
+      Constant(NDArray[Float](Array(9, 1, 0, 2)).reshape(Array(2, 2)))
     )
     val gradient = addition.gradient(Input[Float]("X", Array(None)))
     val output = gradient.compute(Map.empty)
-    val expected = NDArray[Float](List(0, 0, 0, 0)).reshape(Array(2, 2))
+    val expected = NDArray[Float](Array(0, 0, 0, 0)).reshape(Array(2, 2))
     assert(output arrayApproximatelyEquals expected)
   }
 
@@ -722,9 +722,9 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputY = Input[Float]("Y", Array(Some(1)))
     val addition = Add(Square(inputX), inputY)
     val gradientX = addition.gradient(inputX)
-    val valueX = NDArray[Float](List(1, -2, 0, 3, 2, 1)).reshape(Array(2, 3))
+    val valueX = NDArray[Float](Array(1, -2, 0, 3, 2, 1)).reshape(Array(2, 3))
     val outputX = gradientX.compute(Map(inputX -> valueX))
-    val expectedX = valueX * NDArray(List(2))
+    val expectedX = valueX * 2
     assert(outputX arrayApproximatelyEquals expectedX)
     val gradientY = addition.gradient(inputY)
     val outputY = gradientY.compute(Map(inputX -> valueX))
@@ -758,11 +758,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
 
   it should "compute its output (5, 5)" in {
     val dotProduct = DotProduct(
-      Constant(NDArray[Float](List(1, 2, 3, 4, 5))),
-      Constant(NDArray[Float](List(2, -1, 0, 0, 4)))
+      Constant(NDArray[Float](Array(1, 2, 3, 4, 5))),
+      Constant(NDArray[Float](Array(2, -1, 0, 0, 4)))
     )
     val output = dotProduct.compute(Map.empty)
-    assert(output arrayApproximatelyEquals NDArray(List(20)))
+    assert(output arrayApproximatelyEquals NDArray(Array(20)))
   }
 
   it should "fail to compute its output on mismatching arguments (6, 5)" in {
@@ -779,8 +779,8 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val dotProduct = DotProduct(inputX, inputY)
     val gradientX = dotProduct.gradient(inputX)
     val gradientY = dotProduct.gradient(inputY)
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
-    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val valueX = NDArray[Double](Array(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](Array(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)
@@ -806,11 +806,11 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
     val dotProduct =
-      DotProduct[Double](Multiply(Constant(NDArray(List(2))), inputX), inputY)
+      DotProduct[Double](Multiply(Constant(NDArray(Array(2))), inputX), inputY)
     val gradientX = dotProduct.gradient(inputX)
     val gradientY = dotProduct.gradient(inputY)
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
-    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val valueX = NDArray[Double](Array(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](Array(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)
@@ -836,13 +836,13 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val inputX = Input[Double]("X", Array(Some(5)))
     val inputY = Input[Double]("Y", Array(Some(5)))
     val dotProduct = DotProduct[Double](
-      Multiply(inputX, Constant(NDArray(List(2)))),
+      Multiply(inputX, Constant(NDArray(Array(2)))),
       Square(inputY)
     )
     val gradientX = dotProduct.gradient(inputX)
     val gradientY = dotProduct.gradient(inputY)
-    val valueX = NDArray[Double](List(1, 2, 3, 4, 5))
-    val valueY = NDArray[Double](List(2, -1, 0, 0, 4))
+    val valueX = NDArray[Double](Array(1, 2, 3, 4, 5))
+    val valueY = NDArray[Double](Array(2, -1, 0, 0, 4))
     val inputs = Map(inputX -> valueX, inputY -> valueY)
     val numericGradientXOnInputs =
       computeGradientWithFiniteDifferences(dotProduct, inputX, inputs)

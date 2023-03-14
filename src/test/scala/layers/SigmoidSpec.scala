@@ -14,13 +14,13 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
     val sigmoid = Sigmoid(inputLayer)
     val batchSize = 2
     val inputs = Map(
-      input -> NDArray[Double](List(0, 1, 2, -3, 4, 0)).reshape(
+      input -> NDArray[Double](Array(0, 1, 2, -3, 4, 0)).reshape(
         Array(batchSize, numFeatures)
       )
     )
     val outputs = sigmoid(inputs)
     val expected = NDArray[Double](
-      List(0.5, 0.73105852, 0.88079701, 0.04742591, 0.98201377, 0.5)
+      Array(0.5, 0.73105852, 0.88079701, 0.04742591, 0.98201377, 0.5)
     ).reshape(Array(batchSize, numFeatures))
     assert(outputs arrayApproximatelyEquals expected)
   }
@@ -32,7 +32,7 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
     val sigmoid = Sigmoid(inputLayer)
     val batchSize = 2
     val inputs = Map(
-      input -> NDArray[Double](List(-1e6, -1e3, -10, 10, 1e3, 1e6)).reshape(
+      input -> NDArray[Double](Array(-1e6, -1e3, -10, 10, 1e3, 1e6)).reshape(
         Array(batchSize, numFeatures)
       )
     )
@@ -49,14 +49,14 @@ class SigmoidSpec extends AnyFlatSpec with Matchers {
     val sigmoid = Sigmoid(inputLayer)
     val batchSize = 2
     val inputs = Map(
-      input -> NDArray[Double](List(0, 1, 2, -3, 4, 0)).reshape(
+      input -> NDArray[Double](Array(0, 1, 2, -3, 4, 0)).reshape(
         Array(batchSize, numFeatures)
       )
     )
     val gradient = sigmoid.getComputationGraph.gradient(input)
     val outputs = gradient.compute(inputs)
     val expected = NDArray[Double](
-      List(0.25, 0.19661193324148188, 0.1049935854035065, 0.04517665973091213,
+      Array(0.25, 0.19661193324148188, 0.1049935854035065, 0.04517665973091213,
         0.017662706213291114, 0.25)
     ).reshape(Array(batchSize, numFeatures))
     assert(outputs arrayApproximatelyEquals expected)
