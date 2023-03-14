@@ -187,10 +187,12 @@ class NDArray[T: ClassTag] private (
     new NDArray[T](targetShape, elements)
 
   /** Returns an NDArray with the same elements converted to Float. */
-  def toFloat(implicit num: Numeric[T]): NDArray[Float] = map(x => num.toFloat(x))
+  def toFloat(implicit num: Numeric[T]): NDArray[Float] =
+    map(x => num.toFloat(x))
 
   /** Returns an NDArray with the same elements converted to Double. */
-  def toDouble(implicit num: Numeric[T]): NDArray[Double] = map(x => num.toDouble(x))
+  def toDouble(implicit num: Numeric[T]): NDArray[Double] =
+    map(x => num.toDouble(x))
 
   /** Returns an NDArray with the same elements converted to Int. */
   def toInt(implicit num: Numeric[T]): NDArray[Int] = map(x => num.toInt(x))
@@ -212,11 +214,12 @@ class NDArray[T: ClassTag] private (
     indexStrides.indices.reverse.drop(1).foreach { idx =>
       indexStrides(idx) = indexShape(idx + 1) * indexStrides(idx + 1)
     }
-    Iterator.tabulate(indexShape.product){ elementIdx =>
+    Iterator.tabulate(indexShape.product) { elementIdx =>
       val indexArray = Array.fill(indexShape.length)(0)
       var remainder = elementIdx
-      indexStrides.indices.foreach{ strideIdx =>
-        if(strideIdx == indexStrides.length - 1) indexArray(strideIdx) = remainder
+      indexStrides.indices.foreach { strideIdx =>
+        if (strideIdx == indexStrides.length - 1)
+          indexArray(strideIdx) = remainder
         else {
           indexArray(strideIdx) = remainder / indexStrides(strideIdx)
           remainder = remainder % indexStrides(strideIdx)
@@ -398,7 +401,6 @@ class NDArray[T: ClassTag] private (
       )
     }
 
-  //TODO this method is slow (but so are some others, so just make a general issue)
   @tailrec
   private def broadcastToWithMatchingNumDimensions(
       targetShape: Array[Int],
@@ -419,7 +421,9 @@ class NDArray[T: ClassTag] private (
             )(None)
           )
       val sliceElements = sliceIndices.flatMap(sliceIndex =>
-        (0 until targetShape(shapeIdx)).flatMap(_ => slice(sliceIndex).flatten())
+        (0 until targetShape(shapeIdx)).flatMap(_ =>
+          slice(sliceIndex).flatten()
+        )
       )
       val newShape = shape.updated(shapeIdx, targetShape(shapeIdx))
       val broadcastArray = NDArray[T](sliceElements.toArray).reshape(newShape)
@@ -594,9 +598,11 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size.
     */
-  def +(other: T)(implicit num: Numeric[T]): NDArray[T] = this + NDArray(Array(other))
+  def +(other: T)(implicit num: Numeric[T]): NDArray[T] =
+    this + NDArray(Array(other))
 
-  /** Returns the result of element-wise subtraction by broadcasting the operand.
+  /** Returns the result of element-wise subtraction by broadcasting the
+    * operand.
     *
     * @param other
     *   The number to subtract. This function broadcasts the operand across all
@@ -606,9 +612,11 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size.
     */
-  def -(other: T)(implicit num: Numeric[T]): NDArray[T] = this - NDArray(Array(other))
+  def -(other: T)(implicit num: Numeric[T]): NDArray[T] =
+    this - NDArray(Array(other))
 
-  /** Returns the result of element-wise multiplication by broadcasting the operand.
+  /** Returns the result of element-wise multiplication by broadcasting the
+    * operand.
     *
     * @param other
     *   The number to multiply. This function broadcasts the operand across all
@@ -618,7 +626,8 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size.
     */
-  def *(other: T)(implicit num: Numeric[T]): NDArray[T] = this * NDArray(Array(other))
+  def *(other: T)(implicit num: Numeric[T]): NDArray[T] =
+    this * NDArray(Array(other))
 
   /** Returns the result of element-wise division by broadcasting the operand.
     *
@@ -630,7 +639,8 @@ class NDArray[T: ClassTag] private (
     * @return
     *   An NDArray of the same size.
     */
-  def /(other: T)(implicit num: Fractional[T]): NDArray[T] = this / NDArray(Array(other))
+  def /(other: T)(implicit num: Fractional[T]): NDArray[T] =
+    this / NDArray(Array(other))
 
   /** Returns the sum of all elements.
     *
@@ -697,7 +707,8 @@ class NDArray[T: ClassTag] private (
   /** Returns an array with axes transposed. */
   def transpose: NDArray[T] = {
     val ndarrayIndices = indexIterator(shape.reverse).map(_.reverse)
-    val transposeElements = ndarrayIndices.map(ndarrayIndex => apply(ndarrayIndex))
+    val transposeElements =
+      ndarrayIndices.map(ndarrayIndex => apply(ndarrayIndex))
     NDArray(transposeElements.toArray).reshape(shape.reverse)
   }
 
@@ -722,26 +733,31 @@ class NDArray[T: ClassTag] private (
           case None             => Array.range(0, shape(dimensionIdx))
           case Some(indexArray) => indexArray
         }
-      ).toArray
+      )
+      .toArray
     val resultShape = dimensionIndices.map(_.length)
     val indexStrides = Array.fill[Int](dimensionIndices.length)(1)
     indexStrides.indices.reverse.drop(1).foreach { idx =>
-      indexStrides(idx) = dimensionIndices(idx + 1).length * indexStrides(idx + 1)
+      indexStrides(idx) =
+        dimensionIndices(idx + 1).length * indexStrides(idx + 1)
     }
     // For optimization purposes, we are reimplementing some of indexIterator.
-    val ndarrayIndices = Iterator.tabulate(resultShape.product){ elementIdx =>
+    val ndarrayIndices = Iterator.tabulate(resultShape.product) { elementIdx =>
       val indexArray = Array.fill(shape.length)(0)
       var remainder = elementIdx
-      indexStrides.indices.foreach{ strideIdx =>
-        if(strideIdx == indexStrides.length - 1) indexArray(strideIdx) = dimensionIndices(strideIdx)(remainder)
+      indexStrides.indices.foreach { strideIdx =>
+        if (strideIdx == indexStrides.length - 1)
+          indexArray(strideIdx) = dimensionIndices(strideIdx)(remainder)
         else {
-          indexArray(strideIdx) = dimensionIndices(strideIdx)(remainder / indexStrides(strideIdx))
+          indexArray(strideIdx) =
+            dimensionIndices(strideIdx)(remainder / indexStrides(strideIdx))
           remainder = remainder % indexStrides(strideIdx)
         }
       }
       indexArray
     }
-    val sliceElements = ndarrayIndices.map(elementIndices => apply(elementIndices))
+    val sliceElements =
+      ndarrayIndices.map(elementIndices => apply(elementIndices))
     NDArray(sliceElements.toArray).reshape(resultShape)
   }
 
@@ -777,7 +793,8 @@ class NDArray[T: ClassTag] private (
             vectorDotProduct(Array(0)) +: newElementsReversed
         }
       }
-      NDArray[T](newElementsReversed.reverse.toArray).reshape(Array(numRows, numCols))
+      NDArray[T](newElementsReversed.reverse.toArray)
+        .reshape(Array(numRows, numCols))
     }
 
   /** Returns the dot product of this array with another array.
@@ -846,9 +863,11 @@ class NDArray[T: ClassTag] private (
         val newElements = ndarrayIndicesThis.flatMap { ndarrayIndexThis =>
           val sliceIndicesThis =
             ndarrayIndexThis.map(idx => Some(Array(idx))) :+ None
-          val ndarrayIndicesOther = indexIterator(other.shape.dropRight(
-            2
-          ) :+ other.shape.last)
+          val ndarrayIndicesOther = indexIterator(
+            other.shape.dropRight(
+              2
+            ) :+ other.shape.last
+          )
           ndarrayIndicesOther.map { ndarrayIndexOther =>
             val sliceIndicesOtherIntermediate =
               ndarrayIndexOther.map(idx => Some(Array(idx)))
@@ -903,11 +922,14 @@ class NDArray[T: ClassTag] private (
       axis: Int,
       keepDims: Boolean = false
   ): NDArray[B] = {
-    val ndarrayIndices = indexIterator(shape.indices
-      .map(idx =>
-        if (idx == axis) 1
-        else shape(idx)
-      ).toArray)
+    val ndarrayIndices = indexIterator(
+      shape.indices
+        .map(idx =>
+          if (idx == axis) 1
+          else shape(idx)
+        )
+        .toArray
+    )
     val sliceIndices = ndarrayIndices.map(ndarrayIndex =>
       ndarrayIndex.indices
         .map(idx =>
@@ -939,13 +961,20 @@ class NDArray[T: ClassTag] private (
     *   An array of one-hot encoded binary vectors. The output has one greater
     *   rank than the input. This last dimension is for the one-hot vectors.
     */
-  def toCategorical(numClasses: Option[Int] = None)(implicit num: Numeric[T]): NDArray[Int] = classTag[T] match {
-      case _ if classTag[T] == classTag[Int] =>
-        val oneHotLength = numClasses.getOrElse(elements.asInstanceOf[Array[Int]].max + 1)
-        NDArray(elements.flatMap(classIdx =>
-          Array.tabulate(oneHotLength)(arrIdx => if(arrIdx == classIdx.asInstanceOf[Int]) 1 else 0)
-        )).reshape(shape :+ oneHotLength)
-      case _ => toInt.toCategorical(numClasses = numClasses)
+  def toCategorical(
+      numClasses: Option[Int] = None
+  )(implicit num: Numeric[T]): NDArray[Int] = classTag[T] match {
+    case _ if classTag[T] == classTag[Int] =>
+      val oneHotLength =
+        numClasses.getOrElse(elements.asInstanceOf[Array[Int]].max + 1)
+      NDArray(
+        elements.flatMap(classIdx =>
+          Array.tabulate(oneHotLength)(arrIdx =>
+            if (arrIdx == classIdx.asInstanceOf[Int]) 1 else 0
+          )
+        )
+      ).reshape(shape :+ oneHotLength)
+    case _ => toInt.toCategorical(numClasses = numClasses)
   }
 
   /** Returns the string representation of the NDArray. */

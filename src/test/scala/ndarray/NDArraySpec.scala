@@ -20,7 +20,10 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     * @tparam T
     *   The returns type of the function. Unused.
     */
-  private def getMeanExecutionTimeMilliseconds[T](f: () => T, trials: Int = 1000): Double = {
+  private def getMeanExecutionTimeMilliseconds[T](
+      f: () => T,
+      trials: Int = 1000
+  ): Double = {
     val t0 = System.nanoTime()
     (0 until trials).foreach(_ => f())
     val t1 = System.nanoTime()
@@ -306,7 +309,8 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
 
   it should "be approximately equal when using Floats" in {
     val arr1 = NDArray[Float](Array(0, 1, 2, 3, 4))
-    val arr2 = NDArray[Float](Array(0.000001f, 0.9999999f, 2.0f, 3.00000001f, 4))
+    val arr2 =
+      NDArray[Float](Array(0.000001f, 0.9999999f, 2.0f, 3.00000001f, 4))
     assert(arr1 arrayApproximatelyEquals arr2)
   }
 
@@ -716,7 +720,8 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
   }
 
   it should "return the reciprocal of all elements" in {
-    val arr = NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
+    val arr =
+      NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val expected = NDArray[Double](
       Array(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
         0.14285714285714285, 0.125)
@@ -820,8 +825,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
       )
     val arr2 =
       NDArray[Int](Array(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
-    val expectedResult = NDArray[Int](Array(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
-      .reshape(Array(4, 3))
+    val expectedResult =
+      NDArray[Int](Array(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
+        .reshape(Array(4, 3))
     val matmulResult = arr1 matmul arr2
     assert(matmulResult arrayEquals expectedResult)
   }
@@ -860,8 +866,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
       )
     val arr2 =
       NDArray[Int](Array(1, 2, 1, 2, 3, 1, 4, 2, 2)).reshape(Array(3, 3))
-    val expectedResult = NDArray[Int](Array(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
-      .reshape(Array(4, 3))
+    val expectedResult =
+      NDArray[Int](Array(5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6))
+        .reshape(Array(4, 3))
     val matmulResult = arr1 dot arr2
     assert(matmulResult arrayEquals expectedResult)
   }
@@ -896,7 +903,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     val arr1 = NDArray.arange[Int](Array(2, 3, 4))
     val arr2 = NDArray.arange[Int](Array(4, 2))
     val expectedResult =
-      NDArray[Int](Array(28, 34, 76, 98, 124, 162, 172, 226, 220, 290, 268, 354))
+      NDArray[Int](
+        Array(28, 34, 76, 98, 124, 162, 172, 226, 220, 290, 268, 354)
+      )
         .reshape(Array(2, 3, 2))
     val dotProduct = arr1 dot arr2
     assert(dotProduct arrayEquals expectedResult)
@@ -946,7 +955,9 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     val arr = NDArray.arange[Int](Array(2, 3))
     val reduced = arr.reduce(_.sum, 0, keepDims = true)
     assert(reduced.shape sameElements Array(1, 3))
-    assert(reduced arrayEquals NDArray[Int](Array(3, 5, 7)).reshape(Array(1, 3)))
+    assert(
+      reduced arrayEquals NDArray[Int](Array(3, 5, 7)).reshape(Array(1, 3))
+    )
   }
 
   it should "preserve dimensions in reduction if the array has only 1 dimension" in {
@@ -957,19 +968,24 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
 
   it should "convert an Int array of classes to one-hot encoded categorical vectors" in {
     val arr = NDArray[Int](Array(0, 1, 2, 3))
-    val expected = NDArray[Int](Array(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)).reshape(Array(4, 4))
+    val expected = NDArray[Int](
+      Array(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
+    ).reshape(Array(4, 4))
     assert(arr.toCategorical() arrayEquals expected)
   }
 
   it should "convert an Int array of classes to one-hot vectors with the specified number of classes" in {
     val arr = NDArray[Int](Array(2, 1, 0, 2))
-    val expected = NDArray[Int](Array(0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0)).reshape(Array(4, 4))
+    val expected = NDArray[Int](
+      Array(0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0)
+    ).reshape(Array(4, 4))
     assert(arr.toCategorical(numClasses = Some(4)) arrayEquals expected)
   }
 
   it should "convert a non-Int array to categorical by converting the array to Int" in {
     val arr = NDArray[Float](Array(2, 1, 0, 2))
-    val expected = NDArray[Int](Array(0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1)).reshape(Array(4, 3))
+    val expected = NDArray[Int](Array(0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1))
+      .reshape(Array(4, 3))
     assert(arr.toCategorical() arrayEquals expected)
   }
 

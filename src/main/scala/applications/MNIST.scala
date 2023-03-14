@@ -20,7 +20,7 @@ case object MNIST {
   private val urlEncoding = "ISO-8859-1"
   private val imagesFileMagicNumber = Array(0, 0, 8, 3)
   private val labelsFileMagicNumber = Array(0, 0, 8, 1)
-  
+
   /** Returns the MNIST dataset as a tuple (xTrain, yTrain, xTest, yTest).
     *
     * The MNIST dataset contains 60,000 grayscale images and labels. Each image
@@ -42,8 +42,11 @@ case object MNIST {
   private def getDecompressedBytesFromUrl(url: String): Array[Byte] = {
     val fileGzipContent = Source.fromURL(url)(urlEncoding)
     val fileGzipBytes = fileGzipContent.mkString.getBytes(urlEncoding)
-    val fileDecompressedContent = Source.fromInputStream(new GZIPInputStream(new ByteArrayInputStream(fileGzipBytes)))(urlEncoding)
-    val fileDecompressedBytes = fileDecompressedContent.mkString.getBytes(urlEncoding)
+    val fileDecompressedContent = Source.fromInputStream(
+      new GZIPInputStream(new ByteArrayInputStream(fileGzipBytes))
+    )(urlEncoding)
+    val fileDecompressedBytes =
+      fileDecompressedContent.mkString.getBytes(urlEncoding)
     fileDecompressedBytes
   }
 
@@ -58,13 +61,17 @@ case object MNIST {
     */
   private def parseImageFileBytes(bytes: Array[Byte]): NDArray[Int] = {
     val magicNumber = bytes.take(4)
-    if(!(magicNumber sameElements imagesFileMagicNumber)) throw new IOException(s"Images file has incorrect magic number: ${magicNumber.mkString("Array(", ", ", ")")}")
+    if (!(magicNumber sameElements imagesFileMagicNumber))
+      throw new IOException(
+        s"Images file has incorrect magic number: ${magicNumber
+            .mkString("Array(", ", ", ")")}"
+      )
     val numImages = BigInt(bytes.slice(4, 8)).toInt
     val numRows = BigInt(bytes.slice(8, 12)).toInt
     val numCols = BigInt(bytes.slice(12, 16)).toInt
     val numPixelValues = numImages * numRows * numCols
     val pixels = Array.fill(numPixelValues)(0)
-    (0 until numPixelValues).foreach{ pixelIdx =>
+    (0 until numPixelValues).foreach { pixelIdx =>
       // This bitwise AND causes pixelValue to be an unsigned int in [0, 255].
       val pixelValue = bytes(pixelIdx + 16) & 0xff
       pixels(pixelIdx) = pixelValue
@@ -84,10 +91,14 @@ case object MNIST {
     */
   private def parseLabelsFileBytes(bytes: Array[Byte]): NDArray[Int] = {
     val magicNumber = bytes.take(4)
-    if(!(magicNumber sameElements labelsFileMagicNumber)) throw new IOException(s"Labels file has incorrect magic number: ${magicNumber.mkString("Array(", ", ", ")")}")
+    if (!(magicNumber sameElements labelsFileMagicNumber))
+      throw new IOException(
+        s"Labels file has incorrect magic number: ${magicNumber
+            .mkString("Array(", ", ", ")")}"
+      )
     val numLabels = BigInt(bytes.slice(4, 8)).toInt
     val labels = Array.fill(numLabels)(0)
-    (0 until numLabels).foreach{ labelIdx =>
+    (0 until numLabels).foreach { labelIdx =>
       val label = bytes(labelIdx + 8).toInt
       labels(labelIdx) = label
     }
