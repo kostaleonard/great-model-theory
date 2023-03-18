@@ -9,6 +9,7 @@ import autodifferentiation.{
   Subtract
 }
 
+import java.util
 import scala.reflect.ClassTag
 
 /** Computes the mean squared error of the previous layer given outputs.
@@ -35,6 +36,8 @@ case class MeanSquaredError[T: ClassTag](previousLayer: Layer[T])(implicit
 
   // This layer has no parameters.
   override def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
-  ): Layer[T] = this
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = MeanSquaredError(
+    previousLayer.withUpdatedParameters(parameters)
+  )
 }

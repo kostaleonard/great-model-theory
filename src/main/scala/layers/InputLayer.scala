@@ -1,6 +1,7 @@
 package layers
 import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
 
+import java.util
 import scala.reflect.ClassTag
 
 /** An input to a neural network.
@@ -17,6 +18,6 @@ case class InputLayer[T: ClassTag](input: Input[T]) extends Layer[T] {
 
   // This layer has no parameters.
   override def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Layer[T] = this
 }

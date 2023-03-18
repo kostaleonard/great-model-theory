@@ -8,6 +8,7 @@ import autodifferentiation.{
 }
 import ndarray.NDArray
 
+import java.util
 import scala.reflect.ClassTag
 
 object Dense {
@@ -33,12 +34,14 @@ object Dense {
       units: Int,
       weightsInitialization: Option[ModelParameter[T]] = None,
       biasesInitialization: Option[ModelParameter[T]] = None
-  )(implicit num: Numeric[T]): Dense[T] = {
+  )(implicit num: Fractional[T]): Dense[T] = {
     val outputShape = previousLayer.getOutputShape
     val weights = weightsInitialization.getOrElse(
       ModelParameter(
         s"weights@Dense($previousLayer)",
-        NDArray.random[T](Array(outputShape.last.get, units))
+        (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(
+          2
+        ) - num.fromInt(1)) / num.fromInt(2)
       )
     )
     val biases =
@@ -63,10 +66,12 @@ object Dense {
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int
-  )(implicit num: Numeric[T]): Dense[T] = {
+  )(implicit num: Fractional[T]): Dense[T] = {
     val outputShape = previousLayer.getOutputShape
     val weights =
-      NDArray.random[T](Array(outputShape.last.get, units))
+      (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(
+        2
+      ) - num.fromInt(1)) / num.fromInt(2)
     val biases = NDArray.zeros[T](Array(units))
     Dense(
       previousLayer,
@@ -122,12 +127,12 @@ case class Dense[T: ClassTag](
     )
 
   override def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Layer[T] =
     Dense(
       previousLayer.withUpdatedParameters(parameters),
       units,
-      parameters.getOrElse(weights, weights),
-      parameters.getOrElse(biases, biases)
+      parameters.getOrDefault(weights, weights),
+      parameters.getOrDefault(biases, biases)
     )
 }

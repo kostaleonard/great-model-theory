@@ -53,7 +53,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       )
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
+      Map("X" -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
@@ -86,7 +86,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       )
     val sampleBatchSize = 2
     val inputs = Map(
-      input -> NDArray.arange[Float](
+      "X" -> NDArray.arange[Float](
         Array(sampleBatchSize, numFeaturesRows, numFeaturesCols)
       )
     )
@@ -126,7 +126,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
       )
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
+      Map("X" -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = dense(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, units))
     assert(
@@ -143,7 +143,7 @@ class DenseSpec extends AnyFlatSpec with Matchers {
     val dense = Dense.withRandomWeights(inputLayer, 2)
     val sampleBatchSize = 2
     val inputs = Map(
-      input -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures + 1))
+      "X" -> NDArray.arange[Float](Array(sampleBatchSize, numFeatures + 1))
     )
     assertThrows[ShapeException](dense(inputs))
   }

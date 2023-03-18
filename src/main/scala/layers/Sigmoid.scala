@@ -11,6 +11,7 @@ import autodifferentiation.{
 }
 import ndarray.NDArray
 
+import java.util
 import scala.reflect.ClassTag
 
 /** A sigmoid neural network layer.
@@ -39,6 +40,6 @@ case class Sigmoid[T: ClassTag](previousLayer: Layer[T])(implicit
 
   // This layer has no parameters.
   override def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
-  ): Layer[T] = this
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
+  ): Layer[T] = Sigmoid(previousLayer.withUpdatedParameters(parameters))
 }

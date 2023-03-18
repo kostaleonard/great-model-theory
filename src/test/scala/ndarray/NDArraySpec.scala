@@ -719,13 +719,20 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     assert(arr.square arrayEquals expected)
   }
 
-  it should "return the reciprocal of all elements" in {
+  it should "return the reciprocal of all elements (Double)" in {
     val arr =
       NDArray[Double](Array(1, 2, 3, 4, 5, 6, 7, 8)).reshape(Array(2, 4))
     val expected = NDArray[Double](
       Array(1, 0.5, 0.3333333333333333, 0.25, 0.2, 0.1666666,
         0.14285714285714285, 0.125)
     ).reshape(Array(2, 4))
+    assert(arr.reciprocal arrayApproximatelyEquals expected)
+  }
+
+  it should "return the reciprocal of all elements (Float)" in {
+    val arr =
+      NDArray[Float](Array(1, 2, 3))
+    val expected = NDArray[Float](Array(1f, 0.5f, 0.3333333333333333f))
     assert(arr.reciprocal arrayApproximatelyEquals expected)
   }
 
@@ -741,10 +748,18 @@ class NDArraySpec extends AnyFlatSpec with Matchers with TimeLimits {
     assert(arr.negate arrayEquals expected)
   }
 
-  it should "return the exponentiation of all elements" in {
+  it should "return the exponentiation of all elements (Double)" in {
     val arr = NDArray[Double](Array(0, 1, 2, -3, 4))
     val expected = NDArray[Double](
       Array(1, Math.exp(1.0), Math.exp(2.0), Math.exp(-3.0), Math.exp(4.0))
+    )
+    assert(arr.exp arrayApproximatelyEquals expected)
+  }
+
+  it should "return the exponentiation of all elements (Float)" in {
+    val arr = NDArray[Float](Array(0, 1, 2))
+    val expected = NDArray[Float](
+      Array(1f, Math.exp(1.0).toFloat, Math.exp(2.0).toFloat)
     )
     assert(arr.exp arrayApproximatelyEquals expected)
   }

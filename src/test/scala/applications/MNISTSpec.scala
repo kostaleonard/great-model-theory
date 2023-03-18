@@ -24,8 +24,7 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     assert(yTest.flatten().forall(label => label >= 0 && label < 10))
   }
 
-  // We ignore this test because it is too slow to converge, but we keep it as
-  // our goal for the initial release.
+  // This test passes but is very slow.
   ignore should "be easy to train a model on MNIST" in {
     val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).toFloat / 255
     val yTrain = dataset._2.toCategorical().toFloat
@@ -38,12 +37,12 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     val dense2 = Dense.withRandomWeights(activation1, 10)
     val activation2 = Sigmoid(dense2)
     val model = Model(activation2)
-    val inputs = Map(input -> xTrain)
+    val inputs = Map("X" -> xTrain)
     val lossFunctionBefore = Mean(
       Square(Subtract(model.outputLayer.getComputationGraph, Constant(yTrain)))
     )
     val lossBefore = lossFunctionBefore.compute(inputs).flatten().head
-    val fittedModel = model.fit(inputs, yTrain, 10)
+    val fittedModel = model.fit(inputs, yTrain, 10, learningRate = 1e-2)
     val lossFunctionAfter = Mean(
       Square(
         Subtract(fittedModel.outputLayer.getComputationGraph, Constant(yTrain))

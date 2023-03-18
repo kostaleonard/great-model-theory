@@ -4,6 +4,7 @@ import autodifferentiation.{Input, ModelParameter}
 import layers.{Layer, MeanSquaredError}
 import ndarray.NDArray
 
+import java.util
 import scala.reflect.{ClassTag, classTag}
 
 /** A neural network.
@@ -20,7 +21,7 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     * @param inputs
     *   The inputs to the model.
     */
-  def apply(inputs: Map[Input[T], NDArray[T]]): NDArray[T] = outputLayer(
+  def apply(inputs: Map[String, NDArray[T]]): NDArray[T] = outputLayer(
     inputs
   )
 
@@ -32,16 +33,16 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     *   are ignored.
     */
   def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
 
   /** Returns a model trained to predict the labels on the inputs.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @param labels
     *   The ground truth labels the model should learn to predict on the input
     *   data. The labels should be in the same order as the inputs and should
@@ -59,7 +60,7 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     *   order of 1e-3.
     */
   def fit(
-      inputs: Map[Input[T], NDArray[T]],
+      inputs: Map[String, NDArray[T]],
       labels: NDArray[T],
       epochs: Int,
       learningRate: Double = 1e-3
@@ -73,29 +74,36 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     (0 until epochs).foreach { epoch =>
       val nextStepLoss = MeanSquaredError(fittedModel.outputLayer)
       val inputsWithLabels =
-        inputs + (nextStepLoss.labelsInput -> labels)
+        inputs + (nextStepLoss.labelsInput.name -> labels)
+      val nextStepLossGraph = nextStepLoss.getComputationGraph
       val execution =
-        nextStepLoss.getComputationGraph.computeAll(inputsWithLabels)
-      val gradients =
-        nextStepLoss.getComputationGraph.backpropagateAll(execution)
-      val modelParameterGradients = gradients
-        .filter(_._1 match {
-          case ModelParameter(_, _) => true
-          case _                    => false
-        })
-        .asInstanceOf[Map[ModelParameter[T], NDArray[T]]]
-      val updatedParameters = modelParameterGradients.map {
-        parameterAndGradient =>
-          val parameter = parameterAndGradient._1
-          val gradient = parameterAndGradient._2
-          val newParameter = ModelParameter(
-            parameter.name,
-            parameter.value - gradient * learningRateAsT
-          )
-          parameter -> newParameter
+        nextStepLossGraph.computeAllComponentFunctions(inputsWithLabels)
+      val gradients = {
+        nextStepLossGraph.backpropagateAllComponentFunctions(execution)
+      }
+      val modelParameterGradients =
+        new util.IdentityHashMap[ModelParameter[T], NDArray[T]]
+      gradients.forEach((differentiableFunction, gradient) =>
+        differentiableFunction match {
+          case ModelParameter(_, _) =>
+            modelParameterGradients.put(
+              differentiableFunction.asInstanceOf[ModelParameter[T]],
+              gradient
+            )
+          case _ => ;
+        }
+      )
+      val updatedParameters =
+        new util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
+      modelParameterGradients.forEach { (parameter, gradient) =>
+        val newParameter = ModelParameter(
+          parameter.name,
+          parameter.value - (gradient * learningRateAsT)
+        )
+        updatedParameters.put(parameter, newParameter)
       }
       println(
-        s"Epoch $epoch: loss=${execution.outputs(nextStepLoss.getComputationGraph).flatten().head}"
+        s"Epoch $epoch: loss=${execution.outputs.get(nextStepLossGraph).flatten().head}"
       )
       fittedModel = fittedModel.withUpdatedParameters(updatedParameters)
     }
@@ -105,10 +113,10 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
   /** Returns the model's loss on the test set.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @param labels
     *   The ground truth labels the model should learn to predict on the input
     *   data. The labels should be in the same order as the inputs and should
@@ -123,13 +131,13 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
   /** Returns the model's predictions on the inputs.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @return
     *   The model's predictions. These predictions will have the same shape as
     *   the model's output layer.
     */
-  def predict(inputs: Map[Input[T], NDArray[T]]): NDArray[T] = ???
+  def predict(inputs: Map[String, NDArray[T]]): NDArray[T] = apply(inputs)
 }
