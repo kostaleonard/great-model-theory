@@ -505,9 +505,8 @@ class NDArray[T: ClassTag] private (
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
-    val result =
-      thisFlat.indices.map(idx => num.plus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result.toArray).reshape(shape)
+    val result = Array.tabulate(thisFlat.length)(idx => num.plus(thisFlat(idx), otherFlat(idx)))
+    NDArray(result).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 + arr2
@@ -530,9 +529,8 @@ class NDArray[T: ClassTag] private (
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
-    val result =
-      thisFlat.indices.map(idx => num.minus(thisFlat(idx), otherFlat(idx)))
-    NDArray(result.toArray).reshape(shape)
+    val result = Array.tabulate(thisFlat.length)(idx => num.minus(thisFlat(idx), otherFlat(idx)))
+    NDArray(result).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 - arr2
@@ -555,9 +553,8 @@ class NDArray[T: ClassTag] private (
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
-    val result =
-      thisFlat.indices.map(idx => num.times(thisFlat(idx), otherFlat(idx)))
-    NDArray(result.toArray).reshape(shape)
+    val result = Array.tabulate(thisFlat.length)(idx => num.times(thisFlat(idx), otherFlat(idx)))
+    NDArray(result).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 * arr2
@@ -580,9 +577,8 @@ class NDArray[T: ClassTag] private (
   ) {
     val thisFlat = flatten()
     val otherFlat = other.flatten()
-    val result =
-      thisFlat.indices.map(idx => num.div(thisFlat(idx), otherFlat(idx)))
-    NDArray(result.toArray).reshape(shape)
+    val result = Array.tabulate(thisFlat.length)(idx => num.div(thisFlat(idx), otherFlat(idx)))
+    NDArray(result).reshape(shape)
   } else {
     val (arr1, arr2) = broadcastWith(other)
     arr1 / arr2

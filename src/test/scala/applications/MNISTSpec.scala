@@ -3,6 +3,7 @@ package applications
 import autodifferentiation.{Constant, Input, Mean, Square, Subtract}
 import layers.{Dense, InputLayer, Sigmoid}
 import model.Model
+import ndarray.NDArray
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -27,13 +28,14 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
   // TODO do not ignore
   it should "be easy to train a model on MNIST" in {
     //TODO remove slicing
-    val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).slice(Array(Some(Array.range(0, 4)), None)).toFloat / 255
-    val yTrain = dataset._2.toCategorical().slice(Array(Some(Array.range(0, 4)), None)).toFloat
+    val numSamples = 512
+    val xTrain = (dataset._1.reshape(Array(60000, 28 * 28)).toFloat / NDArray.ofValue[Float](Array(60000, 28 * 28), 255)).slice(Array(Some(Array.range(0, numSamples)), None))
+    val yTrain = dataset._2.toCategorical().toFloat.slice(Array(Some(Array.range(0, numSamples)), None))
+    //TODO broadcasting is slow, so we eliminate it here--make issue
+    //val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).toFloat / NDArray.ofValue[Float](Array(60000, 28 * 28), 255)
+    //val yTrain = dataset._2.toCategorical().toFloat
     assert(xTrain.flatten().forall(pixel => pixel >= 0 && pixel <= 1))
     assert(yTrain.flatten().forall(label => label == 0 || label == 1))
-    //TODO remove debugging
-    println(xTrain.shape.mkString("Array(", ", ", ")"))
-    println(yTrain.shape.mkString("Array(", ", ", ")"))
     // TODO users should not have to know about anything in autodifferentiaion module. Refactor and update README example.
     val input = Input[Float]("X", Array(None, Some(28 * 28)))
     val inputLayer = InputLayer(input)
@@ -49,8 +51,16 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     val lossBefore = lossFunctionBefore.compute(inputs).flatten().head
     //TODO remove debugging
     println(lossBefore)
-
-    val fittedModel = model.fit(inputs, yTrain, 10)
+    val predictionsBefore = model.predict(inputs)
+    println(predictionsBefore)
+    //TODO very poor argmax
+    val predictionsBeforeArgMax = predictionsBefore.reduce(arr => arr.flatten().indexOf(arr.flatten().max), 1)
+    val labels = dataset._2.slice(Array(Some(Array.range(0, numSamples))))
+    println(predictionsBeforeArgMax)
+    println(labels)
+    val accuracyBefore = (predictionsBeforeArgMax == labels).map(b => if(b) 1 else 0).sum / numSamples.toFloat
+    println(accuracyBefore)
+    val fittedModel = model.fit(inputs, yTrain, 10, learningRate = 1e-2)
     val lossFunctionAfter = Mean(
       Square(
         Subtract(fittedModel.outputLayer.getComputationGraph, Constant(yTrain))
@@ -58,5 +68,11 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     )
     val lossAfter = lossFunctionAfter.compute(inputs).flatten().head
     assert(lossAfter < lossBefore)
+    val predictionsAfter = fittedModel.predict(inputs)
+    val predictionsAfterArgmax = predictionsAfter.reduce(arr => arr.flatten().indexOf(arr.flatten().max), 1)
+    println(predictionsAfterArgmax)
+    println(labels)
+    val accuracyAfter = (predictionsAfterArgmax == labels).map(b => if(b) 1 else 0).sum / numSamples.toFloat
+    println(accuracyAfter)
   }
 }

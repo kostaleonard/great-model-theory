@@ -29,12 +29,13 @@ object Dense {
       units: Int,
       weightsInitialization: Option[ModelParameter[T]] = None,
       biasesInitialization: Option[ModelParameter[T]] = None
-  )(implicit num: Numeric[T]): Dense[T] = {
+  )(implicit num: Fractional[T]): Dense[T] = {
     val outputShape = previousLayer.getOutputShape
     val weights = weightsInitialization.getOrElse(
       ModelParameter(
         s"weights@Dense($previousLayer)",
-        NDArray.random[T](Array(outputShape.last.get, units))
+        //TODO this weight initialization is hand-tuned for MNIST
+        (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(2) - num.fromInt(1)) / num.fromInt(2)
       )
     )
     val biases =
@@ -59,10 +60,11 @@ object Dense {
   def withRandomWeights[T: ClassTag](
       previousLayer: Layer[T],
       units: Int
-  )(implicit num: Numeric[T]): Dense[T] = {
+  )(implicit num: Fractional[T]): Dense[T] = {
     val outputShape = previousLayer.getOutputShape
+    //TODO this weight initialization is hand-tuned for MNIST
     val weights =
-      NDArray.random[T](Array(outputShape.last.get, units))
+      (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(2) - num.fromInt(1)) / num.fromInt(2)
     val biases = NDArray.zeros[T](Array(units))
     Dense(
       previousLayer,

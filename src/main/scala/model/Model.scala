@@ -133,5 +133,5 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
     *   The model's predictions. These predictions will have the same shape as
     *   the model's output layer.
     */
-  def predict(inputs: Map[Input[T], NDArray[T]]): NDArray[T] = ???
+  def predict(inputs: Map[String, NDArray[T]]): NDArray[T] = apply(inputs)
 }
