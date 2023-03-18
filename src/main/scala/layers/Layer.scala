@@ -3,6 +3,7 @@ package layers
 import autodifferentiation.{DifferentiableFunction, Input, ModelParameter}
 import ndarray.NDArray
 
+import java.util
 import scala.reflect.ClassTag
 
 /** A neural network layer.
@@ -20,12 +21,13 @@ abstract class Layer[T: ClassTag] {
     */
   def getComputationGraph: DifferentiableFunction[T]
 
+  //TODO update docstring
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
     *   A Map of `Input` objects to tensors of arbitrary shape.
     */
-  def apply(inputs: Map[Input[T], NDArray[T]]): NDArray[T] =
+  def apply(inputs: Map[String, NDArray[T]]): NDArray[T] =
     getComputationGraph.compute(inputs)
 
   /** Returns the layer's `Input` objects. */
@@ -43,6 +45,6 @@ abstract class Layer[T: ClassTag] {
     *   are ignored.
     */
   def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Layer[T]
 }

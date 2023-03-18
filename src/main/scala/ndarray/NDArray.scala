@@ -699,7 +699,7 @@ class NDArray[T: ClassTag] private (
     */
   def exp(implicit num: Fractional[T]): NDArray[T] = (classTag[T] match {
     case _ if classTag[T] == classTag[Float] =>
-      map(x => Math.exp(num.toDouble(x)))
+      map(x => Math.exp(num.toDouble(x)).toFloat)
     case _ if classTag[T] == classTag[Double] =>
       map(x => Math.exp(num.toDouble(x)))
   }).asInstanceOf[NDArray[T]]

@@ -1,13 +1,9 @@
 package layers
 
-import autodifferentiation.{
-  Add,
-  DifferentiableFunction,
-  DotProduct,
-  ModelParameter
-}
+import autodifferentiation.{Add, DifferentiableFunction, DotProduct, ModelParameter}
 import ndarray.NDArray
 
+import java.util
 import scala.reflect.ClassTag
 
 object Dense {
@@ -122,12 +118,12 @@ case class Dense[T: ClassTag](
     )
 
   override def withUpdatedParameters(
-      parameters: Map[ModelParameter[T], ModelParameter[T]]
+      parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Layer[T] =
     Dense(
       previousLayer.withUpdatedParameters(parameters),
       units,
-      parameters.getOrElse(weights, weights),
-      parameters.getOrElse(biases, biases)
+      parameters.getOrDefault(weights, weights),
+      parameters.getOrDefault(biases, biases)
     )
 }

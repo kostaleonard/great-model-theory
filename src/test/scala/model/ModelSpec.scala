@@ -18,7 +18,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val model = Model(dense)
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
+      Map("X" -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, outputSize))
     assert(!outputs.flatten().forall(_ == 1))
@@ -35,7 +35,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val model = Model(dense2)
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
+      Map("X" -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures)))
     val outputs = model(inputs)
     assert(outputs.shape sameElements Array(sampleBatchSize, outputSize))
     assert(!outputs.flatten().forall(_ == 1))
@@ -53,7 +53,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val model = Model(dense)
     val sampleBatchSize = 2
     val inputs =
-      Map(input -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures + 1)))
+      Map("X" -> NDArray.ones[Float](Array(sampleBatchSize, numFeatures + 1)))
     assertThrows[ShapeException](model(inputs))
   }
 
@@ -73,7 +73,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, numOutputs)
     val model = Model(dense)
-    val inputs = Map(input -> xTrain)
+    val inputs = Map("X" -> xTrain)
     val lossFunctionBefore = Mean(
       Square(Subtract(model.outputLayer.getComputationGraph, Constant(yTrain)))
     )
@@ -104,7 +104,7 @@ class ModelSpec extends AnyFlatSpec with Matchers {
     val inputLayer = InputLayer(input)
     val dense = Dense.withRandomWeights(inputLayer, numOutputs)
     val model = Model(dense)
-    val inputs = Map(input -> xTrain)
+    val inputs = Map("X" -> xTrain)
     val lossFunctionBefore = Mean(
       Square(Subtract(model.outputLayer.getComputationGraph, Constant(yTrain)))
     )

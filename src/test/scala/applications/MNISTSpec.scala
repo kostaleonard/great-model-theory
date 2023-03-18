@@ -25,11 +25,16 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
   }
 
   // TODO do not ignore
-  ignore should "be easy to train a model on MNIST" in {
-    val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).toFloat / 255
-    val yTrain = dataset._2.toCategorical().toFloat
+  it should "be easy to train a model on MNIST" in {
+    //TODO remove slicing
+    val xTrain = dataset._1.reshape(Array(60000, 28 * 28)).slice(Array(Some(Array.range(0, 4)), None)).toFloat / 255
+    val yTrain = dataset._2.toCategorical().slice(Array(Some(Array.range(0, 4)), None)).toFloat
     assert(xTrain.flatten().forall(pixel => pixel >= 0 && pixel <= 1))
     assert(yTrain.flatten().forall(label => label == 0 || label == 1))
+    //TODO remove debugging
+    println(xTrain.shape.mkString("Array(", ", ", ")"))
+    println(yTrain.shape.mkString("Array(", ", ", ")"))
+    // TODO users should not have to know about anything in autodifferentiaion module. Refactor and update README example.
     val input = Input[Float]("X", Array(None, Some(28 * 28)))
     val inputLayer = InputLayer(input)
     val dense1 = Dense.withRandomWeights(inputLayer, 128)
@@ -37,11 +42,14 @@ class MNISTSpec extends AnyFlatSpec with Matchers {
     val dense2 = Dense.withRandomWeights(activation1, 10)
     val activation2 = Sigmoid(dense2)
     val model = Model(activation2)
-    val inputs = Map(input -> xTrain)
+    val inputs = Map("X" -> xTrain)
     val lossFunctionBefore = Mean(
       Square(Subtract(model.outputLayer.getComputationGraph, Constant(yTrain)))
     )
     val lossBefore = lossFunctionBefore.compute(inputs).flatten().head
+    //TODO remove debugging
+    println(lossBefore)
+
     val fittedModel = model.fit(inputs, yTrain, 10)
     val lossFunctionAfter = Mean(
       Square(
