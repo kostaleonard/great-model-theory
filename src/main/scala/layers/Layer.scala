@@ -21,11 +21,10 @@ abstract class Layer[T: ClassTag] {
     */
   def getComputationGraph: DifferentiableFunction[T]
 
-  //TODO update docstring
   /** Returns the layer's transformation on the inputs.
     *
     * @param inputs
-    *   A Map of `Input` objects to tensors of arbitrary shape.
+    *   A Map of input names to tensors of arbitrary shape.
     */
   def apply(inputs: Map[String, NDArray[T]]): NDArray[T] =
     getComputationGraph.compute(inputs)

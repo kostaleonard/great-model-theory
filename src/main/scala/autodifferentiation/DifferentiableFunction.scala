@@ -6,27 +6,6 @@ import ndarray.NDArray
 import java.util
 import scala.reflect.ClassTag
 
-//TODO just brainstorming here. Remember to clean up
-case class ComputationGraph[T](differentiableFunction: DifferentiableFunction2[T]) {
-
-  //TODO the strings here are variable names, the only named nodes
-  def compute(inputs: Map[String, NDArray[T]]): NDArray[T] = ???
-
-  def computeAllComponentFunctions(inputs: Map[String, NDArray[T]]): util.IdentityHashMap[DifferentiableFunction2[T], NDArray[T]] = ???
-
-
-}
-
-trait DifferentiableFunction2[T] {
-  def compute(inputs: NDArray[T]*): NDArray[T]
-}
-
-case class Add2[T]()(implicit num: Numeric[T]) extends DifferentiableFunction2[T] {
-  override def compute(inputs: NDArray[T]*): NDArray[T] =
-    if (inputs.length != 2) throw new UnsupportedOperationException(s"Binary add operation expected 2 inputs, but found ${inputs.length}")
-    else inputs(0) + inputs(1)
-}
-
 /** A function that is differentiable with respect to its variables.
   *
   * Used to define a compute graph for neural networks.
@@ -37,16 +16,15 @@ case class Add2[T]()(implicit num: Numeric[T]) extends DifferentiableFunction2[T
 trait DifferentiableFunction[T] {
   implicit val classTag: ClassTag[T]
 
-  //TODO update docstrings referencing Input because changed to String
-  //TODO we could make a memory optimization by not calling computeAll. Then could we define computeAll in terms of compute?
   /** Returns the output of the function for the given input values.
     *
     * @param inputs
-    *   A Map of `Input` objects to tensors of arbitrary shape.
+    *   A Map of input names to tensors of arbitrary shape.
     */
-  def compute(inputs: Map[String, NDArray[T]]): NDArray[T] = computeAllComponentFunctions(
-    inputs
-  ).outputs.get(this)
+  def compute(inputs: Map[String, NDArray[T]]): NDArray[T] =
+    computeAllComponentFunctions(
+      inputs
+    ).outputs.get(this)
 
   /** Returns the output of every component function for the given input values.
     *
@@ -56,7 +34,7 @@ trait DifferentiableFunction[T] {
     * user.
     *
     * @param inputs
-    *   A Map of `Input` objects to tensors of arbitrary shape.
+    *   A Map of input names to tensors of arbitrary shape.
     */
   def computeAllComponentFunctions(
       inputs: Map[String, NDArray[T]]
@@ -121,13 +99,15 @@ trait DifferentiableFunction[T] {
       parents(idx)
         .backpropagateAllRecursive(execution, parentGradients(idx))
     )
-    val allGradients = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val allGradients =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     allGradients.put(this, outputGradient)
-    parentBackpropagationResults.foreach(parentGradientMap => allGradients.putAll(parentGradientMap))
+    parentBackpropagationResults.foreach(parentGradientMap =>
+      allGradients.putAll(parentGradientMap)
+    )
     allGradients
   }
 
-  //TODO we can implement this from getParents
   /** Returns the set of all inputs to the function. */
   def getInputs: Set[Input[T]]
 
@@ -143,7 +123,7 @@ trait DifferentiableFunction[T] {
   * Used during backpropagation.
   *
   * @param inputs
-  *   A Map of `Input` objects to tensors of arbitrary shape.
+  *   A Map of input names to tensors of arbitrary shape.
   * @param outputs
   *   The output of every component function for the given input values.
   * @tparam T
@@ -167,7 +147,8 @@ case class Constant[T](value: NDArray[T])(
   override def computeAllComponentFunctions(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value)
     DifferentiableFunctionExecution(inputs, outputs)
   }
@@ -230,7 +211,8 @@ case class ModelParameter[T](
   override def computeAllComponentFunctions(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value)
     DifferentiableFunctionExecution(inputs, outputs)
   }
@@ -272,11 +254,11 @@ case class Input[T](
         }
       )
     ) {
-      val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+      val outputs =
+        new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
       outputs.put(this, value)
       DifferentiableFunctionExecution(inputs, outputs)
-    }
-    else
+    } else
       throw new ShapeException(
         s"Input $name expects values of shape ${shapeWithPlaceholders
             .mkString("Array(", ", ", ")")}, but got ${value.shape
@@ -308,7 +290,8 @@ case class Sum[T](a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, NDArray(Array(value.outputs.get(a).sum)))
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -361,7 +344,8 @@ case class Mean[T](a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, NDArray(Array(value.outputs.get(a).mean)))
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -435,7 +419,8 @@ case class Negate[T](override val a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value.outputs.get(a).negate)
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -470,7 +455,8 @@ case class Square[T](override val a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value.outputs.get(a).square)
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -508,7 +494,8 @@ case class Reciprocal[T](override val a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value.outputs.get(a).reciprocal)
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -546,7 +533,8 @@ case class Exp[T](override val a: DifferentiableFunction[T])(
       inputs: Map[String, NDArray[T]]
   ): DifferentiableFunctionExecution[T] = {
     val value = a.computeAllComponentFunctions(inputs)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, value.outputs.get(a).exp)
     outputs.putAll(value.outputs)
     value.copy(outputs = outputs)
@@ -666,7 +654,8 @@ case class Add[T](
     val aValue = a.computeAllComponentFunctions(inputs)
     val bValue = b.computeAllComponentFunctions(inputs)
     val result = aValue.outputs.get(a) + bValue.outputs.get(b)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, result)
     outputs.putAll(aValue.outputs)
     outputs.putAll(bValue.outputs)
@@ -713,7 +702,8 @@ case class Subtract[T](
     val aValue = a.computeAllComponentFunctions(inputs)
     val bValue = b.computeAllComponentFunctions(inputs)
     val result = aValue.outputs.get(a) - bValue.outputs.get(b)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, result)
     outputs.putAll(aValue.outputs)
     outputs.putAll(bValue.outputs)
@@ -760,7 +750,8 @@ case class Multiply[T](
     val aValue = a.computeAllComponentFunctions(inputs)
     val bValue = b.computeAllComponentFunctions(inputs)
     val result = aValue.outputs.get(a) * bValue.outputs.get(b)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, result)
     outputs.putAll(aValue.outputs)
     outputs.putAll(bValue.outputs)
@@ -815,7 +806,8 @@ case class DotProduct[T](
     val aValue = a.computeAllComponentFunctions(inputs)
     val bValue = b.computeAllComponentFunctions(inputs)
     val result = aValue.outputs.get(a) dot bValue.outputs.get(b)
-    val outputs = new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
+    val outputs =
+      new util.IdentityHashMap[DifferentiableFunction[T], NDArray[T]]
     outputs.put(this, result)
     outputs.putAll(aValue.outputs)
     outputs.putAll(bValue.outputs)

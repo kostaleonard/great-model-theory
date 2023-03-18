@@ -90,9 +90,10 @@ class DifferentiableFunctionSpec extends AnyFlatSpec with Matchers {
     val execution = loss.computeAllComponentFunctions(inputs)
     val gradients = loss.backpropagateAllComponentFunctions(execution)
     val learningRate = 1e-3
-    val nextStepWeightsValue = weights.value - (gradients.get(weights) * NDArray(
-      Array(learningRate)
-    ))
+    val nextStepWeightsValue =
+      weights.value - (gradients.get(weights) * NDArray(
+        Array(learningRate)
+      ))
     val nextStepBiasesValue =
       biases.value - (gradients.get(biases) * NDArray(Array(learningRate)))
     val nextStepWeights =

@@ -1,6 +1,11 @@
 package layers
 
-import autodifferentiation.{Add, DifferentiableFunction, DotProduct, ModelParameter}
+import autodifferentiation.{
+  Add,
+  DifferentiableFunction,
+  DotProduct,
+  ModelParameter
+}
 import ndarray.NDArray
 
 import java.util
@@ -34,8 +39,9 @@ object Dense {
     val weights = weightsInitialization.getOrElse(
       ModelParameter(
         s"weights@Dense($previousLayer)",
-        //TODO this weight initialization is hand-tuned for MNIST
-        (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(2) - num.fromInt(1)) / num.fromInt(2)
+        (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(
+          2
+        ) - num.fromInt(1)) / num.fromInt(2)
       )
     )
     val biases =
@@ -62,9 +68,10 @@ object Dense {
       units: Int
   )(implicit num: Fractional[T]): Dense[T] = {
     val outputShape = previousLayer.getOutputShape
-    //TODO this weight initialization is hand-tuned for MNIST
     val weights =
-      (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(2) - num.fromInt(1)) / num.fromInt(2)
+      (NDArray.random[T](Array(outputShape.last.get, units)) * num.fromInt(
+        2
+      ) - num.fromInt(1)) / num.fromInt(2)
     val biases = NDArray.zeros[T](Array(units))
     Dense(
       previousLayer,

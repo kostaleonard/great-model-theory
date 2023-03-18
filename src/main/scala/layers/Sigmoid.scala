@@ -1,6 +1,14 @@
 package layers
 
-import autodifferentiation.{Add, Constant, DifferentiableFunction, Exp, ModelParameter, Negate, Reciprocal}
+import autodifferentiation.{
+  Add,
+  Constant,
+  DifferentiableFunction,
+  Exp,
+  ModelParameter,
+  Negate,
+  Reciprocal
+}
 import ndarray.NDArray
 
 import java.util

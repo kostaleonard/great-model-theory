@@ -36,14 +36,13 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
       parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
   ): Model[T] = Model(outputLayer.withUpdatedParameters(parameters))
 
-  //TODO users shouldn't have to know about Input (in autodiff)
   /** Returns a model trained to predict the labels on the inputs.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @param labels
     *   The ground truth labels the model should learn to predict on the input
     *   data. The labels should be in the same order as the inputs and should
@@ -76,19 +75,26 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
       val nextStepLoss = MeanSquaredError(fittedModel.outputLayer)
       val inputsWithLabels =
         inputs + (nextStepLoss.labelsInput.name -> labels)
-      //TODO because of our use of IdentityHashMap, we can only call getComputationGraph once--add issue
       val nextStepLossGraph = nextStepLoss.getComputationGraph
       val execution =
         nextStepLossGraph.computeAllComponentFunctions(inputsWithLabels)
       val gradients = {
         nextStepLossGraph.backpropagateAllComponentFunctions(execution)
       }
-      val modelParameterGradients = new util.IdentityHashMap[ModelParameter[T], NDArray[T]]
-      gradients.forEach((differentiableFunction, gradient) => differentiableFunction match {
-        case ModelParameter(_, _) => modelParameterGradients.put(differentiableFunction.asInstanceOf[ModelParameter[T]], gradient)
-        case _ => ;
-      })
-      val updatedParameters = new util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
+      val modelParameterGradients =
+        new util.IdentityHashMap[ModelParameter[T], NDArray[T]]
+      gradients.forEach((differentiableFunction, gradient) =>
+        differentiableFunction match {
+          case ModelParameter(_, _) =>
+            modelParameterGradients.put(
+              differentiableFunction.asInstanceOf[ModelParameter[T]],
+              gradient
+            )
+          case _ => ;
+        }
+      )
+      val updatedParameters =
+        new util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
       modelParameterGradients.forEach { (parameter, gradient) =>
         val newParameter = ModelParameter(
           parameter.name,
@@ -107,10 +113,10 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
   /** Returns the model's loss on the test set.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @param labels
     *   The ground truth labels the model should learn to predict on the input
     *   data. The labels should be in the same order as the inputs and should
@@ -125,10 +131,10 @@ case class Model[T: ClassTag](outputLayer: Layer[T]) {
   /** Returns the model's predictions on the inputs.
     *
     * @param inputs
-    *   The inputs to all input layers in the model. A Map of Input objects to
-    *   the NDArrays that should fill them during training. The shape of each
-    *   array depends on the learning task and model definition. In general, the
-    *   first dimension is the batch dimension.
+    *   The inputs to all input layers in the model. A Map of Strings to the
+    *   NDArrays that should fill them during training. The shape of each array
+    *   depends on the learning task and model definition. In general, the first
+    *   dimension is the batch dimension.
     * @return
     *   The model's predictions. These predictions will have the same shape as
     *   the model's output layer.

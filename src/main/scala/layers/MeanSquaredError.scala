@@ -1,6 +1,13 @@
 package layers
 
-import autodifferentiation.{DifferentiableFunction, Input, Mean, ModelParameter, Square, Subtract}
+import autodifferentiation.{
+  DifferentiableFunction,
+  Input,
+  Mean,
+  ModelParameter,
+  Square,
+  Subtract
+}
 
 import java.util
 import scala.reflect.ClassTag
@@ -30,5 +37,7 @@ case class MeanSquaredError[T: ClassTag](previousLayer: Layer[T])(implicit
   // This layer has no parameters.
   override def withUpdatedParameters(
       parameters: util.IdentityHashMap[ModelParameter[T], ModelParameter[T]]
-  ): Layer[T] = MeanSquaredError(previousLayer.withUpdatedParameters(parameters))
+  ): Layer[T] = MeanSquaredError(
+    previousLayer.withUpdatedParameters(parameters)
+  )
 }
